@@ -3353,3 +3353,314 @@ float Tree::StartTracking(Context &ctx)
 }
 #endif
 
+// #############################
+//  Global function: tree germination module
+// #############################
+void RecruitTree(Context &ctx)
+{
+    for (int site = 0; site < ctx.grid.sites; site++)
+    { //**** Local germination ****
+        if (ctx.T[site].t_age == 0)
+        {
+            int spp_withseeds = 0;
+            for (int spp = 1; spp <= ctx.grid.nbspp; spp++)
+            { // lists all the species with a seed present at given site...
+                if (ctx.species.SPECIES_SEEDS[site][spp] > 0)
+                {
+                    // write species that are present to an extra array
+                    ctx.species.SPECIES_GERM[spp_withseeds] = spp;
+                    spp_withseeds++;
+                }
+            }
+            if (spp_withseeds > 0)
+            { // ... and then randomly select one of these species
+
+                // new in v.2.4.1: for consistency use genrand2() instead of rand(), since v.2.5: use gsl RNG
+                int spp_index = int(gsl_rng_uniform_int(ctx.rng.gslrand, spp_withseeds));
+                int spp = ctx.species.SPECIES_GERM[spp_index];
+                // otherwise all species with seeds present are equiprobable
+
+#ifdef LCP_alternative
+
+#ifdef WATER
+                if (ctx.soil.soil_phi3D[0][ctx.grid.site_DCELL[site]] > 0.5 * ctx.S[spp].s_tlp)
+                {
+                    ctx.T[site].Birth(ctx, spp, site); // in this version, the light environment is checked within Birth() function
+                }
+
+#else
+                ctx.T[site].Birth(ctx, spp, site); // in this version, the light environment is checked within Birth() function
+
+#endif
+
+#else // LCP_alternative
+
+                float flux = ctx.climate.WDailyMean * exp(-fmaxf(ctx.field.LAI3D[0][site + ctx.grid.SBORD], 0.0) * ctx.params.kpar);
+#ifdef WATER
+                if (flux > (ctx.S[spp].s_LCP) && ctx.soil.soil_phi3D[0][ctx.grid.site_DCELL[site]] > 0.5 * ctx.S[spp].s_tlp)
+                {
+                    ctx.T[site].Birth(ctx, spp, site);
+                    ctx.species.SPECIES_SEEDS[site][spp] = 0; // newIM nov2021, to adjust to the yearly update of Species_seeds
+                }
+                // in addition to a condition of light availability- hence light demanding species may not be able to grow in deep sahde conditions in understorey -, a condition on water availability is added - hence drought-intolerant species may not be recruited in water-stressd conditions
+#else
+                // If enough light, germination, initialization of NPP (LCP is the species light compensation point
+                // here, light is the sole environmental resources tested as a limiting factor for germination, but we should think about adding nutrients (N,P) and water conditions...
+                if (flux > (ctx.S[spp].s_LCP))
+                {
+                    ctx.T[site].Birth(ctx, spp, site);
+                    ctx.species.SPECIES_SEEDS[site][spp] = 0; // newIM nov2021, to adjust to the yearly update of Species_seeds
+                }
+#endif // WATER
+#endif // LCP_alternative
+            }
+        }
+    }
+}
+
+
+// #############################
+//  Global function: Treefall gap formation
+// #############################
+//! change in v.2.4: resetting ctx.field.Thurt[0] field is done in TriggerSecondaryTreefall() at the beginning of each iteration. Further changes: rewriting of Tree::FallTree() which is now Tree::Treefall(angle). t_hurt can now persist longer, so new treefall events are added to older damages (that, in turn are decaying)
+void TriggerTreefall(Context &ctx)
+{
+    for (int site = 0; site < ctx.grid.sites; site++)
+        if (ctx.T[site].t_age)
+        {
+            // treefall is triggered given a certain flexural force
+            // ctx.opt._BASICTREEFALL: just dependent on height threshold + random uniform distribution
+            float angle = 0.0, c_forceflex = 0.0;
+            if (ctx.opt._BASICTREEFALL)
+            {
+                c_forceflex = (1 - (1 - gsl_rng_uniform(ctx.rng.gslrand)) / (12 * ctx.time.timestep)) * ctx.T[site].t_height; // probability of treefall per month = 1-t_Ct/t_height , compare to genrand2(), if ctx.time.timestep=1/12: genrand2() < 1 - t_Ct/t_height, or: genrand2() > t_Ct/t_height
+                angle = float(twoPi * gsl_rng_uniform(ctx.rng.gslrand));                                         // random angle
+            }
+            // above a given stress threshold the tree falls
+            if (c_forceflex > ctx.T[site].t_Ct)
+            {
+                ctx.T[site].Treefall(ctx, angle);
+            }
+        }
+#ifdef MPI
+    // Treefall field passed to the n.n. procs
+    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
+#endif
+    for (int site = 0; site < ctx.grid.sites; site++)
+    {
+        // Update of Field hurt
+        if (ctx.T[site].t_age)
+        {
+            ctx.T[site].t_hurt = max(ctx.field.Thurt[0][site + ctx.grid.sites], ctx.T[site].t_hurt); // NEW in v.2.4: addition of damages, alternative: max()
+#ifdef MPI
+            if (mpi_rank)
+                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[1][site]); // ? v.2.4: Update needed, ctx.field.Thurt[1], why max?
+            if (mpi_rank < mpi_size - 1)
+                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[2][site]);
+#endif
+        }
+    }
+}
+
+// #############################
+//  Global function: Secondary treefall gap formation
+// #############################
+//! - NEW in v.2.4: TriggerSecondaryTreefall(), called at the beginning of each iteration
+//! - translates damages from previous round into tree deaths, partly treefalls, partly removing them only (e.g. splintering)
+//! - in the limit of ctx.params.p_tfsecondary = 0.0, this is equivalent to the previous computation
+void TriggerTreefallSecondary(Context &ctx)
+{
+    ctx.diag.nbTreefall1 = 0;
+    ctx.diag.nbTreefall10 = 0;
+    ctx.diag.nbTreefall30 = 0;
+#ifdef Output_ABC
+    nbTreefall10_abc = 0;
+#endif
+    for (int site = 0; site < ctx.grid.sites; site++)
+    {
+        ctx.field.Thurt[0][site] = ctx.field.Thurt[0][site + 2 * ctx.grid.sites] = 0;
+        ctx.field.Thurt[0][site + ctx.grid.sites] = 0;
+    }
+    for (int site = 0; site < ctx.grid.sites; site++)
+    {
+        if (ctx.T[site].t_age)
+        {
+            float height_threshold = ctx.T[site].t_height / ctx.T[site].t_mult_height; // since 2.5: a tree's stability is defined by its species' average height, i.e. we divide by the intraspecific height multiplier to account for lower stability in quickly growing trees; otherwise slender, faster growing trees would be treated preferentially and experience less secondary treefall than more heavily built trees
+            if (2.0 * ctx.T[site].t_hurt * (1 - (1 - gsl_rng_uniform(ctx.rng.gslrand)) / (12 * ctx.time.timestep)) > height_threshold)
+            { // check whether tree dies: probability of death per month is 1.0-0.5*t_height/t_hurt, so, when ctx.time.timestep=1/12, ctx.rng.gslrand <= 1.0 - 0.5 * t_height/t_hurt, or ctx.rng.gslrand > 0.5 * t_height/t_hurt; modified in v.2.5: probability of death is 1.0 - 0.5*t_height/(t_mult_height * t_hurt), so the larger the height deviation (more slender), the higher the risk of being thrown by another tree
+                if (ctx.params.p_tfsecondary > gsl_rng_uniform(ctx.rng.gslrand))
+                {                                                          // check whether tree falls or dies otherwise
+                    float angle = float(twoPi * gsl_rng_uniform(ctx.rng.gslrand)); // random angle
+                    ctx.T[site].Treefall(ctx, angle);
+                }
+                else
+                {
+                    ctx.T[site].Death(ctx);
+                }
+            }
+            else
+            {
+                ctx.T[site].t_hurt = short(ctx.params.hurt_decay * float(ctx.T[site].t_hurt)); // reduction of t_hurt according to ctx.params.hurt_decay, could be moved to Tree::Growth() function and made dependent on the tree's carbon gain
+            }
+        }
+    }
+
+#ifdef MPI
+    //! Treefall field passed to the n.n. procs
+    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
+#endif
+}
+
+float CalcHeightBaseline(float &ah, float &hmax, float &dbh)
+{
+    // height allometry
+    float height = hmax * dbh / (dbh + ah);
+    return (height);
+}
+
+float CalcCRBaseline(Context &ctx, float &dbh)
+{
+    // crown radius allometry
+    float CR;
+    if (!ctx.opt._CROWN_MM)
+    {
+        CR = exp(ctx.params.CR_a + ctx.params.CR_b * log(dbh)); // power law, the default
+    }
+    else
+        CR = ctx.params.CR_b * dbh / (dbh + ctx.params.CR_a); // Michaelis Menten type allometry !!!: requires ctx.params.CR_b to be the CR_max parameter and ctx.params.CR_a the initial increase */
+    // for reference, two crown allometries that are reasonable in French Guiana
+    // t_CR = t_mult_CR * exp(1.9472 + 0.5925*log(t_dbh)); // crown allometry deduced from Piste Saint-Elie */
+    // t_CR = t_mult_CR * exp(1.8814 + 0.5869*log(t_dbh)); // this is crown allometry derived from data set compiled by Jucker et al. 2016 (Global Change Biology)
+    return (CR);
+}
+
+float CalcCDBaseline(Context &ctx, float &height)
+{
+    // crown depth allometry
+    // since v.2.5, simplification of the computation of the crown depth, in accordance with the Canopy Constructor algorithm
+    float CD = (ctx.params.CD_a + ctx.params.CD_b * height);
+    return (CD);
+}
+
+//! Global functions to compute Vcmax (on a mass basis) and leaf dark respiration (on a leaf area basis)
+// newIM : to avoid repeating same functions in Tree and Species class. Was needed for the Species class to correctly initialise Rdark and compute LCP
+
+float CalcVcmaxm(float LMA, float Nmass, float Pmass)
+{
+    float SLA = 10000.0 / LMA;                                                                                                                               // in cm2 g-1
+    float Vcmaxm = pow(10.0, fminf((-1.56 + 0.43 * log10(Nmass * 1000.0) + 0.37 * log10(SLA)), (-0.80 + 0.45 * log10(Pmass * 1000.0) + 0.25 * log10(SLA)))); // this is equation 2 in Domingues et al 2010 PCE (coefficients from fig7) which made better fits than equation 1 (without LMA). Nmass and Pmass are given in g g-1, but should be in mg g-1 in equ 2 in Domingues et al. 2010, hence the mutiplication by 1000.
+    return (Vcmaxm);                                                                                                                                         //  in micromol C g-1 s-1
+}
+float CalcRdark(float LMA, float Nmass, float Pmass, float Vcmax)
+{
+    float Parea = Pmass * LMA;                                                                         // in g ctx.params.m-2
+    float Narea = Nmass * LMA;                                                                         // in g ctx.params.m-2
+    float Rdark = (1.3893 + (0.0728 * Narea) + (0.0015 * Parea) + (0.0095 * Vcmax) - (0.0358 * 26.2)); // in micromolC ctx.params.m-2 s-1 //since v.2.5: correction of Atkin et al. 2015 New phytologist formula. The original formula was based on mean-centered values (cf. Atkin et al. 2015, and the clarification/correction published afterwards), unfortunately only one formula (PFT-specific formula) with absolute values is provided and this is the one used here, cf. corrigendum TableS4): https://nph.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2Fnph.13253&file=nph13253-sup-0001-SupInfo.pdf Warning: Vcmax should be provided on an area basis.
+    return (Rdark);
+}
+
+#ifdef CROWN_UMBRELLA
+
+// Global function: linear decrease of crown radius
+float GetRadiusSlope(Context &ctx, float CR, float crown_extent, float crown_position)
+{
+    float crown_slope = CR * (1.0 - ctx.crown.shape_crown) / crown_extent;
+    float radius = CR - crown_slope * float(crown_position);
+    return (radius);
+}
+
+// Global function: not currently used, but returns the input radius
+float GetRadiusCylinder(float CR, float crown_extent, float crown_position)
+{
+    return (CR);
+}
+
+// Global function: converts floating point crown area into integer value, imposing lower and upper limits
+int GetCrownIntarea(float crown_radius)
+{
+    // crown area
+    float crown_area = PI * crown_radius * crown_radius;
+    int crown_intarea = int(crown_area);      // floor of crown_area to bound area accumulation
+    crown_intarea = max(crown_intarea, 1);    // minimum area of crown (1)
+    crown_intarea = min(crown_intarea, 1963); // maximum area of crown (radius 25), int(3.14*25*25)
+    return (crown_intarea);
+}
+
+// Global function: deduces within-crown densities from LAI with a gradient from 50% in top ctx.diag.layer to 25% in belowtop and 25% in all shells underneath (1 ctx.diag.layer for umbrella-like shape)
+void GetDensitiesGradient(float LAI, float CD, float &dens_top, float &dens_belowtop, float &dens_layer) // RENAMED: ctx.params.dens → dens_layer (was shadowing global ctx.params.dens/ctx.params.ctx.params.dens)
+{
+    if (CD < 2.0)
+    {
+        dens_top = dens_belowtop = dens_layer = LAI / CD;
+    }
+    else if (CD < 3.0)
+    {
+        dens_top = 0.5 * LAI;
+        dens_belowtop = dens_layer = 0.5 * LAI / (CD - 1.0);
+    }
+    else
+    {
+        dens_top = 0.5 * LAI;
+        dens_belowtop = 0.25 * LAI;
+#ifdef CROWN_UMBRELLA
+        dens_layer = 0.25 * LAI;
+#else
+        dens_layer = 0.25 * LAI / (CD - 2.0);
+#endif
+    }
+}
+
+// Global function: deduces within-crown density from LAI, assuming uniform leaf distribution
+void GetDensityUniform(float LAI, float CD, float &dens_layer) // RENAMED: ctx.params.dens → dens_layer
+{
+#ifdef CROWN_UMBRELLA
+    float crownshells_limit = fminf(CD, 3.0);
+    dens_layer = LAI / crownshells_limit;
+#else
+    dens_layer = LAI / CD;
+#endif
+}
+
+// Global function: dummy function when no modification is needed
+void KeepFloatAsIs(float input, float &output, float CD, float height, int layer_fromtop)
+{
+    output = input;
+}
+
+void KeepIntAsIs(int input, int &output, float CD, float height, int layer_fromtop)
+{
+    output = input;
+}
+
+#endif //CROWN_UMBRELLA
+
+#ifdef G0
+
+// Solves the quadratic equation. ROOT: finds smaller (-1), larger (1) root.
+float QUAD(float A, float B, float C, int ROOT)
+{
+    float quad = 0.0;
+    float discriminant = B * B - 4.0 * A * C;
+    // ROOT=-1: smaller root; ROOT=1: larger root
+    if (discriminant < 0)
+    {
+        cerr << "IMAGINARY ROOTS IN QUADRATIC" << endl;
+        quad = 0.0;
+    }
+    if (A == 0.0)
+    {
+        if (B == 0.0)
+            quad = 0.0;
+        else
+            quad = -C / B;
+    }
+    else
+        quad = (-B + ROOT * sqrt(discriminant)) / (2.0 * A);
+    return quad;
+}
+
+#endif
+
+
+
+

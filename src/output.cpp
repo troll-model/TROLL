@@ -3061,81 +3061,6 @@ void OutputABC_transmittance(Context &ctx, fstream &output_transmittance, fstrea
 }
 #endif
 
-#ifdef MPI
-// MPI Routines
-
-// ##############################################
-//  Global MPI function: Communication of border fields in the parallel version of the code
-// ##############################################
-//! - Only if the MPI option has been enabled
-void MPI_ShareSeed(unsigned char **c, int n)
-{
-
-    MPI_Status status;
-
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, size - 2, 0, c[3], n, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, &status);
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, size - 1, 0, c[3], n, MPI_UNSIGNED_CHAR, 1, 0, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, p_rank - 1, 0, c[3], n, MPI_UNSIGNED_CHAR, p_rank + 1, 0, MPI_COMM_WORLD, &status);
-
-    if (p_rank == 0)
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, 1, 1, c[2], n, MPI_UNSIGNED_CHAR, size - 1, 1, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, 0, 1, c[2], n, MPI_UNSIGNED_CHAR, size - 2, 1, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, p_rank + 1, 1, c[2], n, MPI_UNSIGNED_CHAR, p_rank - 1, 1, MPI_COMM_WORLD, &status);
-}
-
-// ##############################################
-//  Global MPI function: Communication of fields
-// ##############################################
-void MPI_ShareField(Context &ctx, unsigned short **cl, unsigned short ***cp, int n)
-{
-
-    MPI_Status status;
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-    {
-        if (p_rank == 0)
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, size - 1, h, cp[1][h], n, MPI_UNSIGNED_SHORT, 1, h, MPI_COMM_WORLD, &status);
-        if (p_rank == size - 1)
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, size - 2, h, cp[1][h], n, MPI_UNSIGNED_SHORT, 0, h, MPI_COMM_WORLD, &status);
-        if ((p_rank) && (p_rank < size - 1))
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, p_rank - 1, h, cp[1][h], n, MPI_UNSIGNED_SHORT, p_rank + 1, h, MPI_COMM_WORLD, &status);
-
-        if (p_rank == 0)
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, 1, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, size - 1, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-        if (p_rank == size - 1)
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, 0, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, size - 2, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-        if ((p_rank) && (p_rank < size - 1))
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, p_rank + 1, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, p_rank - 1, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-    }
-}
-
-// ##############################################
-//  Global MPI function: Communication of treefalls
-// ##############################################
-void MPI_ShareTreefall(unsigned short **c, int n)
-{
-
-    MPI_Status status;
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, size - 1, 0, c[2], n, MPI_UNSIGNED_SHORT, 1, 0, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, size - 2, 0, c[2], n, MPI_UNSIGNED_SHORT, 0, 0, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, p_rank - 1, 0, c[2], n, MPI_UNSIGNED_SHORT, p_rank + 1, 0, MPI_COMM_WORLD, &status);
-
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, 1, 1, c[1], n, MPI_UNSIGNED_SHORT, size - 1, 1, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, 0, 1, c[1], n, MPI_UNSIGNED_SHORT, size - 2, 1, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, p_rank + 1, 1, c[1], n, MPI_UNSIGNED_SHORT, p_rank - 1, 1, MPI_COMM_WORLD, &status);
-}
-#endif
-
 //! Close outputs
 void CloseOutputs(Context &ctx)
 {
@@ -3187,3 +3112,20 @@ void CloseOutputs(Context &ctx)
     }
 #endif
 }
+
+void OutputCrownSliced(Context &ctx, int height, int site, int row_slice, vector<float> &output_statistics)
+{
+    int row_current = site / ctx.grid.cols;
+    int col_current = site % ctx.grid.cols;
+    if (row_current == row_slice && col_current >= ctx.crown.mincol_visual && col_current < ctx.crown.maxcol_visual)
+    {
+        ctx.out.output_visual[1] << ctx.time.iter << "\t" << row_current << "\t" << col_current << "\t" << height;
+        for (int i = 0; i < output_statistics.size(); i++)
+        {
+            ctx.out.output_visual[1] << "\t" << output_statistics[i];
+        } // we only output tree parts that fall in the current slice extent
+        ctx.out.output_visual[1] << endl;
+    }
+};
+
+

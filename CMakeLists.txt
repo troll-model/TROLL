@@ -21,7 +21,7 @@ add_compile_options(-w)
 add_executable(${PROJECT_NAME}
     src/troll.cpp
     src/species.cpp
-    src/crown.cpp
+    src/field.cpp
     src/tree.cpp
     src/lookup_tables.cpp
     src/input.cpp
