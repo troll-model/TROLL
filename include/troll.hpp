@@ -411,6 +411,7 @@ void OutputCHM(Context &ctx, fstream &output_CHM);                              
 
 #ifdef TRACK_INDIVIDUALS
 void TrackingData_andOutput(Context &ctx); //!< Global function: tree level tracking of key variables
+float StartTracking(Context &ctx, Tree &tree); //!< Global function: initialize tree tracking variables
 #endif
 
 // Species and Tree class declarations moved to include/species.hpp and include/tree.hpp

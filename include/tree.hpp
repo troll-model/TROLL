@@ -226,10 +226,6 @@ public:
     void CalcLAImax(Context &ctx);
     void CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax);
     float predLeafLifespanKikuzawa(Context &ctx);
-
-#ifdef TRACK_INDIVIDUALS
-    float StartTracking(Context &ctx);
-#endif
 };
 
 #endif

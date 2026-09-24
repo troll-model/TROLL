@@ -229,7 +229,7 @@ void Tree::Birth(Context &ctx, int nume, int site0)
 #endif
 
 #ifdef TRACK_INDIVIDUALS
-        StartTracking(ctx);
+        StartTracking(ctx, *this);
 #endif
 
 #ifdef LCP_alternative
@@ -788,7 +788,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         t_dbh_previous = t_dbh; // check whether proper initialisation is needed
 #endif
 #ifdef TRACK_INDIVIDUALS
-        StartTracking(ctx);
+        StartTracking(ctx, *this);
 #endif
     }
     return (success);
@@ -3135,54 +3135,6 @@ void Tree::OutputTreeStandard(Context &ctx)
     for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         cout << "\t" << t_soil_layer_weight[l];
     cout << endl;
-}
-#endif
-
-#ifdef TRACK_INDIVIDUALS
-// Diagnostic function to track trees born at a reference year
-float Tree::StartTracking(Context &ctx)
-{
-    // Only tracks trees born in a mature forest at year 501
-    // currently hardcoded
-    if (ctx.time.iter >= 6000 && ctx.time.iter < 6012)
-        t_timeofyear_born = ctx.time.iter % ctx.time.iterperyear;
-    else
-        t_timeofyear_born = -1;
-
-    if (t_timeofyear_born >= 0)
-    {
-        // initialise variables
-        t_seedsproduced = 0;
-        t_seedsproduced_sumyear = 0;
-        t_time_carbonstarvation = 0;
-        t_time_carbonstarvation_year = 0;
-
-        t_GPP_sumyear = 0.0;
-        t_NPP_sumyear = 0.0;
-        t_GPPsquared_sumyear = 0.0; // for standard deviation
-        t_NPPsquared_sumyear = 0.0; // for standard deviation
-        t_Rday_sumyear = 0.0;
-        t_Rnight_sumyear = 0.0;
-        t_Rstem_sumyear = 0.0;
-        t_LAIabove_effavgyear = 0.0;
-        t_carbon_storage_avgyear = 0.0;
-
-        t_LAIcum = 0.0;
-        t_LAIeffcum = 0.0;
-        t_GPPcum = 0.0;
-        t_NPPcum = 0.0;
-        t_LAIsquared_cum = 0.0;
-        t_LAIeffsquared_cum = 0.0;
-        t_GPPsquared_cum = 0.0;
-        t_NPPsquared_cum = 0.0;
-
-        t_dbh_tracked = t_dbh;
-        t_height_tracked = t_height;
-        t_CR_tracked = t_CR;
-        t_agb_tracked = 1000.0 * CalcAGB(ctx);
-
-        ctx.out.output_track[0] << t_site << "\t" << t_timeofyear_born << "\t" << t_site % ctx.grid.cols << "\t" << t_site / ctx.grid.cols << "\t" << t_s->s_name << "\t" << t_dbh << "\t" << t_CR << "\t" << t_height << "\t" << t_agb_tracked << "\t" << t_mult_CR << "\t" << t_mult_height << "\t" << t_wsg << "\t" << t_Nmass << "\t" << t_Pmass << "\t" << t_LMA << "\t" << t_dev_wsg << "\t" << t_mult_N << "\t" << t_mult_P << "\t" << t_mult_LMA << "\t" << t_Vcmax << "\t" << t_Jmax << "\t" << t_Rdark << "\t" << t_LAImax << "\t" << t_leaflifespan << endl;
-    }
 }
 #endif
 

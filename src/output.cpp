@@ -1214,6 +1214,52 @@ void TrackingData_andOutput(Context &ctx)
         }
     }
 }
+
+// Diagnostic function to track trees born at a reference year
+float StartTracking(Context &ctx, Tree &tree)
+{
+    // Only tracks trees born in a mature forest at year 501
+    // currently hardcoded
+    if (ctx.time.iter >= 6000 && ctx.time.iter < 6012)
+        tree.t_timeofyear_born = ctx.time.iter % ctx.time.iterperyear;
+    else
+        tree.t_timeofyear_born = -1;
+
+    if (tree.t_timeofyear_born >= 0)
+    {
+        // initialise variables
+        tree.t_seedsproduced = 0;
+        tree.t_seedsproduced_sumyear = 0;
+        tree.t_time_carbonstarvation = 0;
+        tree.t_time_carbonstarvation_year = 0;
+
+        tree.t_GPP_sumyear = 0.0;
+        tree.t_NPP_sumyear = 0.0;
+        tree.t_GPPsquared_sumyear = 0.0; // for standard deviation
+        tree.t_NPPsquared_sumyear = 0.0; // for standard deviation
+        tree.t_Rday_sumyear = 0.0;
+        tree.t_Rnight_sumyear = 0.0;
+        tree.t_Rstem_sumyear = 0.0;
+        tree.t_LAIabove_effavgyear = 0.0;
+        tree.t_carbon_storage_avgyear = 0.0;
+
+        tree.t_LAIcum = 0.0;
+        tree.t_LAIeffcum = 0.0;
+        tree.t_GPPcum = 0.0;
+        tree.t_NPPcum = 0.0;
+        tree.t_LAIsquared_cum = 0.0;
+        tree.t_LAIeffsquared_cum = 0.0;
+        tree.t_GPPsquared_cum = 0.0;
+        tree.t_NPPsquared_cum = 0.0;
+
+        tree.t_dbh_tracked = tree.t_dbh;
+        tree.t_height_tracked = tree.t_height;
+        tree.t_CR_tracked = tree.t_CR;
+        tree.t_agb_tracked = 1000.0 * CalcAGB(ctx);
+
+        ctx.out.output_track[0] << tree.t_site << "\t" << tree.t_timeofyear_born << "\t" << tree.t_site % ctx.grid.cols << "\t" << tree.t_site / ctx.grid.cols << "\t" << tree.t_s->tree.s_name << "\t" << tree.t_dbh << "\t" << tree.t_CR << "\t" << tree.t_height << "\t" << tree.t_agb_tracked << "\t" << tree.t_mult_CR << "\t" << tree.t_mult_height << "\t" << tree.t_wsg << "\t" << tree.t_Nmass << "\t" << tree.t_Pmass << "\t" << tree.t_LMA << "\t" << tree.t_dev_wsg << "\t" << tree.t_mult_N << "\t" << tree.t_mult_P << "\t" << tree.t_mult_LMA << "\t" << tree.t_Vcmax << "\t" << tree.t_Jmax << "\t" << tree.t_Rdark << "\t" << tree.t_LAImax << "\t" << tree.t_leaflifespan << endl;
+    }
+}
 #endif
 
 #ifdef Output_ABC
