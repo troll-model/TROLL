@@ -1215,7 +1215,7 @@ void TrackingData_andOutput(Context &ctx)
     }
 }
 
-// Diagnostic function to track trees born at a reference year
+// Function to track trees born at a reference year
 float StartTracking(Context &ctx, Tree &tree)
 {
     // Only tracks trees born in a mature forest at year 501
@@ -1259,6 +1259,57 @@ float StartTracking(Context &ctx, Tree &tree)
 
         ctx.out.output_track[0] << tree.t_site << "\t" << tree.t_timeofyear_born << "\t" << tree.t_site % ctx.grid.cols << "\t" << tree.t_site / ctx.grid.cols << "\t" << tree.t_s->tree.s_name << "\t" << tree.t_dbh << "\t" << tree.t_CR << "\t" << tree.t_height << "\t" << tree.t_agb_tracked << "\t" << tree.t_mult_CR << "\t" << tree.t_mult_height << "\t" << tree.t_wsg << "\t" << tree.t_Nmass << "\t" << tree.t_Pmass << "\t" << tree.t_LMA << "\t" << tree.t_dev_wsg << "\t" << tree.t_mult_N << "\t" << tree.t_mult_P << "\t" << tree.t_mult_LMA << "\t" << tree.t_Vcmax << "\t" << tree.t_Jmax << "\t" << tree.t_Rdark << "\t" << tree.t_LAImax << "\t" << tree.t_leaflifespan << endl;
     }
+}
+#endif
+
+#ifdef WATER
+// help function to extract LAI values in given vertical layer
+static double lai3d(const Context &ctx, const Tree &tree, int z)
+{
+    return ctx.field.LAI3D[z][tree.t_site + ctx.grid.SBORD];
+}
+
+// Standard outputs during the simulation -- written to file
+void OutputTreeStandard(Context &ctx, Tree &tree, std::ostream &output)
+{
+    output << ctx.time.iter 
+           << "\t" << tree.t_site 
+           << "\t" << tree.t_sp_lab 
+           << "\t" << tree.t_height
+           << "\t" << tree.t_dbh
+           << "\t" << tree.t_litter
+           << "\t" << tree.t_age 
+           << "\t" << tree.t_LA
+           << "\t" << tree.t_youngLA
+           << "\t" << tree.t_matureLA
+           << "\t" << tree.t_oldLA
+           << "\t" << tree.t_CR 
+           << "\t" << tree.t_CD 
+           << "\t" << tree.t_GPP
+           << "\t" << tree.t_NPP
+           << "\t" << tree.t_Rstem
+           << "\t" << tree.t_Rnight
+           << "\t" << lai3d(ctx, tree, tree.t_height)
+           << "\t" << lai3d(ctx, tree, tree.t_height - tree.t_CD + 1)
+           << "\t" << tree.t_root_depth
+           << "\t" << tree.t_phi_root
+           << "\t" << tree.t_WSF
+           << "\t" << tree.t_WSF_A 
+           << "\t" << tree.t_transpiration
+           << "\t" << tree.t_LAImax
+           << "\t" << tree.t_LAmax;
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+        output
+           << "\t" << tree.t_root_biomass[l];
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+        output
+           << "\t" << tree.t_soil_layer_weight[l];
+    output << endl;
+}
+// Standard outputs during the simulation -- written to screen in real time
+void OutputTreeStandard(Context &ctx, Tree &tree)
+{
+   OutputTreeStandard(ctx, tree, cout);
 }
 #endif
 

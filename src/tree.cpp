@@ -2399,24 +2399,24 @@ void Tree::Growth(Context &ctx)
 
 #ifdef WATER
     if (ctx.time.iter == (ctx.time.nbiter - 90))
-        OutputTreeStandard(ctx, ctx.out.output[28]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[28]);
     if (ctx.time.iter == (ctx.time.nbiter - 45))
-        OutputTreeStandard(ctx, ctx.out.output[29]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[29]);
     if (ctx.time.iter == (ctx.time.nbiter - 1))
-        OutputTreeStandard(ctx, ctx.out.output[30]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[30]);
 
     if (t_site == 4)
-        OutputTreeStandard(ctx, ctx.out.output[12]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[12]);
     if (t_site == 10380)
-        OutputTreeStandard(ctx, ctx.out.output[13]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[13]);
     if (t_site == 100950)
-        OutputTreeStandard(ctx, ctx.out.output[14]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[14]);
     if (t_site == 12090)
-        OutputTreeStandard(ctx, ctx.out.output[15]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[15]);
     if (t_site == 120090)
-        OutputTreeStandard(ctx, ctx.out.output[16]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[16]);
     if (t_site == 150667)
-        OutputTreeStandard(ctx, ctx.out.output[17]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[17]);
 #endif
 }
 
@@ -3114,29 +3114,6 @@ void Tree::histdbh(Context &ctx)
     // where dbh is in cm (it is in number of horizontal cells throughout the code)
     // values are always rounded down (so ctx.diag.nbdbh[30] gives you trees with more than 30 cm dbh, and less than 31))
 }
-
-#ifdef WATER
-// Standard outputs during the simulation -- written to file
-void Tree::OutputTreeStandard(Context &ctx, fstream &output)
-{
-    output << ctx.time.iter << "\t" << t_site << "\t" << t_sp_lab << "\t" << t_height << "\t" << t_dbh << "\t" << t_litter << "\t" << t_age << "\t" << t_LA << "\t" << t_youngLA << "\t" << t_matureLA << "\t" << t_oldLA << "\t" << t_CR << "\t" << t_CD << "\t" << t_GPP << "\t" << t_NPP << "\t" << t_Rstem << "\t" << t_Rnight << "\t" << ctx.field.LAI3D[int(t_height)][t_site + ctx.grid.SBORD] << "\t" << ctx.field.LAI3D[int(t_height - t_CD) + 1][t_site + ctx.grid.SBORD] << "\t" << t_root_depth << "\t" << t_phi_root << "\t" << t_WSF << "\t" << t_WSF_A << "\t" << t_transpiration << "\t" << t_LAImax << "\t" << t_LAmax;
-    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        output << "\t" << t_root_biomass[l];
-    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        output << "\t" << t_soil_layer_weight[l];
-    output << endl;
-}
-// Standard outputs during the simulation -- written to screen in real time
-void Tree::OutputTreeStandard(Context &ctx)
-{
-    cout << ctx.time.iter << "\t" << t_site << "\t" << t_sp_lab << "\t" << t_height << "\t" << t_dbh << "\t" << t_litter << "\t" << t_age << "\t" << t_LA << "\t" << t_youngLA << "\t" << t_matureLA << "\t" << t_oldLA << "\t" << t_CR << "\t" << t_CD << "\t" << t_GPP << "\t" << t_NPP << "\t" << t_Rstem << "\t" << t_Rday << "\t" << t_Rnight << "\t" << ctx.field.LAI3D[int(t_height)][t_site + ctx.grid.SBORD] << "\t" << ctx.field.LAI3D[int(t_height - t_CD) + 1][t_site + ctx.grid.SBORD] << "\t" << t_root_depth << "\t" << t_phi_root << "\t" << t_WSF;
-    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        cout << "\t" << t_root_biomass[l];
-    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        cout << "\t" << t_soil_layer_weight[l];
-    cout << endl;
-}
-#endif
 
 // #############################
 //  Global function: tree germination module

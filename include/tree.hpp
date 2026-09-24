@@ -212,8 +212,6 @@ public:
     leafFluxes FluxesLeaf(Context &ctx, float, float, float, float, float, float, float, float, float);
     leafFluxes dailyFluxesLeaf(Context &ctx, float, float, float, float, float, float, float &);
     leafFluxes Photosyn(Context &ctx, float, float, float, float);
-    void OutputTreeStandard(Context &ctx, std::fstream &output);
-    void OutputTreeStandard(Context &ctx);
 #else
     float DeathRate(Context &ctx, float, float);
     float GPPleaf(Context &ctx, float, float, float);
