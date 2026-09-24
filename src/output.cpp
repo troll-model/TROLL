@@ -424,8 +424,9 @@ void OutputField(Context &ctx)
         int d;
         for (d = 0; d < ctx.grid.dbhmaxincm; d++)
             ctx.diag.nbdbh[d] = 0;
+
         for (site = 0; site < ctx.grid.sites; site++)
-            ctx.T[site].histdbh(ctx);
+            histdbh(ctx, ctx.T[site]);
 
         for (h = 0; h < (ctx.grid.HEIGHT + 1); h++)
         {
@@ -1312,6 +1313,15 @@ void OutputTreeStandard(Context &ctx, Tree &tree)
    OutputTreeStandard(ctx, tree, cout);
 }
 #endif
+
+// Computation of dbh histograms
+void histdbh(Context &ctx, Tree &tree)
+{
+    if (tree.t_age)
+        ctx.diag.nbdbh[int(100. * tree.t_dbh * ctx.grid.LH)]++;
+    // where dbh is in cm (it is in number of horizontal cells throughout the code)
+    // values are always rounded down (so ctx.diag.nbdbh[30] gives you trees with more than 30 cm dbh, and less than 31))
+}
 
 #ifdef Output_ABC
 // ##############################################

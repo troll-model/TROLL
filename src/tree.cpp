@@ -3106,15 +3106,6 @@ void Tree::Average(Context &ctx)
     }
 }
 
-// Computation of dbh histograms
-void Tree::histdbh(Context &ctx)
-{
-    if (t_age)
-        ctx.diag.nbdbh[int(100. * t_dbh * ctx.grid.LH)]++;
-    // where dbh is in cm (it is in number of horizontal cells throughout the code)
-    // values are always rounded down (so ctx.diag.nbdbh[30] gives you trees with more than 30 cm dbh, and less than 31))
-}
-
 // #############################
 //  Global function: tree germination module
 // #############################

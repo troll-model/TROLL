@@ -191,7 +191,6 @@ public:
     void Treefall(Context &ctx, float angle);
     void Update(Context &ctx);
     void Average(Context &ctx);
-    void histdbh(Context &ctx);
 
     float CalcJmaxm(Context &ctx);
     float CalcAGB(Context &ctx);

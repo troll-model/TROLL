@@ -378,6 +378,7 @@ void OutputVisual(Context &ctx);                                                
 void OutputTreeStandard(Context &ctx, Tree &tree, std::ostream &output);          //!< Global function: write tree variables to file 
 void OutputTreeStandard(Context &ctx, Tree &tree);                                //!< Global function: write tree variables to standard output 
 #endif
+void histdbh(Context &ctx, Tree &tree);                                           //!< Global function: compute DBH histograms
 void CloseOutputs(Context &ctx);
 void FreeMem(Context &ctx);
 
