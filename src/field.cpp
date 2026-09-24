@@ -516,6 +516,41 @@ void FillSeed(Context &ctx, int col, int row, int spp)
         }
     }
 }
+// #############################
+//  Global function: Calculate the crown area filled by leaves (only relevant for crown gap fractions > 0.0)
+// #############################
+float GetCrownAreaFilled(float crown_area, float fraction_filled_target)
+{
+    // for now calculated explicitly. Ideally, we would replace the loop by an equation that expresses the underlying logic
+    int crown_intarea = int(crown_area);      // floor of crown_area to bound area accumulation
+    crown_intarea = max(crown_intarea, 1);    // minimum area of crown (1)
+    crown_intarea = min(crown_intarea, 1963); // maximum area of crown (radius 25), int(3.14*25*25)
+
+    int crown_intarea_gaps = 0;
+    float fraction_filled_actual = 0.0;
+
+    for (int i = 0; i < crown_intarea; i++)
+    {
+        if (fraction_filled_actual > fraction_filled_target)
+        {
+            fraction_filled_actual = (fraction_filled_actual * float(i)) / (float(i) + 1.0);
+            crown_intarea_gaps++;
+        }
+        else
+            fraction_filled_actual = (fraction_filled_actual * float(i) + 1.0) / (float(i) + 1.0);
+    }
+
+    // now determine crown_area_filled, depending on whether the next voxel is filled or not filled
+    float crown_area_filled;
+    if (fraction_filled_actual > fraction_filled_target)
+    {
+        crown_area_filled = float(crown_intarea - crown_intarea_gaps);
+    }
+    else
+        crown_area_filled = crown_area - float(crown_intarea_gaps);
+
+    return (crown_area_filled);
+}
 
 //! - upper bound on LAI within one voxel and above voxel (beyond 9.95 and 19.95, none of the environmental variables should change), needed for LookUp tables
 int CalcIntabsorb(float absorb_prev, float absorb_delta)

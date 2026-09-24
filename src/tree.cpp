@@ -163,7 +163,7 @@ void Tree::Birth(Context &ctx, int nume, int site0)
         float crown_area = PI * t_CR * t_CR;
         float fraction_filled_general = 1.0 - ctx.crown.crown_gap_fraction;
         t_fraction_filled = fminf(fraction_filled_general / (t_mult_CR * t_mult_CR), 1.0);
-        float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+        float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
 
         if (ctx.opt._LA_regulation > 0)
         {
@@ -617,7 +617,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         SetParameter(parameter_name, parameter_value, t_litter, 0.0f, 100000.0f, -1.0f, quiet);
 
         float crown_area = PI * t_CR * t_CR;
-        float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+        float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
 
         /* if(t_LAmax >= 0.0 && t_LA >= 0.0 && t_youngLA >= 0.0 && t_matureLA >= 0.0 && t_oldLA >= 0.0 && t_litter >= 0.0){
             // there could be more consistency checks here (e.g. t_youngLA + t_matureLA + t_oldLA should be approximately t_LA)
@@ -799,7 +799,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
 //    if(t_LA < 0.0){
 //        // 1. determine leaf area and related variables, based on current environment
 //        float crown_area = PI*t_CR*t_CR;
-//        float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+//        float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
 //
 //        if(ctx.opt._LA_regulation > 0){
 //            float LAIexperienced_eff;
@@ -2126,7 +2126,7 @@ void Tree::CalcLAImax(Context &ctx)
 void Tree::CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax)
 {
     float crown_area = PI * t_CR * t_CR;
-    float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+    float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
 
     if (ctx.opt._LA_regulation == 1)
     {
@@ -2858,7 +2858,7 @@ void Tree::UpdateTreeBiometry(Context &ctx)
 void Tree::UpdateVolumeDensity()
 {
     float crown_area = PI * t_CR * t_CR;
-    float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+    float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
     t_LAI = t_LA / crown_area_nogaps;
 }
 
@@ -3137,41 +3137,6 @@ void Tree::OutputTreeStandard(Context &ctx)
     cout << endl;
 }
 #endif
-
-// Calculate the crown area filled by leaves (only relevant for crown gap fractions > 0.0)
-float Tree::GetCrownAreaFilled(float crown_area)
-{
-    // for now calculated explicitly. Ideally, we would replace the loop by an equation that expresses the underlying logic
-    int crown_intarea = int(crown_area);      // floor of crown_area to bound area accumulation
-    crown_intarea = max(crown_intarea, 1);    // minimum area of crown (1)
-    crown_intarea = min(crown_intarea, 1963); // maximum area of crown (radius 25), int(3.14*25*25)
-
-    int crown_intarea_gaps = 0;
-    float fraction_filled_target = t_fraction_filled;
-    float fraction_filled_actual = 0.0;
-
-    for (int i = 0; i < crown_intarea; i++)
-    {
-        if (fraction_filled_actual > fraction_filled_target)
-        {
-            fraction_filled_actual = (fraction_filled_actual * float(i)) / (float(i) + 1.0);
-            crown_intarea_gaps++;
-        }
-        else
-            fraction_filled_actual = (fraction_filled_actual * float(i) + 1.0) / (float(i) + 1.0);
-    }
-
-    // now determine crown_area_filled, depending on whether the next voxel is filled or not filled
-    float crown_area_filled;
-    if (fraction_filled_actual > fraction_filled_target)
-    {
-        crown_area_filled = float(crown_intarea - crown_intarea_gaps);
-    }
-    else
-        crown_area_filled = crown_area - float(crown_intarea_gaps);
-
-    return (crown_area_filled);
-}
 
 #ifdef TRACK_INDIVIDUALS
 // Diagnostic function to track trees born at a reference year

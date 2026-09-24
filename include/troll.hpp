@@ -341,7 +341,8 @@ float CalcRdark(float lma, float nmass, float pmass, float vcmax); //!< Returns 
 #ifdef G0
 float QUAD(float A, float B, float C, int ROOT); //!< Returns solution of quadratic equation (larger root of ROOT=1, smaller root if ROOT=-1)
 #endif
-void CalcLAI(Context &ctx, Tree &tree); 
+void CalcLAI(Context &ctx, Tree &tree);
+float GetCrownAreaFilled(float crown_area, float fraction_filled_target);
 
 // GLOBAL FUNCTIONS
 void AssignSpeciesParam(Species &S, const std::string &name, const std::string &value); //!< Global function: assign a species parameter by name
