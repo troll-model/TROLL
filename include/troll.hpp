@@ -264,8 +264,18 @@ void CircleAreaUpdateCrownStatistic_template(Context &ctx, int row_center, int c
 //!< Global function: Template function called by LoopLayerUpdateCrownStatistic_template
 
 template <typename G, typename I, typename O, typename M, typename F>
-void LoopLayerUpdateCrownStatistic_template(Context &ctx, int row_center, int col_center, float height, float CR, float CD, float fraction_filled_target, int shell_fromtop, G GetRadiusLayer, I CrownStatistic_input, O &CrownStatistic_output, M ModifyCrownStatistic_input, F UpdateCrownStatistic_output)
-{
+void LoopLayerUpdateCrownStatistic_template(
+    Context &ctx, // context (parameters)
+    int row_center, int col_center, // voxel center
+    float height, float CR, float CD, // tree dimensions
+    float fraction_filled_target, 
+    int shell_fromtop, 
+    G GetRadiusLayer, 
+    I CrownStatistic_input, 
+    O &CrownStatistic_output, 
+    M ModifyCrownStatistic_input, 
+    F UpdateCrownStatistic_output
+) {
     int crown_top = int(height);
 
     // we start out with 0 actually filled voxels. As a result, the first voxel will always be filled
@@ -325,11 +335,13 @@ void LoopLayerUpdateCrownStatistic_template(Context &ctx, int row_center, int co
 //!< Global function: Template function to loop across crown layer and update
 #endif
 
+// Fields computation
 float CalcVcmaxm(float lma, float nmass, float pmass);             //!< Returns Vcmaxm, in micromol C g-1 s-1
 float CalcRdark(float lma, float nmass, float pmass, float vcmax); //!< Returns Rdark, in micromol C m-2 s-1
 #ifdef G0
 float QUAD(float A, float B, float C, int ROOT); //!< Returns solution of quadratic equation (larger root of ROOT=1, smaller root if ROOT=-1)
 #endif
+void CalcLAI(Context &ctx, Tree &tree); 
 
 // GLOBAL FUNCTIONS
 void AssignSpeciesParam(Species &S, const std::string &name, const std::string &value); //!< Global function: assign a species parameter by name

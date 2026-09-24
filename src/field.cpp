@@ -146,7 +146,7 @@ void UpdateField(Context &ctx)
         for (int sbsite = 0; sbsite < ctx.grid.sites + 2 * ctx.grid.SBORD; sbsite++)
             ctx.field.LAI3D[h][sbsite] = 0.0;
     for (int site = 0; site < ctx.grid.sites; site++)
-        ctx.T[site].CalcLAI(ctx); // Each tree contribues to ctx.field.LAI3D
+        CalcLAI(ctx, ctx.T[site]); // Each tree contribues to ctx.field.LAI3D
 
     for (int h = ctx.grid.HEIGHT; h > 0; h--)
     { // LAI is computed by summing LAI from the canopy top to the ground
@@ -701,6 +701,103 @@ void AddCrownVolumeLayer(Context &ctx, int row_center, int col_center, float hei
         }
     }
 }
+
+// ###############################################
+//  Update of the ctx.field.LAI3D field
+//! called by UpdateField
+// #################################################
+//! - modified in v.2.3: additional contribution to voxels that are not fully occupied by the tree crown. !!!: this does not calculate ctx.field.LAI3D directly, this only calculates the density in each voxel belonging to a tree. The final LAI field is calculated outside of the class Tree
+//! - modified in v.2.4 and v.2.5: introducing an alternative crown shape, "umbrella"-like, inspired by previous shell models and similar to the crown shapes in the PPA. If activated, crowns contain three layers of vegetation that, once the crown goes beyond 3m in depth, will bend downwards on the edges with a linear slope. Since v.2.5 all loops (CalcLAI, Fluxh, leafarea_max) are executed through the same template. This allows to implement other crown shapes in the future and ensures that modifications are carried through across the code
+#ifdef CROWN_UMBRELLA
+void CalcLAI(Context &ctx, Tree &tree)
+{
+    if (tree.t_age > 0)
+    {
+        int site_crowncenter = tree.t_site + tree.t_CrownDisplacement;
+        int row_crowncenter = site_crowncenter / ctx.grid.cols;
+        int col_crowncenter = site_crowncenter % ctx.grid.cols;
+
+        float LA_cumulated = 0.0; // Currently, an output variable is required by LoopLayerUpdateCrownStatistic_template, we here use LA_cumulated as control variable
+
+        int crown_top = int(tree.t_height);
+        int crown_base = int(tree.t_height - tree.t_CD);
+        int max_shells = min(crown_top - crown_base + 1, 4); // since the new crown shapes
+
+        for (int shell_fromtop = 0; shell_fromtop < max_shells; shell_fromtop++)
+        {
+            LoopLayerUpdateCrownStatistic_template(
+                ctx,
+                row_crowncenter, col_crowncenter,
+                tree.t_height, tree.t_CR, tree.t_CD,
+                tree.t_fraction_filled,
+                shell_fromtop,
+                [&ctx](float CR, float e, float p){ return GetRadiusSlope(ctx, CR, e, p); },
+                tree.t_LAI,
+                LA_cumulated,
+                LAI2dens,
+                [&ctx](int h, int s, float d, float &la){ UpdateLAI3D(ctx, h, s, d, la); });
+        }
+    }
+}
+#else
+void CalcLAI(Context &ctx, Tree &tree)
+{
+    if (tree.t_age > 0)
+    {
+        int crown_base = int(tree.t_height - tree.t_CD),
+            crown_top = int(tree.t_height);
+        int site_crowncenter = tree.t_site + tree.t_CrownDisplacement;
+        int row_crowncenter = site_crowncenter / ctx.grid.cols;
+        int col_crowncenter = site_crowncenter % ctx.grid.cols;
+
+        float fraction_abovetop = tree.t_height - float(crown_top);
+        float fraction_belowbase = float(crown_base + 1) - (tree.t_height - tree.t_CD);
+
+        float crown_area = PI * tree.t_CR * tree.t_CR;      // floor of crown_area to bound area accumulation
+        int crown_intarea = int(crown_area);      // floor of crown_area to bound area accumulation
+        crown_intarea = max(crown_intarea, 1);    // minimum area of crown (1)
+        crown_intarea = min(crown_intarea, 1963); // maximum area of crown (radius 25), int(3.14*25*25), int(3.14*25*25)
+
+        float dens_avg = tree.t_LAI / tree.t_CD;
+        float fraction_filled_target = tree.t_fraction_filled;
+
+        for (int h = crown_base; h <= crown_top; h++)
+        {
+            float fraction_filled_actual = 0.0;
+            float dens_layer;
+
+            dens_layer = dens_avg;
+            if (crown_top == crown_base)
+                dens_layer *= tree.t_CD;
+            else if (h == crown_top)
+                dens_layer *= fraction_abovetop;
+            else if (h == crown_base)
+                dens_layer *= fraction_belowbase;
+
+            for (int i = 0; i < crown_intarea; i++)
+            {
+                if (fraction_filled_actual > fraction_filled_target)
+                {
+                    fraction_filled_actual = (fraction_filled_actual * float(i)) / (float(i) + 1.0);
+                }
+                else
+                {
+                    fraction_filled_actual = (fraction_filled_actual * float(i) + 1.0) / (float(i) + 1.0);
+                    int site_relative = ctx.lookup.LookUp_Crown_site[i];
+                    int row = row_crowncenter + site_relative / 51 - 25;
+                    int col = col_crowncenter + site_relative % 51 - 25;
+
+                    if (row >= 0 && row < ctx.grid.rows && col >= 0 && col < ctx.grid.cols)
+                    {
+                        int site = col + ctx.grid.cols * row + ctx.grid.SBORD;
+                        ctx.field.LAI3D[h][site] += dens_layer;
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
 
 #ifdef MPI
 // MPI Routines

@@ -819,7 +819,7 @@ void ReadInputInventory(Context &ctx)
         for (int sbsite = 0; sbsite < ctx.grid.sites + 2 * ctx.grid.SBORD; sbsite++)
             ctx.field.LAI3D[h][sbsite] = 0.0;
     for (int site = 0; site < ctx.grid.sites; site++)
-        ctx.T[site].CalcLAI(ctx); // Each tree contribues to ctx.field.LAI3D
+        CalcLAI(ctx, ctx.T[site]); // Each tree contribues to ctx.field.LAI3D
     for (int h = ctx.grid.HEIGHT; h > 0; h--)
     { // LAI is computed by summing LAI from the canopy top to the ground
         for (int site = 0; site < ctx.grid.sites; site++)

@@ -498,7 +498,7 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
 
     for (int site = 0; site < ctx.grid.sites; site++)
     { // Each tree contribues to ctx.field.LAI3D
-        ctx.T[site].CalcLAI(ctx);
+        CalcLAI(ctx, ctx.T[site]);
     }
 
     for (int h = ctx.grid.HEIGHT; h > 0; h--)
