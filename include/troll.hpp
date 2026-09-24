@@ -361,10 +361,11 @@ void ReadInputPointcloud(Context &ctx);                             //!< Global 
 void AllocMem(Context &ctx);                                        //!< Global function: Field dynamic memory allocation
 void Evolution(Context &ctx);                                       //!< Global function: Evolution at each timestep
 void UpdateSeeds(Context &ctx);                                     //!< Global function: Compute field Seed
+void DisperseSeed(Context &ctx, Tree &tree);                        //!< Global function: Compute seed dispersal
+void FillSeed(Context &ctx, int col, int row, int spp);             //!< Global function: update SPECIES_SEEDS field; v.2.5
 void UpdateField(Context &ctx);                                     //!< Global function: Update all fields
 void TriggerTreefall(Context &ctx);                                 //!< Global function: Treefall gap formation; v.2.4
 void TriggerTreefallSecondary(Context &ctx);                        //!< Global function: Secondary treefall gap formation
-void FillSeed(Context &ctx, int col, int row, int spp);                           //!< Global function: update SPECIES_SEEDS field; v.2.5
 void RecruitTree(Context &ctx);                                     //!< Global function: tree germination module; v.2.5
 void Average(Context &ctx);                                                        //!< Global function: output of the global averages every timestep
 void OutputField(Context &ctx);                                                    //!< Global function: output of the field variables every timestep

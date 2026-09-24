@@ -3,71 +3,6 @@
 #include "context.hpp"
 
 // #################################
-//  Global function: Compute field Seed
-// #################################
-void UpdateSeeds(Context &ctx)
-{
-    // With MPI option: Pass seeds across processors => two more fields to be communicated between n.n. (nearest neighbor) processors. NB: dispersal distance is bounded by the value of 'ctx.grid.rows'. At least 99 % of the seeds should be dispersed within the stripe or on the n.n. stripe. Hence ctx.grid.rows > 4.7*max(dist_moy_dissemination),for an exponential dispersal kernel.
-    // dispersal only once a year
-    if (ctx.time.iter % ctx.time.iterperyear == 0)
-    {
-        // acceleration, using the multinomial distribution
-        int ha = ctx.grid.sites / 10000;
-        gsl_ran_multinomial(ctx.rng.gslrand, ctx.grid.sites, ctx.params.Cseedrain * ha, ctx.species.p_seed, ctx.species.n_seed);
-        cout << ctx.grid.sites << " Seedrain: " << ctx.params.Cseedrain * ha << endl;
-        int seedsadded = 0;
-        for (int s = 0; s < ctx.grid.sites; s++)
-        {
-            // if(ctx.T[s].t_age == 0){
-            int nbseeds = ctx.species.n_seed[s];
-            // cout << "Site: " << s << " nbseeds: " << nbseeds << " ctx.grid.nbspp: " << ctx.grid.nbspp << endl;
-            gsl_ran_multinomial(ctx.rng.gslrand, ctx.grid.nbspp, nbseeds, ctx.species.p_species, ctx.species.n_species);
-            for (int spp = 1; spp <= ctx.grid.nbspp; spp++)
-            {
-                int nbseeds_species = ctx.species.n_species[spp - 1];
-                // cout << "Site: " << s << " Species: " << spp << " nbseeds: " << nbseeds_species << endl;
-                if (nbseeds_species > 0)
-                {
-                    ctx.species.SPECIES_SEEDS[s][spp] = 1;
-                    seedsadded++;
-                }
-                else
-                    ctx.species.SPECIES_SEEDS[s][spp] = 0;
-            }
-            //}
-        }
-
-        // now disperse seeds from the trees on site
-        // dispersion comes after seedrain calculation, because seedrain automatically removes seeds from places where there was no incoming seed
-        int trees_mature = 0;
-        for (int site = 0; site < ctx.grid.sites; site++)
-        { // disperse seeds produced by mature trees
-            if (ctx.T[site].t_age)
-            {
-                if (ctx.T[site].t_dbh >= ctx.T[site].t_dbhmature)
-                    trees_mature++;
-                ctx.T[site].DisperseSeed(ctx);
-            }
-        }
-
-        int nbspecies_affected = 0;
-        int seedsadded_effective = 0;
-        for (int spp = 1; spp <= ctx.grid.nbspp; spp++)
-        {
-            int seedsadded_species = 0;
-            for (int s = 0; s < ctx.grid.sites; s++)
-            {
-                seedsadded_species += ctx.species.SPECIES_SEEDS[s][spp];
-            }
-            if (seedsadded_species > 0)
-                nbspecies_affected++;
-            seedsadded_effective += seedsadded_species;
-        }
-        cout << "Trees_mature: " << trees_mature << " Nbseedsadded: " << seedsadded << " effective: " << seedsadded_effective << " nbspeciesaffected: " << nbspecies_affected << endl;
-    }
-}
-
-// #################################
 //  Global function: Update all fields
 // #################################
 //! - This is an important function for TROLL -- Includes many of the operations
@@ -449,6 +384,116 @@ void UpdateField(Context &ctx)
         }
     }
 #endif
+}
+
+// #################################
+//  Global function: Compute field Seed
+// #################################
+void UpdateSeeds(Context &ctx)
+{
+    // With MPI option: Pass seeds across processors => two more fields to be communicated between n.n. (nearest neighbor) processors. NB: dispersal distance is bounded by the value of 'ctx.grid.rows'. At least 99 % of the seeds should be dispersed within the stripe or on the n.n. stripe. Hence ctx.grid.rows > 4.7*max(dist_moy_dissemination),for an exponential dispersal kernel.
+    // dispersal only once a year
+    if (ctx.time.iter % ctx.time.iterperyear == 0)
+    {
+        // acceleration, using the multinomial distribution
+        int ha = ctx.grid.sites / 10000;
+        gsl_ran_multinomial(ctx.rng.gslrand, ctx.grid.sites, ctx.params.Cseedrain * ha, ctx.species.p_seed, ctx.species.n_seed);
+        cout << ctx.grid.sites << " Seedrain: " << ctx.params.Cseedrain * ha << endl;
+        int seedsadded = 0;
+        for (int s = 0; s < ctx.grid.sites; s++)
+        {
+            // if(ctx.T[s].t_age == 0){
+            int nbseeds = ctx.species.n_seed[s];
+            // cout << "Site: " << s << " nbseeds: " << nbseeds << " ctx.grid.nbspp: " << ctx.grid.nbspp << endl;
+            gsl_ran_multinomial(ctx.rng.gslrand, ctx.grid.nbspp, nbseeds, ctx.species.p_species, ctx.species.n_species);
+            for (int spp = 1; spp <= ctx.grid.nbspp; spp++)
+            {
+                int nbseeds_species = ctx.species.n_species[spp - 1];
+                // cout << "Site: " << s << " Species: " << spp << " nbseeds: " << nbseeds_species << endl;
+                if (nbseeds_species > 0)
+                {
+                    ctx.species.SPECIES_SEEDS[s][spp] = 1;
+                    seedsadded++;
+                }
+                else
+                    ctx.species.SPECIES_SEEDS[s][spp] = 0;
+            }
+            //}
+        }
+
+        // now disperse seeds from the trees on site
+        // dispersion comes after seedrain calculation, because seedrain automatically removes seeds from places where there was no incoming seed
+        int trees_mature = 0;
+        for (int site = 0; site < ctx.grid.sites; site++)
+        { // disperse seeds produced by mature trees
+            if (ctx.T[site].t_age)
+            {
+                if (ctx.T[site].t_dbh >= ctx.T[site].t_dbhmature)
+                    trees_mature++;
+                DisperseSeed(ctx, ctx.T[site]);
+            }
+        }
+
+        int nbspecies_affected = 0;
+        int seedsadded_effective = 0;
+        for (int spp = 1; spp <= ctx.grid.nbspp; spp++)
+        {
+            int seedsadded_species = 0;
+            for (int s = 0; s < ctx.grid.sites; s++)
+            {
+                seedsadded_species += ctx.species.SPECIES_SEEDS[s][spp];
+            }
+            if (seedsadded_species > 0)
+                nbspecies_affected++;
+            seedsadded_effective += seedsadded_species;
+        }
+        cout << "Trees_mature: " << trees_mature << " Nbseedsadded: " << seedsadded << " effective: " << seedsadded_effective << " nbspeciesaffected: " << nbspecies_affected << endl;
+    }
+}
+
+
+// ################################
+//  Seed dispersal, called by UpdateSeeds
+// #################################
+//! - This routine implements the reproduction stage (nbs seeds are produced per tree) and dispersal of the trees
+//! - Dispersal is equiprobable in all direction and normally distributed (for 2D normal distribution, the absolute distance follows a Rayleigh distribution)
+//! - Reproduction only occurs for mature trees
+//! - New v.2.1 threshold of maturity is defined as a size threshold (and not age as before), following Wright et al 2005 JTE
+void DisperseSeed(Context &ctx, Tree &tree)
+{
+    if (tree.t_dbh >= tree.t_dbhmature)
+    {
+        int nbs;
+        if (ctx.opt._SEEDTRADEOFF)
+            nbs = int(tree.t_NPP * 2.0 * ctx.params.falloccanopy * 0.08 * 0.5 * (ctx.S[tree.t_sp_lab].s_iseedmass)); // some multiplications could be avoided in this line.
+        else
+            nbs = ctx.params.nbs0 * tree.t_multiplier_seed;
+        // else nbs=int(t_NPP*2*ctx.params.falloccanopy*0.08*0.5); // test 17/01/2017: use a factor to translate NPP into seeds produced, but not species specific, not linked to mass of grains
+        for (int i = 0; i < nbs; i++)
+        {
+            // Loop over number of produced seeds
+            // float rho = 2.0*((t_s->s_ds)+t_CR)*float(sqrt(fabs(log(genrand2()*iPi))));    //! s_ds is mean seed dispersal distance. Dispersal distance rho: P(rho) = rho*exp(-rho^2)
+            // update 2.5: rho does not seem to correspond to original 1999 paper anymore and in previous version predicted dispersal with a lower cutoff instead of the Rayleigh distribution
+            // here we restore the previous formulation by using the Rayleigh implementation from the gsl library
+            // for the moment, we do not use the crown radius as an additional dispersal kernel. This would lead to a loss of large tree species locally, because they will have much less seeds within the plot
+            float rho = gsl_ran_rayleigh(ctx.rng.gslrand, ctx.S[tree.t_sp_lab].s_ds);
+            float theta_angle = float(twoPi * gsl_rng_uniform(ctx.rng.gslrand)); // Dispersal angle ctx.params.theta
+            int col_tree = tree.t_site % ctx.grid.cols;
+            int row_tree = tree.t_site / ctx.grid.cols;
+            int dist_cols = int(rho * cos(theta_angle));
+            int dist_rows = int(rho * sin(theta_angle));
+            int col_dispersal = dist_cols + col_tree;
+            int row_dispersal = dist_rows + row_tree;
+            FillSeed(ctx, col_dispersal, row_dispersal, tree.t_sp_lab);
+        }
+#ifdef TRACK_INDIVIDUALS
+        if (tree.t_month_born >= 0)
+        {
+            tree.t_seedsproduced_sumyear += nbs;
+            tree.t_seedsproduced += nbs;
+        }
+#endif
+    }
 }
 
 // #############################

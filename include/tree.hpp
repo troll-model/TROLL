@@ -188,7 +188,6 @@ public:
     void UpdateTreeBiometry(Context &ctx);
     void UpdateVolumeDensity();
 
-    void DisperseSeed(Context &ctx);
     void Treefall(Context &ctx, float angle);
     void Update(Context &ctx);
     void Average(Context &ctx);
