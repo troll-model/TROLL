@@ -368,17 +368,18 @@ void UpdateField(Context &ctx);                                     //!< Global 
 void TriggerTreefall(Context &ctx);                                 //!< Global function: Treefall gap formation; v.2.4
 void TriggerTreefallSecondary(Context &ctx);                        //!< Global function: Secondary treefall gap formation
 void RecruitTree(Context &ctx);                                     //!< Global function: tree germination module; v.2.5
-void Average(Context &ctx);                                                       //!< Global function: output of the global averages every timestep
-void OutputField(Context &ctx);                                                   //!< Global function: output of the field variables every timestep
+void Average(Context &ctx);                                         //!< Global function: output of the global averages every timestep
+void OutputField(Context &ctx);                                     //!< Global function: output of the field variables every timestep
 void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit); //!< Global function: output snapshots of the scene at one point in time
-void OutputLAI(Context &ctx, fstream &output_transmLAI3D);                        //!< Global function: writes the whole 3D LAI voxel field to file
-void OutputCHM(Context &ctx, fstream &output_CHM);                                //!< Global function: Outputs CHM
-void OutputVisual(Context &ctx);                                                  //!< Global function: Output function for visualization purposes
+void OutputLAI(Context &ctx, fstream &output_transmLAI3D);          //!< Global function: writes the whole 3D LAI voxel field to file
+void OutputCHM(Context &ctx, fstream &output_CHM);                  //!< Global function: Outputs CHM
+void OutputVisual(Context &ctx);                                    //!< Global function: Output function for visualization purposes
 #ifdef WATER
 void OutputTreeStandard(Context &ctx, Tree &tree, std::ostream &output);          //!< Global function: write tree variables to file 
-void OutputTreeStandard(Context &ctx, Tree &tree);                                //!< Global function: write tree variables to standard output 
+void OutputTreeStandard(Context &ctx, Tree &tree);                  //!< Global function: write tree variables to standard output 
 #endif
-void histdbh(Context &ctx, Tree &tree);                                           //!< Global function: compute DBH histograms
+void histdbh(Context &ctx, Tree &tree);                             //!< Global function: compute DBH histograms
+void Average(Context &ctx, Tree &tree);                                         //!< Global function: compute average and update species output variables
 void CloseOutputs(Context &ctx);
 void FreeMem(Context &ctx);
 

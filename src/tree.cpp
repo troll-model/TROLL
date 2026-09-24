@@ -3051,61 +3051,6 @@ void Tree::Treefall(Context &ctx, float angle)
     Death(ctx);
 }
 
-// ####################################################
-//  Computes Average and OutputField
-// ####################################################
-//  - Short routine that basically only updates the vector s_output_field
-void Tree::Average(Context &ctx)
-{
-    if (t_age > 0)
-    {
-        if (t_dbh * ctx.grid.LH >= 0.1)
-        {
-            (ctx.S[t_sp_lab].s_sum10)++;
-            ctx.S[t_sp_lab].s_ba10 += t_dbh * ctx.grid.LH * t_dbh * ctx.grid.LH * 3.1415 * 0.25;
-        }
-        if (t_dbh * ctx.grid.LH >= 0.3)
-            (ctx.S[t_sp_lab].s_sum30)++;
-        ctx.S[t_sp_lab].s_ba += t_dbh * ctx.grid.LH * t_dbh * ctx.grid.LH * 3.1415 * 0.25;
-        ctx.S[t_sp_lab].s_npp += t_NPP * 1.0e-6;
-        ctx.S[t_sp_lab].s_gpp += t_GPP * 1.0e-6;
-        float agb = CalcAGB(ctx);
-        ctx.S[t_sp_lab].s_agb += agb;
-        ctx.S[t_sp_lab].s_rday += t_Rday * 1.0e-6;
-        ctx.S[t_sp_lab].s_rnight += t_Rnight * 1.0e-6;
-        ctx.S[t_sp_lab].s_rstem += t_Rstem * 1.0e-6;
-        ctx.S[t_sp_lab].s_litterfall += t_litter * 1.0e-6;
-
-#ifdef WATER
-        int crown_top = int(t_height);
-        int crown_base = int(t_height - t_CD);
-        float grad = 1 / float(crown_top - crown_base + 1);
-        for (int l = crown_base; l < (crown_top + 1); l++)
-        {
-            ctx.soil.LAI_young[l] += t_youngLA * grad;
-            ctx.soil.LAI_mature[l] += t_matureLA * grad;
-            ctx.soil.LAI_old[l] += t_oldLA * grad;
-        }
-
-        ctx.soil.abund_phi_root += t_phi_root;
-        if (t_dbh * ctx.grid.LH >= 0.1)
-            ctx.soil.abund10_phi_root += t_phi_root;
-        ctx.soil.agb_phi_root += agb * t_phi_root;
-#endif
-
-#ifdef MIP_Lichstein
-        if (ctx.time.iter % ctx.time.iterperyear == 364 && (ctx.opt._FromInventory || (!ctx.opt._FromInventory && ctx.time.iter >= (ctx.time.nbiter - 100 * ctx.time.iterperyear))))
-        {
-            if (t_dbh * ctx.grid.LH >= 0.01)
-            {
-                t_inInventory = 1;
-                ctx.out.output_MIP_ind << ctx.time.iter << "\t" << ctx.S[t_sp_lab].s_name << "\t" << -9999 << "\t" << 1.0 << "\t" << 0.0 << "\t" << t_dbh * 100 << "\t" << t_height << "\t" << -9999 << "\t" << 0.5 * agb << "\t" << 1000 * t_wsg << "\t" << 1000 / t_LMA << "\t" << t_Nmass << "\t" << t_Pmass << "\t" << t_dbhmax << "\t" << t_tlp << "\t" << t_leafarea << endl;
-            }
-        }
-#endif
-    }
-}
-
 // #############################
 //  Global function: tree germination module
 // #############################

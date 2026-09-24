@@ -35,7 +35,7 @@ void Average(Context &ctx)
             ctx.S[spp].s_sum10 = ctx.S[spp].s_sum30 = ctx.S[spp].s_ba = ctx.S[spp].s_ba10 = ctx.S[spp].s_agb = ctx.S[spp].s_gpp = ctx.S[spp].s_npp = ctx.S[spp].s_rday = ctx.S[spp].s_rnight = ctx.S[spp].s_rstem = ctx.S[spp].s_litterfall = 0;
 
         for (site = 0; site < ctx.grid.sites; site++)
-            ctx.T[site].Average(ctx);
+            Average(ctx, ctx.T[site]);
 
         for (spp = 1; spp <= ctx.grid.nbspp; spp++)
         {
@@ -1321,6 +1321,77 @@ void histdbh(Context &ctx, Tree &tree)
         ctx.diag.nbdbh[int(100. * tree.t_dbh * ctx.grid.LH)]++;
     // where dbh is in cm (it is in number of horizontal cells throughout the code)
     // values are always rounded down (so ctx.diag.nbdbh[30] gives you trees with more than 30 cm dbh, and less than 31))
+}
+
+// ####################################################
+//  Computes Average and OutputField
+// ####################################################
+//  - Short routine that basically only updates the vector s_output_field
+void Average(Context &ctx, Tree &tree)
+{
+    if (tree.t_age > 0)
+    {
+        if (tree.t_dbh * ctx.grid.LH >= 0.1)
+        {
+            (ctx.S[tree.t_sp_lab].s_sum10)++;
+            ctx.S[tree.t_sp_lab].s_ba10 += tree.t_dbh * ctx.grid.LH * tree.t_dbh * ctx.grid.LH * 3.1415 * 0.25;
+        }
+        if (tree.t_dbh * ctx.grid.LH >= 0.3)
+            (ctx.S[tree.t_sp_lab].s_sum30)++;
+        ctx.S[tree.t_sp_lab].s_ba += tree.t_dbh * ctx.grid.LH * tree.t_dbh * ctx.grid.LH * 3.1415 * 0.25;
+        ctx.S[tree.t_sp_lab].s_npp += tree.t_NPP * 1.0e-6;
+        ctx.S[tree.t_sp_lab].s_gpp += tree.t_GPP * 1.0e-6;
+        float agb = tree.CalcAGB(ctx);
+        ctx.S[tree.t_sp_lab].s_agb += agb;
+        ctx.S[tree.t_sp_lab].s_rday += tree.t_Rday * 1.0e-6;
+        ctx.S[tree.t_sp_lab].s_rnight += tree.t_Rnight * 1.0e-6;
+        ctx.S[tree.t_sp_lab].s_rstem += tree.t_Rstem * 1.0e-6;
+        ctx.S[tree.t_sp_lab].s_litterfall += tree.t_litter * 1.0e-6;
+
+#ifdef WATER
+        int crown_top = int(tree.t_height);
+        int crown_base = int(tree.t_height - tree.t_CD);
+        float grad = 1 / float(crown_top - crown_base + 1);
+        for (int l = crown_base; l < (crown_top + 1); l++)
+        {
+            ctx.soil.LAI_young[l] += tree.t_youngLA * grad;
+            ctx.soil.LAI_mature[l] += tree.t_matureLA * grad;
+            ctx.soil.LAI_old[l] += tree.t_oldLA * grad;
+        }
+
+        ctx.soil.abund_phi_root += tree.t_phi_root;
+        if (tree.t_dbh * ctx.grid.LH >= 0.1)
+            ctx.soil.abund10_phi_root += tree.t_phi_root;
+        ctx.soil.agb_phi_root += agb * tree.t_phi_root;
+#endif
+
+#ifdef MIP_Lichstein
+        if (ctx.time.iter % ctx.time.iterperyear == 364 && (ctx.opt._FromInventory || (!ctx.opt._FromInventory && ctx.time.iter >= (ctx.time.nbiter - 100 * ctx.time.iterperyear))))
+        {
+            if (tree.t_dbh * ctx.grid.LH >= 0.01)
+            {
+                tree.t_inInventory = 1;
+                ctx.out.output_MIP_ind << ctx.time.iter 
+                << "\t" << ctx.S[tree.t_sp_lab].s_name 
+                << "\t" << -9999 
+                << "\t" << 1.0 
+                << "\t" << 0.0 
+                << "\t" << tree.t_dbh * 100 
+                << "\t" << tree.t_height 
+                << "\t" << -9999 
+                << "\t" << 0.5 * agb 
+                << "\t" << 1000 * tree.t_wsg 
+                << "\t" << 1000 / tree.t_LMA 
+                << "\t" << tree.t_Nmass 
+                << "\t" << tree.t_Pmass 
+                << "\t" << tree.t_dbhmax 
+                << "\t" << tree.t_tlp 
+                << "\t" << tree.t_leafarea 
+                << endl;
+            }
+        }
+#endif
+    }
 }
 
 #ifdef Output_ABC
