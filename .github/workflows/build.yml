@@ -1,10 +1,10 @@
 name: Build TROLL (Cross-Platform)
 on:
   pull_request:
-    branches: [ "dev" ]  # Run when a PR targets the `dev` branch
+    branches: [ "dev" ]
   push:
-    branches: [ "dev" ]  # Run when a commit is pushed directly to `dev`
-  workflow_dispatch:  # Allows manual triggering
+    branches: [ "dev" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,25 +14,53 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install dependencies (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt install -y cmake libgsl-dev # g++ already installed on ubuntu-latest
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y cmake libgsl-dev
 
       - name: Install dependencies (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install gsl   # cmake already installed on macos-latest
+        if: runner.os == 'macOS'
+        run: brew install gsl
 
-      - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (warnings are errors)
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DTROLL_WARNINGS_AS_ERRORS=ON
 
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Verify executable (Linux/macOS)
-        if: matrix.os != 'windows-latest'
-        run: ls -lh build/TROLL
+  # Every compile-time option in include/troll_defines.hpp, one at a time.
+  # Configurations marked "known_broken" did not compile before this workflow
+  # existed; they run so the breakage stays visible, but do not fail the build.
+  # Remove the flag once a configuration is fixed (or delete the option).
+  options:
+    name: Option ${{ matrix.defines }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.known_broken }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { defines: "LAI_gradient",              known_broken: false }
+          - { defines: "MIP_Lichstein",             known_broken: false }
+          - { defines: "CACHE_LUT",                 known_broken: false }
+          - { defines: "CHECK_CARBON",              known_broken: false }
+          - { defines: "TROLL_NO_PHENO_DROUGHT",    known_broken: false }
+          - { defines: "TROLL_NO_LCP_alternative",  known_broken: false }
+          - { defines: "TROLL_NO_G0",               known_broken: false }
+          - { defines: "TROLL_NO_FF_todiscuss",     known_broken: false }
+          - { defines: "TROLL_NO_CHM_SPIKEFREE",    known_broken: false }
+          - { defines: "TROLL_NO_WATER",            known_broken: true }
+          - { defines: "TROLL_NO_CROWN_UMBRELLA",   known_broken: true }
+          - { defines: "TROLL_NO_FULL_CLIMATE",     known_broken: true }
+          - { defines: "Output_ABC",                known_broken: true }
+          - { defines: "TRACK_INDIVIDUALS",         known_broken: true }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake libgsl-dev
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release "-DTROLL_DEFINES=${{ matrix.defines }}"
+      - name: Build
+        run: cmake --build build

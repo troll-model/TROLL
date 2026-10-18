@@ -400,14 +400,10 @@ void ReadInputDailyvar(Context &ctx)
         cout << "ERROR with the daily variation file" << endl;
     }
 
-    if (NULL == (ctx.climate.WDailyMean_all = new float[ctx.time.nbsteps_varday]))
-        cerr << "!!! ctx.climate.WDailyMean_all" << endl;
-    if (NULL == (ctx.climate.tDailyMean_all = new float[ctx.time.nbsteps_varday]))
-        cerr << "!!! ctx.climate.tDailyMean_all" << endl;
-    if (NULL == (ctx.climate.VPDDailyMean_all = new float[ctx.time.nbsteps_varday]))
-        cerr << "!!! ctx.climate.VPDDailyMean_all" << endl;
-    if (NULL == (ctx.climate.windDailyMean_all = new float[ctx.time.nbsteps_varday]))
-        cerr << "!!! ctx.climate.windDailyMean_all" << endl;
+    ctx.climate.WDailyMean_all.assign(ctx.time.nbsteps_varday, float());
+    ctx.climate.tDailyMean_all.assign(ctx.time.nbsteps_varday, float());
+    ctx.climate.VPDDailyMean_all.assign(ctx.time.nbsteps_varday, float());
+    ctx.climate.windDailyMean_all.assign(ctx.time.nbsteps_varday, float());
 
     for (int j = 0; j < ctx.time.nbsteps_varday; j++)
     {
@@ -727,8 +723,7 @@ void ReadInputSoil(Context &ctx)
         }
         cout << "Read in: " << ctx.soil.nblayers_soil << " soil layers" << endl;
 
-        if (NULL == (ctx.soil.layer_depth = new float[ctx.soil.nblayers_soil]))
-            cerr << "!!! Mem_Alloc ctx.soil.layer_depth" << endl;
+        ctx.soil.layer_depth.assign(ctx.soil.nblayers_soil, float());
         float cumulative_depth = 0.0;
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
@@ -737,12 +732,9 @@ void ReadInputSoil(Context &ctx)
         }
         // (added in the header but kept in here) in this version, all soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) are computed from soil texture data (%clay, %silt, %sand) provided in input for each ctx.diag.layer. If additional information is available from the field (soil pH, organic content, dry bulk density, cation exchange capacity), this could be also provided in input and used to refine the computation of these soil parameters (see Table 2 in Marthews et al. 2014 Geoscientific Model Development and Hodnett & Tomasella 2002 Geoderma -- for tropical soils). Alternatively, if no local field soil data is available, these soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) should be drawn from global maps and databases --see Marthews et al. 2014, and directly provided in input. ==> ccl: to standardize the input file, the soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) should probably be provided in input, and the computation of those properties from the available local data (here %clay, %silt, %sand) made using a new function of RconTROLL (and not here)
         // (added in the header but kept in here) ctx.soil.Sat_SWC and ctx.soil.Res_SWC are here computed according Tomasella & Hodnett 1998 from soil texture information (see Table 2 in Marthews et al. 2014)
-        if (NULL == (ctx.soil.Sat_SWC = new float[ctx.soil.nblayers_soil]))
-            cerr << "!!! Mem_Alloc Sat_SW" << endl;
-        if (NULL == (ctx.soil.Max_SWC = new float[ctx.soil.nblayers_soil]))
-            cerr << "!!! Mem_Alloc Max_SW" << endl;
-        if (NULL == (ctx.soil.FC_SWC = new float[ctx.soil.nblayers_soil]))
-            cerr << "!!! Mem_Alloc FC_SW" << endl;
+        ctx.soil.Sat_SWC.assign(ctx.soil.nblayers_soil, float());
+        ctx.soil.Max_SWC.assign(ctx.soil.nblayers_soil, float());
+        ctx.soil.FC_SWC.assign(ctx.soil.nblayers_soil, float());
 
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
@@ -759,18 +751,15 @@ void ReadInputSoil(Context &ctx)
             cout << "ctx.diag.layer " << l << " Vol=" << ctx.grid.sites_per_dcell * ctx.grid.LH * ctx.grid.LH * layer_thickness[l] << " m3; ctx.soil.Sat_SWC =" << ctx.soil.Sat_SWC[l] << " MAX_SWC =" << ctx.soil.Max_SWC[l] << " m3." << endl;
         }
 
-        if (NULL == (ctx.soil.Ksat = new float[ctx.soil.nblayers_soil]))
-            cerr << "!!! Mem_Alloc ctx.soil.Ksat" << endl;
+        ctx.soil.Ksat.assign(ctx.soil.nblayers_soil, float());
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
             ctx.soil.Ksat[l] = 0.007055556 * pow(10, (-0.60 - (0.0064 * proportion_Clay[l]) + (0.0126 * proportion_Sand[l]))); // according to Cosby et al. 1984 (the only expression of k_sat reported in Table 2 of Marthews et al. 2014). k_sat is here in mm/s or equivalently in kg/m2/s.
             cout << "ctx.diag.layer " << l << " ctx.soil.Ksat=" << ctx.soil.Ksat[l] << "mm/s or kg/m2/s  " << ctx.soil.Ksat[l] * 9.8 / 18 << endl;
         }
 
-        if (NULL == (ctx.soil.Res_SWC = new float[ctx.soil.nblayers_soil]))
-            cerr << "!!! Mem_Alloc Res_SW" << endl;
-        if (NULL == (ctx.soil.Min_SWC = new float[ctx.soil.nblayers_soil]))
-            cerr << "!!! Mem_Alloc Max_SW" << endl;
+        ctx.soil.Res_SWC.assign(ctx.soil.nblayers_soil, float());
+        ctx.soil.Min_SWC.assign(ctx.soil.nblayers_soil, float());
 
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
@@ -790,14 +779,10 @@ void ReadInputSoil(Context &ctx)
 
         if (ctx.opt._WATER_RETENTION_CURVE == 1)
         {
-            if (NULL == (ctx.soil.a_vgm = new float[ctx.soil.nblayers_soil]))
-                cerr << "!!! Mem_Alloc ctx.soil.a_vgm" << endl;
-            if (NULL == (ctx.soil.b_vgm = new float[ctx.soil.nblayers_soil]))
-                cerr << "!!! Mem_Alloc ctx.soil.b_vgm" << endl;
-            if (NULL == (ctx.soil.c_vgm = new float[ctx.soil.nblayers_soil]))
-                cerr << "!!! Mem_Alloc ctx.soil.c_vgm" << endl;
-            if (NULL == (ctx.soil.m_vgm = new float[ctx.soil.nblayers_soil]))
-                cerr << "!!! Mem_Alloc ctx.soil.m_vgm" << endl;
+            ctx.soil.a_vgm.assign(ctx.soil.nblayers_soil, float());
+            ctx.soil.b_vgm.assign(ctx.soil.nblayers_soil, float());
+            ctx.soil.c_vgm.assign(ctx.soil.nblayers_soil, float());
+            ctx.soil.m_vgm.assign(ctx.soil.nblayers_soil, float());
 
             for (int l = 0; l < ctx.soil.nblayers_soil; l++)
             {
@@ -816,10 +801,8 @@ void ReadInputSoil(Context &ctx)
         }
         else if (ctx.opt._WATER_RETENTION_CURVE == 0)
         {
-            if (NULL == (ctx.soil.phi_e = new float[ctx.soil.nblayers_soil]))
-                cerr << "!!! Mem_Alloc ctx.soil.phi_e" << endl;
-            if (NULL == (ctx.soil.b = new float[ctx.soil.nblayers_soil]))
-                cerr << "!!! Mem_Alloc b" << endl;
+            ctx.soil.phi_e.assign(ctx.soil.nblayers_soil, float());
+            ctx.soil.b.assign(ctx.soil.nblayers_soil, float());
             for (int l = 0; l < ctx.soil.nblayers_soil; l++)
             {
                 ctx.soil.phi_e[l] = -0.001 * (0.285 + (0.000733 * proportion_Silt[l] * proportion_Silt[l]) - (0.00013 * proportion_Silt[l] * proportion_Clay[l]) + (0.0000036 * proportion_Silt[l] * proportion_Silt[l] * proportion_Clay[l])); // according to Tomasella & Hodnett 1998 tropical texture-based pedotransfer function, as reported in Table 2 of Marthews et al. 2014. ctx.soil.phi_e is here in MPa.

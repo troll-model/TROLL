@@ -9,25 +9,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: |
-          sudo apt install -y cppcheck cpplint
+        run: sudo apt-get install -y cppcheck cpplint
 
       - name: Configure CMake
         run: cmake -B lint -S lint
 
-      - name: Run cpplint (lint-style)
-        run: |
-          cmake --build lint --target lint-style > cpplint_output.txt 2>&1 || true
-          cat cpplint_output.txt  # Print to logs for immediate visibility
+      # Gating: cppcheck warnings fail the job (previously "|| true" let everything pass)
+      - name: cppcheck (gating)
+        run: cmake --build lint --target lint-static-gate
 
-      - name: Run cppcheck (lint-static)
-        run: |
-          cmake --build lint --target lint-static > cppcheck_output.txt 2>&1 || true
-          cat cppcheck_output.txt  # Print to logs for immediate visibility
+      # Advisory: full style/static reports are kept as artifacts but do not fail the job
+      - name: cpplint (advisory)
+        run: cmake --build lint --target lint-style > cpplint_output.txt 2>&1 || true
+
+      - name: cppcheck --enable=all (advisory)
+        run: cmake --build lint --target lint-static > cppcheck_output.txt 2>&1 || true
 
       - name: Upload lint outputs
         uses: actions/upload-artifact@v4
-        if: always()  # Upload even if previous steps fail
+        if: always()
         with:
           name: lint-outputs
           path: |

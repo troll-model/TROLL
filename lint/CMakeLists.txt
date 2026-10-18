@@ -25,6 +25,17 @@ if(CPPCHECK_PATH)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Running cppcheck for static analysis"
     )
+    # Gating check used in CI: warning-level findings fail the build.
+    # uninitMemberVar is suppressed for now (82 members of Tree/Species without
+    # initializers); remove the suppression once they are initialized.
+    add_custom_target(lint-static-gate
+        COMMAND ${CPPCHECK_PATH}
+        ARGS --enable=warning,portability --inline-suppr --std=c++17
+             --suppress=uninitMemberVar --suppress=missingIncludeSystem
+             -I../include -I../include/internal --error-exitcode=1 --quiet ../src/
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Running cppcheck (gating: warnings are errors)"
+    )
 else()
     message(WARNING "cppcheck not found, lint-static target will not be available")
 endif()

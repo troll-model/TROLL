@@ -1,35 +1,36 @@
+#include <stdexcept>
 #include "troll.hpp"
 #include "constants.hpp"
 #include "context.hpp"
+#include "internal/lookup_tables_cache.hpp"
 
 //! Global function: initialise intraspecific variables
 //! Global function: initialise output streams
 void InitialiseOutputStreams(Context &ctx)
 {
     char nnn[200];
-    if (!mpi_rank)
     {
-        sprintf(nnn, "%s_%i_sumstats.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_sumstats.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_basic[0].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_initial_pattern.txt", ctx.buffers.buf, easympi_rank); // previously "state" output, but not used anymore, overwritten for initial pattern
+        sprintf(nnn, "%s_%i_initial_pattern.txt", ctx.buffers.buf, ctx.buffers.run_index); // previously "state" output, but not used anymore, overwritten for initial pattern
         ctx.out.output_basic[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_final_pattern.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_final_pattern.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_basic[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_final_SWC3D.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_final_SWC3D.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_basic[3].open(nnn, ios::out);
 
         // write headers for files
         ctx.out.output_basic[0] << "iter\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
         // headers for initial and final patterns are written automatically
 
-        sprintf(nnn, "%s_%i_sumstats_species.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_sumstats_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_extended[0].open(nnn, ios::out);
         ctx.out.output_extended[0] << "iter\tspecies\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
 
 #ifdef MIP_Lichstein
-        sprintf(nnn, "%s_%i_MIP_eco.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_MIP_eco.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_MIP_eco.open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_MIP_ind.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_MIP_ind.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_MIP_ind.open(nnn, ios::out);
 
         ctx.out.output_MIP_eco << "YEAR\tMONTH\tDAY\tGPP\tNPP\tET\tLAI\tLFLIT\tSW1\tSW2\tSW3\tSW4" << endl;
@@ -38,23 +39,23 @@ void InitialiseOutputStreams(Context &ctx)
 
         if (ctx.opt._OUTPUT_extended)
         {
-            sprintf(nnn, "%s_%i_sumstats_species.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_sumstats_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[0].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_ppfd0.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_ppfd0.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[1].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_death.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_death.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[2].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_death_snapshots.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_death_snapshots.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[3].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_deathrate.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_deathrate.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[4].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_sdd.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_sdd.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[5].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_vertd.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_vertd.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[6].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_LAI.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_LAI.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[7].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_CHM.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_CHM.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[8].open(nnn, ios::out);
 
             // write headers
@@ -71,7 +72,7 @@ void InitialiseOutputStreams(Context &ctx)
 
             if (ctx.crown.extent_visual > 0)
             {
-                sprintf(nnn, "%s_%i_visual_field.txt", ctx.buffers.buf, easympi_rank);
+                sprintf(nnn, "%s_%i_visual_field.txt", ctx.buffers.buf, ctx.buffers.run_index);
                 ctx.out.output_visual[0].open(nnn, ios::out);
 #ifdef CHM_SPIKEFREE
                 ctx.out.output_visual[0] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "height_spikefree" << "\t" << "LAI" << endl; // header
@@ -79,7 +80,7 @@ void InitialiseOutputStreams(Context &ctx)
                 ctx.out.output_visual[0] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "LAI" << endl; // header
 #endif
 
-                sprintf(nnn, "%s_%i_visual_slice.txt", ctx.buffers.buf, easympi_rank);
+                sprintf(nnn, "%s_%i_visual_slice.txt", ctx.buffers.buf, ctx.buffers.run_index);
                 ctx.out.output_visual[1].open(nnn, ios::out);
                 ctx.out.output_visual[1] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "sp_lab" << "\t" << "ratio_height_Ct" << "\t" << "ratio_NPP_GPP" << endl; // header
             }
@@ -88,93 +89,93 @@ void InitialiseOutputStreams(Context &ctx)
         // v.3.1.6 output for point cloud
         if (ctx.opt._OUTPUT_pointcloud)
         {
-            sprintf(nnn, "%s_%i.las", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i.las", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_pointcloud.open(nnn, ios::out | ios::binary);
             ctx.out.output_pointcloud.imbue(locale::classic()); // justification here: https://stackoverflow.com/questions/14750496/sending-integer-to-fstream-as-little-endian; locale regulates how streams print and read values (i.e. commas vs. points for decimals, etc.); setting it to classic to ensure portability, but not entirely sure how important this is in practice for binary files
         }
 
 #ifdef Output_ABC
-        sprintf(nnn, "%s_%i_abc_traitconservation.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_traitconservation.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[0].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_ground.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_ground.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_chm.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_chm.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_chmALS.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_chmALS.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[3].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_transmittance.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_transmittance.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[4].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_transmittanceALS.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_transmittanceALS.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[5].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_species.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[6].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_species10.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_species10.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[7].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_traits.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_traits.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[8].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_traits10.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_traits10.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[9].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_biomass.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_abc_biomass.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[10].open(nnn, ios::out);
 #endif
 
 #ifdef WATER
-        // sprintf(nnn,"%s_%i_water_balance.txt",ctx.buffers.buf, easympi_rank);
+        // sprintf(nnn,"%s_%i_water_balance.txt",ctx.buffers.buf, ctx.buffers.run_index);
         // output_water[0].open(nnn, ios::out);
 
-        sprintf(nnn, "%s_%i_water_balance.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_water_balance.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[11].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site1.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_site1.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[12].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site2.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_site2.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[13].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site3.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_site3.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[14].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site4.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_site4.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[15].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site5.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_site5.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[16].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site6.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_site6.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[17].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_begin.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_state_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[28].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_mid.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_state_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[29].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_end.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_state_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[30].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_begin.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_SWC_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_mid.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_SWC_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_end.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_SWC_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[3].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_begin.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_SWP_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[4].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_mid.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_SWP_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[5].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_end.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_SWP_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[6].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_litterfall.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_litterfall.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[7].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_begin.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_waterfluxes_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[18].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_mid.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_waterfluxes_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[19].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_end.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_waterfluxes_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[20].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIdynamics.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_LAIdynamics.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[21].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIyoung.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_LAIyoung.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[22].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAImature.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_LAImature.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[23].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIold.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_LAIold.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[24].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_phi_root.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_phi_root.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[31].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIprofile.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_LAIprofile.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[32].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_soilproperties.txt", ctx.buffers.buf, easympi_rank);
+        sprintf(nnn, "%s_%i_soilproperties.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[33].open(nnn, ios::out);
 
         // write headers
@@ -304,18 +305,18 @@ void InitialiseOutputStreams(Context &ctx)
         if (ctx.opt._OUTPUT_extended)
         {
             // these are the "cases" of trees that are followed
-            sprintf(nnn, "%s_%i_trees_fortracking.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_trees_fortracking.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_track[0].open(nnn, ios::out);
             ctx.out.output_track[0] << "site" << "\t" << "timeofyear_born" << "\t" << "col" << "\t" << "row" << "\t" << "species" << "\t" << "dbh" << "\t" << "cr" << "\t" << "height" << "\t" << "agb" << "\t" << "multiplier_cr" << "\t" << "multiplier_height" << "\t" << "wsg" << "\t" << "Nmass" << "\t" << "Pmass" << "\t" << "LMA" << "\t" << "deviation_wsg" << "\t" << "multiplier_Nmass" << "\t" << "multiplier_Pmass" << "\t" << "multiplier_lma" << "\t" << "Vcmax" << "\t" << "Jmax" << "\t" << "Rdark" << "\t" << "LAImax" << "\t" << "leaflifespan" << endl;
 
             // these are the "activities" that are recorded for each tree
-            sprintf(nnn, "%s_%i_trees_tracked.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_trees_tracked.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_track[1].open(nnn, ios::out);
 
             ctx.out.output_track[1] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seeds" << "\t" << "seedstotal" << "\t" << "carbstarv" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "dbhgrowth" << "\t" << "height" << "\t" << "heightgrowth" << "\t" << "cr" << "\t" << "crgrowth" << "\t" << "agb" << "\t" << "agbgrowth" << "\t" << "GPP" << "\t" << "GPPsq" << "\t" << "NPP" << "\t" << "NPPsq" << "\t" << "Rday" << "\t" << "Rnight" << "\t" << "Rstem" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "carbstore_avg" << endl;
 
             // this is to get information on the dead trees > 10cm
-            sprintf(nnn, "%s_%i_trees_aftertracking.txt", ctx.buffers.buf, easympi_rank);
+            sprintf(nnn, "%s_%i_trees_aftertracking.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_track[2].open(nnn, ios::out);
 
             ctx.out.output_track[2] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seedstotal" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "height" << "\t" << "cr" << "\t" << "agb" << "\t" << "GPP" << "\t" << "NPP" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "GPPsquared" << "\t" << "NPPsquared" << "\t" << "LAIabovesquared_avg" << "\t" << "LAIabovesquared_effavg" << endl;
@@ -377,6 +378,12 @@ void Initialise(Context &ctx)
     else
     {
         std::cout << "Loaded LUTs from cache." << std::endl;
+#ifdef LCP_alternative
+        // LookUpLAImax depends on the species and on this run's intraspecific
+        // deviates, so it is never cached. It used to be skipped here, leaving the
+        // table empty and making Tree::Birth read past its end.
+        InitialiseLookUpLAImax(ctx);
+#endif
     }
 #else  // CACHE_LUT
     InitialiseLookUpTables(ctx);
@@ -891,28 +898,23 @@ void AllocMem(Context &ctx)
     ctx.grid.SBORD = ctx.grid.cols * ctx.grid.RMAX;
     ctx.grid.dbhmaxincm = int(100. * d);
     cout << "ctx.grid.SBORD: " << ctx.grid.SBORD << endl;
-    if (!mpi_rank)
     {
         // cout << "ctx.grid.HEIGHT : " << ctx.grid.HEIGHT << " ctx.grid.RMAX : " << ctx.grid.RMAX << " DBH : " << DBH <<"\n"; cout.flush();
         if (ctx.grid.RMAX > ctx.grid.rows)
         {
             // Consistency tests
-            cerr << "Error : ctx.grid.RMAX > ctx.grid.rows \n";
-            exit(-1);
+            throw std::runtime_error("ctx.grid.RMAX > ctx.grid.rows");
         }
         if (ctx.grid.HEIGHT > ctx.grid.rows)
         {
-            cerr << "Error : ctx.grid.HEIGHT > ctx.grid.rows \n";
-            exit(-1);
+            throw std::runtime_error("ctx.grid.HEIGHT > ctx.grid.rows (the plot must be at least as wide as the canopy is tall)");
         }
     }
 
     //** Initialization of dynamic Fields **
     //**************************************
-    if (NULL == (ctx.diag.nbdbh = new int[ctx.grid.dbhmaxincm]))
-        cerr << "!!! Mem_Alloc\n"; // Field for DBH histogram
-    if (NULL == (ctx.diag.layer = new float[ctx.grid.HEIGHT + 1]))
-        cerr << "!!! Mem_Alloc\n"; // Field for variables averaged by vertical ctx.diag.layer
+    ctx.diag.nbdbh.assign(ctx.grid.dbhmaxincm, int());
+    ctx.diag.layer.assign(ctx.grid.HEIGHT + 1, float());
 #ifdef Output_ABC
     if (NULL == (abundances_species = new int[ctx.grid.nbspp + 1]))
         cerr << "!!! Mem_Alloc\n"; // vector to save species abundances every recorded ctx.time.timestep
@@ -933,20 +935,15 @@ void AllocMem(Context &ctx)
         if (NULL == (traits_species10[spp] = new float[10]))
             cerr << "!!! Mem_Alloc\n";
 #endif
-    if (NULL == (ctx.species.SPECIES_GERM = new int[ctx.grid.nbspp + 1]))
-        cerr << "!!! Mem_Alloc\n"; // Field for democratic seed germination
-    if (NULL == (ctx.species.SPECIES_SEEDS = new int *[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";                              // Field of seeds
+    ctx.species.SPECIES_GERM.assign(ctx.grid.nbspp + 1, int());
+    ctx.species.SPECIES_SEEDS.resize(ctx.grid.sites);
     for (int site = 0; site < ctx.grid.sites; site++)                    // For each processor, we define a stripe above (labelled 0) and a stripe below (1). Each stripe is ctx.grid.SBORD in width.
-        if (NULL == (ctx.species.SPECIES_SEEDS[site] = new int[ctx.grid.nbspp + 1])) // ALL the ctx.grid.sites need to be updated.
-            cerr << "!!! Mem_Alloc\n";
+        ctx.species.SPECIES_SEEDS[site].assign(ctx.grid.nbspp + 1, int()); // ALL the ctx.grid.sites need to be updated.
     for (int site = 0; site < ctx.grid.sites; site++)
         for (int spp = 0; spp <= ctx.grid.nbspp; spp++)
             ctx.species.SPECIES_SEEDS[site][spp] = 0;
-    if (NULL == (ctx.species.p_seed = new double[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.species.n_seed = new unsigned int[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
+    ctx.species.p_seed.assign(ctx.grid.sites, double());
+    ctx.species.n_seed.assign(ctx.grid.sites, 0u);
 
     double prob_seed = 1.0 / double(ctx.grid.sites);
     for (int i = 0; i < ctx.grid.sites; i++)
@@ -954,10 +951,8 @@ void AllocMem(Context &ctx)
     for (int i = 0; i < ctx.grid.sites; i++)
         ctx.species.n_seed[i] = 0;
 
-    if (NULL == (ctx.species.p_species = new double[ctx.grid.nbspp]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.species.n_species = new unsigned int[ctx.grid.nbspp]))
-        cerr << "!!! Mem_Alloc\n";
+    ctx.species.p_species.assign(ctx.grid.nbspp, double());
+    ctx.species.n_species.assign(ctx.grid.nbspp, 0u);
 
     for (int spp = 1; spp <= ctx.grid.nbspp; spp++)
     {
@@ -970,53 +965,37 @@ void AllocMem(Context &ctx)
         ctx.species.n_species[i] = 0;
 
     if (ctx.opt._SEEDTRADEOFF)
-        if (NULL == (ctx.species.PROB_S = new float[ctx.grid.nbspp + 1]))
-            cerr << "!!! Mem_Alloc\n";
+        ctx.species.PROB_S.assign(ctx.grid.nbspp + 1, float());
     if (ctx.opt._NDD)
-        if (NULL == (ctx.species.PROB_S = new float[ctx.grid.nbspp + 1]))
-            cerr << "!!! Mem_Alloc\n";
+        ctx.species.PROB_S.assign(ctx.grid.nbspp + 1, float());
     //  if (NULL==(persist=new long int[ctx.time.nbiter])) cerr<<"!!! Mem_Alloc\n";                  // Field for persistence
     //  if (NULL==(distr=new int[ctx.grid.cols])) cerr<<"!!! Mem_Alloc\n";
 
-    if (NULL == (ctx.field.LAI3D = new float *[ctx.grid.HEIGHT + 1]))             // Field 3D
-        cerr << "!!! Mem_Alloc\n";                             // Trees at the border of the simulated forest need to know the canopy occupancy by trees in the neighboring processor.
+    ctx.field.LAI3D.resize(ctx.grid.HEIGHT + 1); // Field 3D
     for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)                     // For each processor, we define a stripe above (labelled 0) and a stripe below (1). Each stripe is ctx.grid.SBORD in width.
-        if (NULL == (ctx.field.LAI3D[h] = new float[ctx.grid.sites + 2 * ctx.grid.SBORD])) // ALL the ctx.grid.sites need to be updated.
-            cerr << "!!! Mem_Alloc\n";
+        ctx.field.LAI3D[h].assign(ctx.grid.sites + 2 * ctx.grid.SBORD, float()); // ALL the ctx.grid.sites need to be updated.
     for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
         for (int site = 0; site < ctx.grid.sites + 2 * ctx.grid.SBORD; site++)
             ctx.field.LAI3D[h][site] = 0.0;
-    if (NULL == (ctx.field.Thurt[0] = new unsigned short[3 * ctx.grid.sites])) // Field for treefall impacts
-        cerr << "!!! Mem_Alloc\n";
+    ctx.field.Thurt[0].assign(3 * ctx.grid.sites, (unsigned short)0); // Field for treefall impacts
     for (int i = 1; i < 3; i++)
-        if (NULL == (ctx.field.Thurt[i] = new unsigned short[ctx.grid.sites]))
-            cerr << "!!! Mem_Alloc\n";
+        ctx.field.Thurt[i].assign(ctx.grid.sites, (unsigned short)0);
 
 #ifdef WATER
-    if (NULL == (ctx.soil.SWC3D = new float *[ctx.soil.nblayers_soil]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.soil_phi3D = new float *[ctx.soil.nblayers_soil]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.Ks = new float *[ctx.soil.nblayers_soil]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.KsPhi = new float *[ctx.soil.nblayers_soil]))
-        cerr << "!!! Mem_Alloc\n";
+    ctx.soil.SWC3D.resize(ctx.soil.nblayers_soil);
+    ctx.soil.soil_phi3D.resize(ctx.soil.nblayers_soil);
+    ctx.soil.Ks.resize(ctx.soil.nblayers_soil);
+    ctx.soil.KsPhi.resize(ctx.soil.nblayers_soil);
     // if (NULL==(KsPhi2=new float*[ctx.soil.nblayers_soil])) cerr<<"!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.Transpiration = new float *[ctx.soil.nblayers_soil]))
-        cerr << "!!! Mem_Alloc\n";
+    ctx.soil.Transpiration.resize(ctx.soil.nblayers_soil);
     for (int l = 0; l < ctx.soil.nblayers_soil; l++)
     {
-        if (NULL == (ctx.soil.SWC3D[l] = new float[ctx.grid.nbdcells]))
-            cerr << "!!! Mem_Alloc\n";
-        if (NULL == (ctx.soil.soil_phi3D[l] = new float[ctx.grid.nbdcells]))
-            cerr << "!!! Mem_Alloc\n";
-        if (NULL == (ctx.soil.Ks[l] = new float[ctx.grid.nbdcells]))
-            cerr << "!!! Mem_Alloc\n";
-        if (NULL == (ctx.soil.KsPhi[l] = new float[ctx.grid.nbdcells]))
-            cerr << "!!! Mem_Alloc\n";
+        ctx.soil.SWC3D[l].assign(ctx.grid.nbdcells, float());
+        ctx.soil.soil_phi3D[l].assign(ctx.grid.nbdcells, float());
+        ctx.soil.Ks[l].assign(ctx.grid.nbdcells, float());
+        ctx.soil.KsPhi[l].assign(ctx.grid.nbdcells, float());
         // if (NULL==(KsPhi2[l]=new float[ctx.grid.nbdcells])) cerr<<"!!! Mem_Alloc\n";
-        if (NULL == (ctx.soil.Transpiration[l] = new float[ctx.grid.nbdcells]))
-            cerr << "!!! Mem_Alloc\n";
+        ctx.soil.Transpiration[l].assign(ctx.grid.nbdcells, float());
         for (int dcell = 0; dcell < ctx.grid.nbdcells; dcell++)
         {
             // ctx.soil.SWC3D[l][dcell]=ctx.soil.Max_SWC[l];
@@ -1032,35 +1011,22 @@ void AllocMem(Context &ctx)
             }
         }
     }
-    if (NULL == (ctx.soil.LAI_DCELL = new float *[ctx.grid.HEIGHT + 1]))
-        cerr << "!!! Mem_Alloc\n";
+    ctx.soil.LAI_DCELL.resize(ctx.grid.HEIGHT + 1);
     for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
     {
-        if (NULL == (ctx.soil.LAI_DCELL[h] = new float[ctx.grid.nbdcells]))
-            cerr << "!!! Mem_Alloc\n";
+        ctx.soil.LAI_DCELL[h].assign(ctx.grid.nbdcells, float());
     }
-    if (NULL == (ctx.soil.LAI_young = new float[ctx.grid.HEIGHT + 1]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.LAI_mature = new float[ctx.grid.HEIGHT + 1]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.LAI_old = new float[ctx.grid.HEIGHT + 1]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.Canopy_height_DCELL = new float[ctx.grid.nbdcells]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.TopWindSpeed_DCELL = new float[ctx.grid.nbdcells]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.HSum_DCELL = new int[ctx.grid.nbdcells]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.Interception = new float[ctx.grid.nbdcells]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.Throughfall = new float[ctx.grid.nbdcells]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.Runoff = new float[ctx.grid.nbdcells]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.Leakage = new float[ctx.grid.nbdcells]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (ctx.soil.Evaporation = new float[ctx.grid.nbdcells]))
-        cerr << "!!! Mem_Alloc\n";
+    ctx.soil.LAI_young.assign(ctx.grid.HEIGHT + 1, float());
+    ctx.soil.LAI_mature.assign(ctx.grid.HEIGHT + 1, float());
+    ctx.soil.LAI_old.assign(ctx.grid.HEIGHT + 1, float());
+    ctx.soil.Canopy_height_DCELL.assign(ctx.grid.nbdcells, float());
+    ctx.soil.TopWindSpeed_DCELL.assign(ctx.grid.nbdcells, float());
+    ctx.soil.HSum_DCELL.assign(ctx.grid.nbdcells, int());
+    ctx.soil.Interception.assign(ctx.grid.nbdcells, float());
+    ctx.soil.Throughfall.assign(ctx.grid.nbdcells, float());
+    ctx.soil.Runoff.assign(ctx.grid.nbdcells, float());
+    ctx.soil.Leakage.assign(ctx.grid.nbdcells, float());
+    ctx.soil.Evaporation.assign(ctx.grid.nbdcells, float());
     for (int dcell = 0; dcell < ctx.grid.nbdcells; dcell++)
     {
         for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
@@ -1081,8 +1047,7 @@ void AllocMem(Context &ctx)
         ctx.soil.LAI_old[h] = 0.0;
     }
 
-    if (NULL == (ctx.grid.site_DCELL = new int[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
+    ctx.grid.site_DCELL.assign(ctx.grid.sites, int());
     for (int site = 0; site < ctx.grid.sites; site++)
     {
         int x = site % ctx.grid.cols;
@@ -1093,43 +1058,21 @@ void AllocMem(Context &ctx)
     }
 #endif
 
-#ifdef MPI // Fields for MPI operations
-    for (i = 0; i < 2; i++)
-    {                                                             //  Two fields: one for the CL north (0) one for the CL south (1)
-        if (NULL == (LAIc[i] = new unsigned short *[ctx.grid.HEIGHT + 1])) // These fields contain the light info in the neighboring procs (2*ctx.grid.SBORD in width, not ctx.grid.SBORD !). They are used to update local fields
-            cerr << "!!! Mem_Alloc\n";
-        for (h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-            if (NULL == (LAIc[i][h] = new unsigned short[2 * ctx.grid.SBORD]))
-                cerr << "!!! Mem_Alloc\n";
-    }
-#endif
 }
 
 //!  Free dynamic memory
 void FreeMem(Context &ctx)
 {
-    delete[] ctx.diag.nbdbh;
-    delete[] ctx.diag.layer;
-    delete[] ctx.species.SPECIES_GERM;
-#ifdef WATER
-    delete[] ctx.grid.site_DCELL;
-#endif
-    for (int site = 0; site < ctx.grid.sites; site++)
-        delete[] ctx.species.SPECIES_SEEDS[site];
-    delete[] ctx.species.SPECIES_SEEDS;
-    delete[] ctx.species.p_seed;
-    delete[] ctx.species.n_seed;
-    delete[] ctx.species.p_species;
-    delete[] ctx.species.n_species;
-
-    if (ctx.opt._SEEDTRADEOFF || ctx.opt._NDD)
-        delete[] ctx.species.PROB_S;
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-        delete[] ctx.field.LAI3D[h];
-    delete[] ctx.field.LAI3D;
-
-    for (int i = 0; i < 3; i++)
-        delete[] ctx.field.Thurt[i];
+    // Model arrays in Context are std::vector members and are released automatically
+    // when ctx goes out of scope (RAII). Only resources not owned by Context are freed here.
+    gsl_rng_free(ctx.rng.gslrand);
+    ctx.rng.gslrand = nullptr;
+    gsl_matrix_free(ctx.rng.mcov_N_P_LMA);
+    ctx.rng.mcov_N_P_LMA = nullptr;
+    gsl_vector_free(ctx.rng.mu_N_P_LMA);
+    ctx.rng.mu_N_P_LMA = nullptr;
+    gsl_vector_free(ctx.rng.variation_N_P_LMA);
+    ctx.rng.variation_N_P_LMA = nullptr;
 
 #ifdef Output_ABC
     delete[] chm_field_previous;
@@ -1161,23 +1104,5 @@ void FreeMem(Context &ctx)
     delete[] traits_species;
     delete[] traits_species10;
 
-#endif
-    delete[] ctx.lookup.LookUp_T;
-    delete[] ctx.lookup.LookUp_KmT;
-    delete[] ctx.lookup.LookUp_VPD;
-    delete[] ctx.lookup.LookUp_flux_absorption;
-    delete[] ctx.lookup.LookUp_flux;
-    delete[] ctx.lookup.LookUp_ExtinctLW;
-    // delete [] LookUp_Rday; //newIM: no redundancy anymore between LookUp_Rday and ctx.lookup.LookUp_Rleaf
-    delete[] ctx.lookup.LookUp_JmaxT;
-    delete[] ctx.lookup.LookUp_Rstem;
-    delete[] ctx.lookup.LookUp_Rleaf; // newIM: no redundancy anymore between LookUp_Rday and ctx.lookup.LookUp_Rleaf
-    delete[] ctx.lookup.LookUp_GammaT;
-    // delete [] LookUp_Rnight; //newIM: no redundancy anymore between LookUp_Rday and ctx.lookup.LookUp_Rleaf
-    delete[] ctx.lookup.LookUp_VcmaxT;
-#ifdef WATER
-    delete[] ctx.lookup.LookUp_INLR;
-    delete[] ctx.lookup.LookUp_SLOPE;
-    delete[] ctx.lookup.LookUp_GRADN;
 #endif
 }

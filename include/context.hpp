@@ -36,6 +36,8 @@ struct InputBuffers
     char *bufi_pointcloud = nullptr;
     char *bufi_dataSWC = nullptr;
     char *bufi_species = nullptr;
+    int run_index = 0;       //!< Run index from the -n option, used in output file names (formerly the global easympi_rank)
+    long long seed = -1;     //!< RNG seed from the -r / --seed option; -1 = not set on the command line
 };
 
 struct OutputConfig
@@ -90,7 +92,7 @@ struct Grid
     int linear_nb_dcells;
     int sites_per_dcell;
     int nbdcells;
-    int *site_DCELL = nullptr;
+    std::vector<int> site_DCELL;
     float i_sites_per_dcell;
     int HEIGHT;
     int SBORD;
@@ -143,10 +145,10 @@ struct Climate
     float windDailyMean_year;
     float Tnight_year;
 
-    float *WDailyMean_all = nullptr;
-    float *VPDDailyMean_all = nullptr;
-    float *tDailyMean_all = nullptr;
-    float *windDailyMean_all = nullptr;
+    std::vector<float> WDailyMean_all;
+    std::vector<float> VPDDailyMean_all;
+    std::vector<float> tDailyMean_all;
+    std::vector<float> windDailyMean_all;
 };
 
 struct LookupTables
@@ -154,30 +156,30 @@ struct LookupTables
     int nbTbins;
     float iTaccuracy;
 
-    float *LookUp_KmT = nullptr;
-    float *LookUp_GammaT = nullptr;
-    float *LookUp_VcmaxT = nullptr;
-    float *LookUp_JmaxT = nullptr;
-    float *LookUp_Rleaf = nullptr;
-    float *LookUp_flux_absorption = nullptr;
-    float *LookUp_flux = nullptr;
-    float *LookUp_ExtinctLW = nullptr;
-    float *LookUp_VPD = nullptr;
-    float *LookUp_T = nullptr;
-    float *LookUp_Rstem = nullptr;
+    std::vector<float> LookUp_KmT;
+    std::vector<float> LookUp_GammaT;
+    std::vector<float> LookUp_VcmaxT;
+    std::vector<float> LookUp_JmaxT;
+    std::vector<float> LookUp_Rleaf;
+    std::vector<float> LookUp_flux_absorption;
+    std::vector<float> LookUp_flux;
+    std::vector<float> LookUp_ExtinctLW;
+    std::vector<float> LookUp_VPD;
+    std::vector<float> LookUp_T;
+    std::vector<float> LookUp_Rstem;
     int LookUp_Crown_site[2601];
 
     int nbVPDbins;
     float iVPDaccuracy;
 
-    float **LookUp_INLR = nullptr;
-    float *LookUp_SLOPE = nullptr;
-    float *LookUp_GRADN = nullptr;
+    std::vector<std::vector<float>> LookUp_INLR;
+    std::vector<float> LookUp_SLOPE;
+    std::vector<float> LookUp_GRADN;
 
     int nbHbins;
     float iHaccuracy;
 
-    float *LookUp_Wind = nullptr;
+    std::vector<float> LookUp_Wind;
 
     std::vector<float> LookUpLAImax;
 };
@@ -185,43 +187,43 @@ struct LookupTables
 struct Soil
 {
     int nblayers_soil;
-    float *layer_depth = nullptr;
+    std::vector<float> layer_depth;
 
-    float *Sat_SWC = nullptr;
-    float *Max_SWC = nullptr;
-    float *FC_SWC = nullptr;
-    float *Res_SWC = nullptr;
-    float *Min_SWC = nullptr;
+    std::vector<float> Sat_SWC;
+    std::vector<float> Max_SWC;
+    std::vector<float> FC_SWC;
+    std::vector<float> Res_SWC;
+    std::vector<float> Min_SWC;
 
-    float *Ksat = nullptr;
-    float *a_vgm = nullptr;
-    float *b_vgm = nullptr;
-    float *c_vgm = nullptr;
-    float *m_vgm = nullptr;
-    float *phi_e = nullptr;
-    float *b = nullptr;
+    std::vector<float> Ksat;
+    std::vector<float> a_vgm;
+    std::vector<float> b_vgm;
+    std::vector<float> c_vgm;
+    std::vector<float> m_vgm;
+    std::vector<float> phi_e;
+    std::vector<float> b;
 
-    float **SWC3D = nullptr;
-    float **soil_phi3D = nullptr;
-    float **Ks = nullptr;
-    float **KsPhi = nullptr;
-    float **Transpiration = nullptr;
+    std::vector<std::vector<float>> SWC3D;
+    std::vector<std::vector<float>> soil_phi3D;
+    std::vector<std::vector<float>> Ks;
+    std::vector<std::vector<float>> KsPhi;
+    std::vector<std::vector<float>> Transpiration;
 
-    float **LAI_DCELL = nullptr;
+    std::vector<std::vector<float>> LAI_DCELL;
 
-    float *LAI_young = nullptr;
-    float *LAI_mature = nullptr;
-    float *LAI_old = nullptr;
+    std::vector<float> LAI_young;
+    std::vector<float> LAI_mature;
+    std::vector<float> LAI_old;
 
-    float *Canopy_height_DCELL = nullptr;
-    int *HSum_DCELL = nullptr;
-    float *TopWindSpeed_DCELL = nullptr;
+    std::vector<float> Canopy_height_DCELL;
+    std::vector<int> HSum_DCELL;
+    std::vector<float> TopWindSpeed_DCELL;
 
-    float *Interception = nullptr;
-    float *Throughfall = nullptr;
-    float *Runoff = nullptr;
-    float *Leakage = nullptr;
-    float *Evaporation = nullptr;
+    std::vector<float> Interception;
+    std::vector<float> Throughfall;
+    std::vector<float> Runoff;
+    std::vector<float> Leakage;
+    std::vector<float> Evaporation;
 
     float transpiration_1016;
     float abund_phi_root;
@@ -237,8 +239,8 @@ struct Diagnostics
     int nbTreefall1, nbTreefall10, nbTreefall30;
     int nbtrees_carbstarv_n1, nbtrees_carbstarv_n10, nbtrees_carbstarv_n30;
 
-    int *nbdbh = nullptr;
-    float *layer = nullptr;
+    std::vector<int> nbdbh;
+    std::vector<float> layer;
 };
 
 struct PointCloud
@@ -261,15 +263,15 @@ struct RNGState
 
 struct SpeciesState
 {
-    int **SPECIES_SEEDS = nullptr;
-    double *p_seed = nullptr;
-    unsigned int *n_seed = nullptr;
+    std::vector<std::vector<int>> SPECIES_SEEDS;
+    std::vector<double> p_seed;
+    std::vector<unsigned int> n_seed;
 
-    double *p_species = nullptr;
-    unsigned int *n_species = nullptr;
+    std::vector<double> p_species;
+    std::vector<unsigned int> n_species;
 
-    int *SPECIES_GERM = nullptr;
-    float *PROB_S = nullptr;
+    std::vector<int> SPECIES_GERM;
+    std::vector<float> PROB_S;
 };
 
 struct Intraspecific
@@ -372,8 +374,8 @@ struct SimParams
 
 struct SimFields
 {
-    float **LAI3D = nullptr;
-    unsigned short *Thurt[3];
+    std::vector<std::vector<float>> LAI3D;
+    std::vector<unsigned short> Thurt[3];
 };
 
 struct Context

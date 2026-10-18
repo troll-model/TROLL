@@ -230,7 +230,7 @@ void OutputCrownSliced(Context &ctx, int height, int site, int row_slice, vector
     if (row_current == row_slice && col_current >= ctx.crown.mincol_visual && col_current < ctx.crown.maxcol_visual)
     {
         ctx.out.output_visual[1] << ctx.time.iter << "\t" << row_current << "\t" << col_current << "\t" << height;
-        for (int i = 0; i < output_statistics.size(); i++)
+        for (size_t i = 0; i < output_statistics.size(); i++)
         {
             ctx.out.output_visual[1] << "\t" << output_statistics[i];
         } // we only output tree parts that fall in the current slice extent

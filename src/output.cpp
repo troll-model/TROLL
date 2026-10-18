@@ -2,6 +2,12 @@
 #include "constants.hpp"
 #include "context.hpp"
 
+//! Percentage num/den*100, or 0 when den is 0 (avoids printing "-nan" when a size class is empty)
+static double PercentOrZero(double num, double den)
+{
+    return den > 0.0 ? 100.0 * num / den : 0.0;
+}
+
 // ##############################################
 //  Global function: calculation of the global averages every ctx.time.timestep
 // ##############################################
@@ -20,7 +26,7 @@ void Average(Context &ctx)
     int site, spp;
     float sum1 = 0.0, sum10 = 0.0, sum30 = 0.0, ba = 0.0, npp = 0.0, gpp = 0.0, ba10 = 0.0, agb = 0.0, rday = 0.0, rnight = 0.0, rstem = 0.0, litterfall = 0.0;
 
-    float inbcells = 1.0 / float(ctx.grid.sites * mpi_size);
+    float inbcells = 1.0 / float(ctx.grid.sites);
     float inbhectares = inbcells * ctx.grid.NH * ctx.grid.NH * 10000.0;
 
 #ifdef WATER
@@ -29,7 +35,6 @@ void Average(Context &ctx)
     ctx.soil.agb_phi_root = 0.0;
 #endif
 
-    if (!mpi_rank)
     {
         for (spp = 1; spp <= ctx.grid.nbspp; spp++)
             ctx.S[spp].s_sum10 = ctx.S[spp].s_sum30 = ctx.S[spp].s_ba = ctx.S[spp].s_ba10 = ctx.S[spp].s_agb = ctx.S[spp].s_gpp = ctx.S[spp].s_npp = ctx.S[spp].s_rday = ctx.S[spp].s_rnight = ctx.S[spp].s_rstem = ctx.S[spp].s_litterfall = 0;
@@ -83,10 +88,10 @@ void Average(Context &ctx)
         cout.precision(2);
 
 #ifdef WATER
-        cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << 100.0 * ctx.diag.nbdead_n1 * inbhectares / sum1 << " | " << 100.0 * ctx.diag.nbdead_n10 * inbhectares / sum10 << " | " << 100.0 * ctx.diag.nbdead_n30 * inbhectares / sum30 << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << " *** ctx.soil.Transpiration (mm): ";
+        cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << PercentOrZero(ctx.diag.nbdead_n1 * inbhectares, sum1) << " | " << PercentOrZero(ctx.diag.nbdead_n10 * inbhectares, sum10) << " | " << PercentOrZero(ctx.diag.nbdead_n30 * inbhectares, sum30) << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << " *** ctx.soil.Transpiration (mm): ";
 #else
 
-        cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << 100.0 * ctx.diag.nbdead_n1 * inbhectares / sum1 << " | " << 100.0 * ctx.diag.nbdead_n10 * inbhectares / sum10 << " | " << 100.0 * ctx.diag.nbdead_n30 * inbhectares / sum30 << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << endl;
+        cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << PercentOrZero(ctx.diag.nbdead_n1 * inbhectares, sum1) << " | " << PercentOrZero(ctx.diag.nbdead_n10 * inbhectares, sum10) << " | " << PercentOrZero(ctx.diag.nbdead_n30 * inbhectares, sum30) << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << endl;
 #endif
 
         if (ctx.opt._OUTPUT_extended)
@@ -150,7 +155,7 @@ void Average(Context &ctx)
     {
         if (ctx.T[s].t_age > 0)
         {
-            float agb = 1000.0 * ctx.T[s].CalcAGB(); // convert to g
+            float agb = 1000.0 * ctx.T[s].CalcAGB(ctx); // convert to g
             float carbon_trunk = agb * 0.5;
             carbon_stored_trunk += carbon_trunk;
 
@@ -397,18 +402,6 @@ void Average(Context &ctx)
 
 #endif
 
-#ifdef MPI
-    // This section corresponds to the parallel version of the reporting of the global diagnostic variables. Since much work has been done on routine Average over the past years, this would need a full rewrite, !!!!Action 20/01/2016: rework the parallel version of function Average!!!!
-
-    //     MPI_Reduce(&(ctx.S[spp].s_nbind),&sind,1,
-    //     MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
-    //     MPI_Reduce(ctx.S[spp].s_output_field,ctx.S[spp].s_output_field,5,
-    //     MPI_FLOAT,MPI_SUM,0,MPI_COMM_WORLD);
-    //     MPI_Reduce(Mortality,Mortality,4,
-    //     MPI_FLOAT,MPI_SUM,0,MPI_COMM_WORLD);
-    //     MPI_Reduce(&ctx.S[spp].s_output_field[6],&ctx.S[spp].s_output_field[6],5,
-    //     MPI_FLOAT,MPI_MAX,0,MPI_COMM_WORLD);
-#endif
     cout.flush();
 }
 
@@ -434,19 +427,13 @@ void OutputField(Context &ctx)
                 ctx.diag.layer[h] += ctx.field.LAI3D[h][site + ctx.grid.SBORD];
         }
 
-#ifdef MPI
-        MPI_Status status;
-        MPI_Reduce(ctx.diag.nbdbh, ctx.diag.nbdbh, ctx.grid.dbhmaxincm, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(ctx.diag.layer, ctx.diag.layer, ctx.grid.HEIGHT, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-#endif
-        if (!mpi_rank)
         {
             // output of the dbh histograms (ctx.out.output[31])
             for (d = 1; d < ctx.grid.dbhmaxincm; d++)
                 ctx.out.output[31] << d << "\t" << ctx.diag.nbdbh[d] << "\n";
             ctx.out.output[31] << "\n";
             // output of the mean LAI per height class (ctx.out.output[32])
-            float norm = 1.0 / float(ctx.grid.sites * ctx.grid.LH * ctx.grid.LH * mpi_size);
+            float norm = 1.0 / float(ctx.grid.sites * ctx.grid.LH * ctx.grid.LH);
             for (h = 0; h < (ctx.grid.HEIGHT + 1); h++)
                 ctx.out.output[32] << ctx.time.iter << "\t" << h * ctx.grid.LV << "\t" << ctx.diag.layer[h] * norm << "\n";
             ctx.out.output[32] << "\n";
@@ -3061,129 +3048,46 @@ void OutputABC_transmittance(Context &ctx, fstream &output_transmittance, fstrea
 }
 #endif
 
-#ifdef MPI
-// MPI Routines
-
-// ##############################################
-//  Global MPI function: Communication of border fields in the parallel version of the code
-// ##############################################
-//! - Only if the MPI option has been enabled
-void MPI_ShareSeed(unsigned char **c, int n)
-{
-
-    MPI_Status status;
-
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, size - 2, 0, c[3], n, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, &status);
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, size - 1, 0, c[3], n, MPI_UNSIGNED_CHAR, 1, 0, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, p_rank - 1, 0, c[3], n, MPI_UNSIGNED_CHAR, p_rank + 1, 0, MPI_COMM_WORLD, &status);
-
-    if (p_rank == 0)
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, 1, 1, c[2], n, MPI_UNSIGNED_CHAR, size - 1, 1, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, 0, 1, c[2], n, MPI_UNSIGNED_CHAR, size - 2, 1, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, p_rank + 1, 1, c[2], n, MPI_UNSIGNED_CHAR, p_rank - 1, 1, MPI_COMM_WORLD, &status);
-}
-
-// ##############################################
-//  Global MPI function: Communication of fields
-// ##############################################
-void MPI_ShareField(Context &ctx, unsigned short **cl, unsigned short ***cp, int n)
-{
-
-    MPI_Status status;
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-    {
-        if (p_rank == 0)
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, size - 1, h, cp[1][h], n, MPI_UNSIGNED_SHORT, 1, h, MPI_COMM_WORLD, &status);
-        if (p_rank == size - 1)
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, size - 2, h, cp[1][h], n, MPI_UNSIGNED_SHORT, 0, h, MPI_COMM_WORLD, &status);
-        if ((p_rank) && (p_rank < size - 1))
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, p_rank - 1, h, cp[1][h], n, MPI_UNSIGNED_SHORT, p_rank + 1, h, MPI_COMM_WORLD, &status);
-
-        if (p_rank == 0)
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, 1, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, size - 1, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-        if (p_rank == size - 1)
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, 0, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, size - 2, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-        if ((p_rank) && (p_rank < size - 1))
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, p_rank + 1, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, p_rank - 1, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-    }
-}
-
-// ##############################################
-//  Global MPI function: Communication of treefalls
-// ##############################################
-void MPI_ShareTreefall(unsigned short **c, int n)
-{
-
-    MPI_Status status;
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, size - 1, 0, c[2], n, MPI_UNSIGNED_SHORT, 1, 0, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, size - 2, 0, c[2], n, MPI_UNSIGNED_SHORT, 0, 0, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, p_rank - 1, 0, c[2], n, MPI_UNSIGNED_SHORT, p_rank + 1, 0, MPI_COMM_WORLD, &status);
-
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, 1, 1, c[1], n, MPI_UNSIGNED_SHORT, size - 1, 1, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, 0, 1, c[1], n, MPI_UNSIGNED_SHORT, size - 2, 1, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, p_rank + 1, 1, c[1], n, MPI_UNSIGNED_SHORT, p_rank - 1, 1, MPI_COMM_WORLD, &status);
-}
-#endif
 
 //! Close outputs
+namespace
+{
+    void CloseStream(std::fstream &stream)
+    {
+        if (stream.is_open())
+            stream.close();
+        stream.clear();
+    }
+
+    template <std::size_t N>
+    void CloseStreams(std::fstream (&streams)[N])
+    {
+        for (auto &stream : streams)
+            CloseStream(stream);
+    }
+} // namespace
+
+//! Close (and thereby flush) every output stream, whether or not it was opened.
+//! Previously only a subset was closed and the rest relied on exit() running global
+//! destructors; with a local Context those buffers could be lost.
 void CloseOutputs(Context &ctx)
 {
-    ctx.out.output_info.close();
-    ctx.out.output_info.clear();
-
-    for (int i = 0; i < 4; i++)
-    {
-        ctx.out.output_basic[i].close();
-        ctx.out.output_basic[i].clear();
-    }
-
-    if (ctx.opt._OUTPUT_extended == 1)
-    {
-        for (int i = 0; i < 9; i++)
-        {
-            ctx.out.output_extended[i].close();
-            ctx.out.output_extended[i].clear();
-        }
-        if (ctx.crown.extent_visual > 0)
-        {
-            for (int i = 0; i < 2; i++)
-            {
-                ctx.out.output_visual[i].close();
-                ctx.out.output_visual[i].clear();
-            }
-        }
-    }
-
+    CloseStream(ctx.out.output_info);
+    CloseStreams(ctx.out.output_basic);
+    CloseStreams(ctx.out.output_extended);
+    CloseStreams(ctx.out.output_visual);
+    CloseStream(ctx.out.output_pointcloud);
+#ifdef MIP_Lichstein
+    CloseStream(ctx.out.output_MIP_eco);
+    CloseStream(ctx.out.output_MIP_ind);
+#endif
 #ifdef Output_ABC
-    for (int i = 0; i < 11; i++)
-    {
-        ctx.out.output_abc[i].close();
-        ctx.out.output_abc[i].clear();
-    }
+    CloseStreams(ctx.out.output_abc);
 #endif
 #ifdef WATER
-    for (int i = 0; i < 40; i++)
-    {
-        ctx.out.output[i].close();
-        ctx.out.output[i].clear();
-    }
+    CloseStreams(ctx.out.output);
 #endif
 #ifdef TRACK_INDIVIDUALS
-    for (int i = 0; i < 3; i++)
-    {
-        ctx.out.output_track[i].close();
-        ctx.out.output_track[i].clear();
-    }
+    CloseStreams(ctx.out.output_track);
 #endif
 }

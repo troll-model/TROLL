@@ -1,12 +1,11 @@
+#include <cerrno>
+#include <cstring>
+#include <stdexcept>
 #include "troll.hpp"
 #include "constants.hpp"
 #include "context.hpp"
 #include "internal/lookup_tables_cache.hpp"
 #include "internal/param_registry.hpp"
-
-int mpi_rank = 0;
-int mpi_size = 0;
-int easympi_rank = 0;
 
 // ###########################################
 // ###########################################
@@ -14,23 +13,24 @@ int easympi_rank = 0;
 // ###########################################
 // ###########################################
 
-int main(int argc, char *argv[])
+//! Parse a non-negative integer seed; throws on malformed input
+static long long ParseSeed(const char *text)
+{
+    char *end = nullptr;
+    errno = 0;
+    long long value = strtoll(text, &end, 10);
+    if (end == text || *end != '\0' || errno != 0 || value < 0)
+        throw std::runtime_error(std::string("invalid seed '") + text + "' (expected a non-negative integer)");
+    return value;
+}
+
+static int RunTroll(int argc, char *argv[])
 {
     Context ctx{};
 
     //!*********************
     //!** Initializations **
     //!*********************
-#ifdef MPI // Lookup processor number / total number of processors
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &p_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-    mpi_rank = 0;
-    mpi_size = 1;
-#endif
-    easympi_rank = 0;
-
     for (int argn = 1; argn < argc; argn++)
     { // Arguments of the input and output files
         if (*argv[argn] == '-')
@@ -67,7 +67,19 @@ int main(int argc, char *argv[])
                 ctx.opt._OUTPUT_pointcloud = 1;
                 break;
             case 'n':
-                easympi_rank = atoi(argv[argn] + 2); // new v.2.2
+                ctx.buffers.run_index = atoi(argv[argn] + 2); // new v.2.2
+                break;
+            case 'r': // random seed, e.g. -r42 (same as --seed=42)
+                ctx.buffers.seed = ParseSeed(argv[argn] + 2);
+                break;
+            case '-': // long options
+                if (strncmp(argv[argn], "--seed=", 7) == 0)
+                    ctx.buffers.seed = ParseSeed(argv[argn] + 7);
+                else if (strcmp(argv[argn], "--seed") == 0 && argn + 1 < argc)
+                    ctx.buffers.seed = ParseSeed(argv[++argn]);
+                else
+                    throw std::runtime_error(std::string("unknown option ") + argv[argn]);
+                break;
             }
         }
     }
@@ -103,21 +115,37 @@ int main(int argc, char *argv[])
     Trandgsl = gsl_rng_default;
     ctx.rng.gslrand = gsl_rng_alloc(Trandgsl);
 
-    cout << "Easy MPI rank: " << easympi_rank << endl;
+    cout << "Easy MPI rank: " << ctx.buffers.run_index << endl;
 
-    unsigned long int t = (unsigned long int)time(NULL);
-    unsigned long int seed = 3 * t + 2 * (easympi_rank + 1) + 1;
-
-    if (ctx.opt._NONRANDOM == 1)
+    // Seed precedence: command line (-r / --seed) > _NONRANDOM == 1 (seed 1) > time-based.
+    // The seed actually used is written to the _info.txt file so any run can be reproduced.
+    unsigned long int seed;
+    const char *seed_source;
+    if (ctx.buffers.seed >= 0)
+    {
+        seed = (unsigned long int)ctx.buffers.seed;
+        seed_source = "command line";
+    }
+    else if (ctx.opt._NONRANDOM == 1)
+    {
         seed = 1;
+        seed_source = "_NONRANDOM";
+    }
+    else
+    {
+        unsigned long int t = (unsigned long int)time(NULL);
+        seed = 3 * t + 2 * (ctx.buffers.run_index + 1) + 1;
+        seed_source = "time-based";
+    }
 
     gsl_rng_set(ctx.rng.gslrand, seed);
 
-    cout << "On proc #" << easympi_rank << " seed: " << seed << endl;
-    sprintf(ctx.fileio.outputinfo, "%s_%i_info.txt", ctx.buffers.buf, easympi_rank);
+    cout << "On proc #" << ctx.buffers.run_index << " seed: " << seed << endl;
+    sprintf(ctx.fileio.outputinfo, "%s_%i_info.txt", ctx.buffers.buf, ctx.buffers.run_index);
     ctx.out.output_info.open(ctx.fileio.outputinfo, ios::out);
     if (!ctx.out.output_info)
         cerr << "ERROR with info file" << endl;
+    ctx.out.output_info << "Random seed : " << seed << " (" << seed_source << ")\n";
 
     Initialise(ctx); // Read global parameters
 
@@ -173,7 +201,6 @@ int main(int argc, char *argv[])
 
     //** Information in file info **
     //******************************
-    if (!mpi_rank)
     {
         ctx.out.output_info << "\nTROLL simulator\n\n";
         ctx.out.output_info << "\n   2D discrete network: horizontal step = " << ctx.grid.LH
@@ -272,27 +299,29 @@ int main(int argc, char *argv[])
     //** End of simulation **
     //***********************
     float durf = duration / double(CLOCKS_PER_SEC); // output of the effective CPU time
-#ifdef MPI
-    MPI_Reduce(&durf, &durf, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-#endif
-    if (!mpi_rank)
     {
         cout << "\n";
-#ifdef MPI
-        ctx.out.output_info << "Number of processors : " << mpi_size << "\n";
-#endif
-        ctx.out.output_info << "Average computation time : " << durf / float(mpi_size) << " seconds.\n";
+        ctx.out.output_info << "Average computation time : " << durf << " seconds.\n";
         ctx.out.output_info << "End of simulation.\n";
         ctx.out.output_info.flush();
-        cout << "\nNumber of processors : " << mpi_size << "\n";
-        cout << "Average computation time : " << durf / float(mpi_size) << " seconds.\n";
+        cout << "Average computation time : " << durf << " seconds.\n";
         cout << "End of simulation.\n";
     }
 
     CloseOutputs(ctx); // new in v.3.1: Close and clear outputs, maybe not necessary as main function terminates shortly after, but maybe it ensures a cleaner communication with file system/within Rcpp
     FreeMem(ctx);      // Free dynamic memory  //! added in oct2013
-#ifdef easyMPI
-    MPI::Finalize();
-#endif
-    exit(0);
+    return 0; // return (not exit) so that ctx and its streams are destroyed normally
+}
+
+int main(int argc, char *argv[])
+{
+    try
+    {
+        return RunTroll(argc, argv);
+    }
+    catch (const std::exception &e)
+    {
+        cerr << "Error: " << e.what() << endl;
+        return EXIT_FAILURE;
+    }
 }

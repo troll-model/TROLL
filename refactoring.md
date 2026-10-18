@@ -142,9 +142,7 @@ The registry binds directly to `ctx.*` fields via pointers, so it requires a `Co
 
 ### MPI globals
 
-`mpi_rank`, `mpi_size`, and `easympi_rank` remain as file-scope globals in `troll.cpp`. MPI support is disabled by default (`#undef MPI`). Moving these into `Context` would require threading them through functions that are not currently MPI-aware.
-
-In a conversation here [https://github.com/troll-model/TROLL/pull/22#issuecomment-3580696619] I saw that maybe it should be removed? TBD
+Done in 4.1.0: the MPI code was removed (it no longer compiled), `mpi_rank`/`mpi_size` are gone and `easympi_rank` became `ctx.buffers.run_index`.
 
 ### Conditional-compilation diagnostics
 

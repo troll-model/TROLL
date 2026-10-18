@@ -617,7 +617,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         SetParameter(parameter_name, parameter_value, t_litter, 0.0f, 100000.0f, -1.0f, quiet);
 
         float crown_area = PI * t_CR * t_CR;
-        float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+        [[maybe_unused]] float crown_area_nogaps = GetCrownAreaFilled(crown_area); // only used by the commented-out block below
 
         /* if(t_LAmax >= 0.0 && t_LA >= 0.0 && t_youngLA >= 0.0 && t_matureLA >= 0.0 && t_oldLA >= 0.0 && t_litter >= 0.0){
             // there could be more consistency checks here (e.g. t_youngLA + t_matureLA + t_oldLA should be approximately t_LA)
@@ -765,6 +765,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
         SetParameter(parameter_name, parameter_value, t_WSF_A, 0.0f, 1.0f, 1.0f, quiet);
 
+#ifdef PHENO_DROUGHT
         parameter_name = "Ndays_dry";
         parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
         SetParameter(parameter_name, parameter_value, t_Ndays_dry, 0, 1000, 0, quiet);
@@ -776,6 +777,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         parameter_name = "pheno_factor";
         parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
         SetParameter(parameter_name, parameter_value, t_pheno_factor, 0.0f, 1.0f, 1.0f, quiet);
+#endif // PHENO_DROUGHT
 
 #endif
         //*################*/
@@ -2591,12 +2593,13 @@ void Tree::CalcRespGPP(Context &ctx)
                 cout << "Warning leafarea <=0 in CalcRespGPP !! PPFD=" << PPFD << "; leafarea_layer=" << leafarea_layer << " when h=" << h << " with crown_above_top=" << crown_above_top << " and leafarea_toprounding=" << leafarea_toprounding << endl;
             }
 
+            if (PPFD < 0) // was nested inside "PPFD > 0" below and could never fire
+            {
+                cout << "Warning PPFD <0 in CalcRespGPP !! PPFD=" << PPFD << endl;
+            }
+
             if (leafarea_layer > 0.0 && PPFD > 0)
             {
-                if (PPFD < 0)
-                {
-                    cout << "Warning PPFD <0 in CalcRespGPP !! PPFD=" << PPFD << endl;
-                }
                 float water_flux_1016 = 0.0;
                 leafFluxes dailyF = Tree::dailyFluxesLeaf(ctx, PPFD, VPD, Tmp, W, ExtinctLW, PPFD_incident, water_flux_1016);
                 t_GPP += leafarea_layer * dailyF.carbon_flux;
@@ -2790,7 +2793,11 @@ void Tree::UpdateLeafDynamics(Context &ctx)
 
             if (new_litter < 0)
             {
+#ifdef PHENO_DROUGHT
                 cout << "Warning in UpdateLeafDynamics, newlitter <0, lambda_old=" << lambda_old << " t_oldLA=" << t_oldLA << " t_pheno_factor=" << t_pheno_factor << endl;
+#else
+                cout << "Warning in UpdateLeafDynamics, newlitter <0, lambda_old=" << lambda_old << " t_oldLA=" << t_oldLA << endl;
+#endif
             }
 
             // first check whether tree can still support more leaves (does not have excess leafarea)
@@ -2861,7 +2868,11 @@ void Tree::UpdateLeafDynamics(Context &ctx)
 
             if (t_litter < 0 || t_oldLA < 0)
             {
+#ifdef PHENO_DROUGHT
                 cout << "Warning in UpdateLeafDynamics, new_litter=" << new_litter << ", lambda_old=" << lambda_old << " t_oldLA=" << t_oldLA << " t_pheno_factor=" << t_pheno_factor << " t_LMA=" << t_LMA << " new_old=" << new_old << " t_Ndays_dry=" << t_Ndays_dry << " t_Ndays_wet=" << t_Ndays_wet << endl;
+#else
+                cout << "Warning in UpdateLeafDynamics, new_litter=" << new_litter << ", lambda_old=" << lambda_old << " t_oldLA=" << t_oldLA << " t_LMA=" << t_LMA << " new_old=" << new_old << endl;
+#endif
             }
 
             t_LA = t_youngLA + t_matureLA + t_oldLA;

@@ -58,9 +58,6 @@
 #include <typeinfo>
 #include <random>
 
-#ifdef MPI
-#include "mpi.h"
-#endif
 
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_randist.h>
@@ -155,32 +152,32 @@ using namespace std;
 
 #ifdef Output_ABC
 // Output creation for Approximate Bayesian Computation and Summary Statistics calculation. ABC produces large files, so metrics are pre-calculated within TROLL
-int chmchange_iter = 43; //!< Global variable: ad-hoc variable. Output at step 43 iterations before the final output, to simulate a suite of successive LiDAR measurements at Nouragues, from March 2012 to October 2015, so 3 * 12 + 7 = 43 !!!UPDATE
+inline int chmchange_iter = 43; //!< Global variable: ad-hoc variable. Output at step 43 iterations before the final output, to simulate a suite of successive LiDAR measurements at Nouragues, from March 2012 to October 2015, so 3 * 12 + 7 = 43 !!!UPDATE
 // the margins of the ABC analysis, can be smaller than the actually simulated plot to deal with edge effects
 
-int margin;       //!< Global variable: for ABC -- margin used to deal with edge effects
-int row_start;    //!< Global variable: for ABC -- row start after margin clipping
-int row_end;      //!< Global variable: for ABC -- row end after margin clipping
-int col_start;    //!< Global variable: for ABC -- col start after margin clipping
-int col_end;      //!< Global variable: for ABC -- col end after margin clipping
-int sites_abc;    //!< Global variable: for ABC -- number of sites after margin clipping
-int nbvisited;    //!< Global variable: for ABC -- number of visited sites !!!UPDATE
-int patch_size;   //!< Global variable: for ABC -- patch size !!!UPDATE
-float isites_abc; //!< Global variable: for ABC -- inverse of number of sites after margin clipping
+inline int margin;       //!< Global variable: for ABC -- margin used to deal with edge effects
+inline int row_start;    //!< Global variable: for ABC -- row start after margin clipping
+inline int row_end;      //!< Global variable: for ABC -- row end after margin clipping
+inline int col_start;    //!< Global variable: for ABC -- col start after margin clipping
+inline int col_end;      //!< Global variable: for ABC -- col end after margin clipping
+inline int sites_abc;    //!< Global variable: for ABC -- number of sites after margin clipping
+inline int nbvisited;    //!< Global variable: for ABC -- number of visited sites !!!UPDATE
+inline int patch_size;   //!< Global variable: for ABC -- patch size !!!UPDATE
+inline float isites_abc; //!< Global variable: for ABC -- inverse of number of sites after margin clipping
 
-int *chm_field_previous(0);     //!< Global vector: for ABC -- canopy height model (chm) calculated at previous step !!!UPDATE
-int *chm_field_current(0);      //!< Global vector: for ABC -- canopy height model (chm) calculated at current step !!!UPDATE
-int *chm_field_previous_ALS(0); //!< Global vector: for ABC -- canopy height model (chm) inferred from Airborne Lidar Scanning (ALS) at previous step
-int *chm_field_current_ALS(0);  //!< Global vector: for ABC -- canopy height model (chm) inferred from Airborne Lidar Scanning (ALS) at current step
-int *chm_field_changes(0);      //!< Global vector: for ABC -- change in canopy height as calculated
-int *chm_field_changes_ALS(0);  //!< Global vector: for ABC -- change in canopy height as observed
-float **transmittance_simulatedALS(0);
-float **transmittance_direct(0);
-int **transmittance_simulatedALS_sampling(0);
-float GPP_MA[120] = {0.0};        //!< Global variable: moving average of GPP across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
-float Litterfall_MA[120] = {0.0}; //!< Global variable: moving average of litterfall across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
-float Mortality_MA[120] = {0.0};  //!< Global variable: moving average of mortality across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
-float Treefall_MA[120] = {0.0};   //!< Global variable: moving average of treefall across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
+inline int *chm_field_previous(0);     //!< Global vector: for ABC -- canopy height model (chm) calculated at previous step !!!UPDATE
+inline int *chm_field_current(0);      //!< Global vector: for ABC -- canopy height model (chm) calculated at current step !!!UPDATE
+inline int *chm_field_previous_ALS(0); //!< Global vector: for ABC -- canopy height model (chm) inferred from Airborne Lidar Scanning (ALS) at previous step
+inline int *chm_field_current_ALS(0);  //!< Global vector: for ABC -- canopy height model (chm) inferred from Airborne Lidar Scanning (ALS) at current step
+inline int *chm_field_changes(0);      //!< Global vector: for ABC -- change in canopy height as calculated
+inline int *chm_field_changes_ALS(0);  //!< Global vector: for ABC -- change in canopy height as observed
+inline float **transmittance_simulatedALS(0);
+inline float **transmittance_direct(0);
+inline int **transmittance_simulatedALS_sampling(0);
+inline float GPP_MA[120] = {0.0};        //!< Global variable: moving average of GPP across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
+inline float Litterfall_MA[120] = {0.0}; //!< Global variable: moving average of litterfall across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
+inline float Mortality_MA[120] = {0.0};  //!< Global variable: moving average of mortality across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
+inline float Treefall_MA[120] = {0.0};   //!< Global variable: moving average of treefall across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
 #endif
 
 // DIAGNOSTICS OUTPUT STATISTICS migrated to ctx.diag:
@@ -189,25 +186,15 @@ float Treefall_MA[120] = {0.0};   //!< Global variable: moving average of treefa
 // (Output_ABC globals omitted: Output_ABC is #undef'd)
 
 #ifdef CHECK_CARBON
-float carbon_assimilated_total; //!< Global variable: --  !!!UPDATE
-float carbon_net_total;         //!< Global variable: --  !!!UPDATE
-float carbon_stored_leaves;     //!< Global variable: --  !!!UPDATE
-float carbon_stored_trunk;      //!< Global variable: --  !!!UPDATE
-float carbon_stored_free;       //!< Global variable: --  !!!UPDATE
+inline float carbon_assimilated_total; //!< Global variable: --  !!!UPDATE
+inline float carbon_net_total;         //!< Global variable: --  !!!UPDATE
+inline float carbon_stored_leaves;     //!< Global variable: --  !!!UPDATE
+inline float carbon_stored_trunk;      //!< Global variable: --  !!!UPDATE
+inline float carbon_stored_free;       //!< Global variable: --  !!!UPDATE
 #endif
 
-// PROCESSORS FOR MPI OPTION
-extern int mpi_rank;     //!< Global variable: processor rank (Message Passing Interface)
-extern int mpi_size;     //!< Global variable: processor number (Message Passing Interface)
-extern int easympi_rank; //!< Global variable: processor rank (easy Message Passing Interface)
 
 // MPI PROCEDURES
-#ifdef MPI
-unsigned short **LAIc[2];                                        //!< Global 3D field: sharing LAI across boundaries
-void MPI_ShareSeed(unsigned char **, int);                       //!< Global MPI function: Communication of border fields in the parallel version of the code
-void MPI_ShareField(Context &ctx, unsigned short **, unsigned short ***, int); //!< Global MPI function: Communication of fields
-void MPI_ShareTreefall(unsigned short **, int);                  //!< Global MPI function: Communication of treefalls
-#endif
 
 #ifdef CROWN_UMBRELLA
 // TREESHAPE CALCULATIONS

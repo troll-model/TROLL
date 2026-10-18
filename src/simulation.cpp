@@ -68,16 +68,20 @@ void UpdateSeeds(Context &ctx)
     if (ctx.time.iter % ctx.time.iterperyear == 0)
     {
         // acceleration, using the multinomial distribution
-        int ha = ctx.grid.sites / 10000;
-        gsl_ran_multinomial(ctx.rng.gslrand, ctx.grid.sites, ctx.params.Cseedrain * ha, ctx.species.p_seed, ctx.species.n_seed);
-        cout << ctx.grid.sites << " Seedrain: " << ctx.params.Cseedrain * ha << endl;
+        // Plot area in hectares. This was an integer division, which gave zero seed rain
+        // for plots smaller than 1 ha and truncated non-integer areas (e.g. 1.5 ha -> 1 ha).
+        // For whole-hectare plots the result is unchanged.
+        double ha = double(ctx.grid.sites) / 10000.0;
+        unsigned int nb_seedrain = (unsigned int)(ctx.params.Cseedrain * ha);
+        gsl_ran_multinomial(ctx.rng.gslrand, ctx.grid.sites, nb_seedrain, ctx.species.p_seed.data(), ctx.species.n_seed.data());
+        cout << ctx.grid.sites << " Seedrain: " << nb_seedrain << endl;
         int seedsadded = 0;
         for (int s = 0; s < ctx.grid.sites; s++)
         {
             // if(ctx.T[s].t_age == 0){
             int nbseeds = ctx.species.n_seed[s];
             // cout << "Site: " << s << " nbseeds: " << nbseeds << " ctx.grid.nbspp: " << ctx.grid.nbspp << endl;
-            gsl_ran_multinomial(ctx.rng.gslrand, ctx.grid.nbspp, nbseeds, ctx.species.p_species, ctx.species.n_species);
+            gsl_ran_multinomial(ctx.rng.gslrand, ctx.grid.nbspp, nbseeds, ctx.species.p_species.data(), ctx.species.n_species.data());
             for (int spp = 1; spp <= ctx.grid.nbspp; spp++)
             {
                 int nbseeds_species = ctx.species.n_species[spp - 1];
@@ -190,13 +194,6 @@ void UpdateField(Context &ctx)
     RecruitTree(ctx);
 
     //  Compute Field ctx.field.LAI3D
-#ifdef MPI
-    // Reinitialize field ctx.field.LAI3D
-    for (int i = 0; i < 2; i++)
-        for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-            for (int site = 0; site < 2 * ctx.grid.SBORD; site++)
-                LAIc[i][h][site] = 0;
-#endif
 
     for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
         for (int sbsite = 0; sbsite < ctx.grid.sites + 2 * ctx.grid.SBORD; sbsite++)
@@ -300,23 +297,6 @@ void UpdateField(Context &ctx)
     }
 #endif
 
-#ifdef MPI
-    // Communicate border of field
-    // MPI_ShareField(ctx.field.LAI3D,LAIc,2*ctx.grid.SBORD);
-    This MPI command no longer exists in openMPI
-            Action 20 /
-        01 / 2016 TODO : FIX THIS MPI_ShareField(ctx.field.LAI3D, LAIc, 2 * ctx.grid.SBORD);
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-    {
-        //! Add border effects in local fields
-        if (mpi_rank)
-            for (site = 0; site < 2 * ctx.grid.SBORD; site++)
-                ctx.field.LAI3D[h][site] += LAIc[0][h][site];
-        if (mpi_rank < mpi_size - 1)
-            for (int site = 0; site < 2 * ctx.grid.SBORD; site++)
-                ctx.field.LAI3D[h][site + ctx.grid.sites] += LAIc[1][h][site];
-    }
-#endif
 
 #ifdef WATER
     //**  Evolution of belowground hydraulic fields: Soil bucket model
@@ -616,22 +596,12 @@ void TriggerTreefall(Context &ctx)
                 ctx.T[site].Treefall(ctx, angle);
             }
         }
-#ifdef MPI
-    // Treefall field passed to the n.n. procs
-    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
-#endif
     for (int site = 0; site < ctx.grid.sites; site++)
     {
         // Update of Field hurt
         if (ctx.T[site].t_age)
         {
             ctx.T[site].t_hurt = max(ctx.field.Thurt[0][site + ctx.grid.sites], ctx.T[site].t_hurt); // NEW in v.2.4: addition of damages, alternative: max()
-#ifdef MPI
-            if (mpi_rank)
-                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[1][site]); // ? v.2.4: Update needed, ctx.field.Thurt[1], why max?
-            if (mpi_rank < mpi_size - 1)
-                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[2][site]);
-#endif
         }
     }
 }
@@ -679,10 +649,6 @@ void TriggerTreefallSecondary(Context &ctx)
         }
     }
 
-#ifdef MPI
-    //! Treefall field passed to the n.n. procs
-    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
-#endif
 }
 
 // Helper function

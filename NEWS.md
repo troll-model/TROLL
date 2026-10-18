@@ -1,3 +1,13 @@
+-   TROLL 4.1.0 (development): code-health release, no intended change to model results
+    -   Regression tests: pinned reference commit, established-stand test case (`make sanity-stand`), tolerance-based comparison (`sanity/compare.py`), working `make sanity1000`.
+    -   Build: compiler warnings re-enabled (were silenced by `-w`), zero `-Wall` warnings, CMake options for `-Werror`, sanitizers and model options (`TROLL_DEFINES`); gating cppcheck, sanitizer job and option-matrix build in CI.
+    -   Reproducibility: `-r<seed>` / `--seed=<seed>` option; the seed used is written to `_info.txt`.
+    -   Memory: model arrays in `Context` are `std::vector` (no leaks; sanitizer-clean); all output streams closed at the end of a run; `exit()` replaced by `return`/exceptions.
+    -   Removed the MPI code (unmaintained since v.2.2, did not compile); the run index (`-n`) moved into `Context`.
+    -   Fixed: seed rain was zero for plots < 1 ha and truncated for non-integer hectares (integer division in `UpdateSeeds`); identical results for whole-hectare plots.
+    -   Fixed: `CACHE_LUT` did not compile; once compiled, cached runs differed from computed ones (accuracy scalars not cached, `LookUpLAImax` left empty, `LookUp_INLR[0]` never allocated, cache not keyed on inputs). Cached and computed runs are now bit-identical.
+    -   Fixed: `CHECK_CARBON` and `PHENO_DROUGHT`-off builds; multiple definitions of header globals (`Output_ABC`, `CHECK_CARBON`).
+    -   Console summary prints 0 instead of `-nan` for empty size classes.
 -   TROLL 4.0.0: water cycle version, Isabelle Maréchaux (Feb 2023)
 -   TROLL 3.1.0: Isabelle Maréchaux (May-June 2021)
 -   TROLL 3.0.0: Fabian Fischer, Isabelle Marechaux, Jerome Chave (Jan 2021)

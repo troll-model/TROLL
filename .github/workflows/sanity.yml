@@ -3,26 +3,60 @@ name: Test
 on: [push, pull_request]
 
 jobs:
-  test:
-    name: Run sanity checks
+  sanity:
+    name: Regression checks (bit-exact vs pinned reference)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Cache sanity base results
-        uses: actions/cache@v4
-        id: cache-base-results
-        with:
-          path: sanity/base_results
-          key: ${{ runner.os }}-sanity-base-results-${{ hashFiles('sanity/check.sh') }}
-          # Restore from cache if the check.sh script hasn't changed
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: sudo apt install -y cmake libgsl-dev
+        run: sudo apt-get install -y cmake libgsl-dev
 
-      - name: Configure project
-        run: cmake -B build
+      # Reference build and reference outputs, keyed on the pinned commit and the inputs
+      - name: Cache reference
+        uses: actions/cache@v4
+        with:
+          path: sanity/.ref
+          key: sanity-ref-${{ runner.os }}-${{ hashFiles('sanity/check.sh', 'sanity/fixtures/**', 'example/**') }}
 
-      - name: Run sanity checks
-        run: cmake --build build --target test
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Example, 20 days from bare ground
+        run: cmake --build build --target sanity
+
+      - name: Established 1 ha stand, 1 year
+        run: cmake --build build --target sanity-stand
+
+      - name: Upload run logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-logs
+          path: sanity/test_runs/*/run.log
+
+  sanitizers:
+    name: AddressSanitizer + UndefinedBehaviorSanitizer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake libgsl-dev
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug "-DTROLL_SANITIZE=address;undefined" -DTROLL_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build
+      - name: Run example (20 days) and established stand (30 days)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: |
+          set -e
+          mkdir -p out
+          E=example
+          F=sanity/fixtures/stand_1ha
+          sed -E 's/^nbiter[[:space:]]+[0-9]+/nbiter\t20/' $E/global_inputs.txt > out/gi_example.txt
+          sed -E 's/^nbiter[[:space:]]+[0-9]+/nbiter\t30/' $F/global_inputs.txt > out/gi_stand.txt
+          gunzip -c $F/forest.txt.gz > out/forest.txt
+          ./build/TROLL -iout/gi_example.txt -s$E/species.txt -m$E/daily_climate.txt -d$E/halfhourly_climate.txt -p$E/soil.txt -oout/example > out/example.log
+          ./build/TROLL -iout/gi_stand.txt -s$E/species.txt -m$E/daily_climate.txt -d$E/halfhourly_climate.txt -p$E/soil.txt -fout/forest.txt -w$F/SWC3D.txt -oout/stand > out/stand.log

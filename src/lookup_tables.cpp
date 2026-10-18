@@ -193,37 +193,27 @@ void InitialiseLookUpTables(Context &ctx)
     ctx.lookup.iTaccuracy = 1.0 / Taccuracy;
     cout << endl
          << "Built-in maximal temperature: " << float(ctx.lookup.nbTbins) * Taccuracy << endl;
-    if (NULL == (ctx.lookup.LookUp_KmT = new float[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_KmT" << endl;
-    if (NULL == (ctx.lookup.LookUp_GammaT = new float[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_GammaT" << endl;
-    if (NULL == (ctx.lookup.LookUp_VcmaxT = new float[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_VcmaxT" << endl;
-    if (NULL == (ctx.lookup.LookUp_JmaxT = new float[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_JmaxT" << endl;
+    ctx.lookup.LookUp_KmT.assign(ctx.lookup.nbTbins, float());
+    ctx.lookup.LookUp_GammaT.assign(ctx.lookup.nbTbins, float());
+    ctx.lookup.LookUp_VcmaxT.assign(ctx.lookup.nbTbins, float());
+    ctx.lookup.LookUp_JmaxT.assign(ctx.lookup.nbTbins, float());
     // if(NULL==(LookUp_Rday=new float[ctx.lookup.nbTbins])) cerr<<"!!! Mem_Alloc LookUp_Rday" << endl; //newIM: no redundancy anymore between LookUp_Rday and LookUP_Rnight
-    if (NULL == (ctx.lookup.LookUp_Rleaf = new float[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_Rleaf" << endl; // newIM: no redundancy anymore between LookUp_Rday and LookUP_Rnight
-    if (NULL == (ctx.lookup.LookUp_Rstem = new float[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_Rstem" << endl;
+    ctx.lookup.LookUp_Rleaf.assign(ctx.lookup.nbTbins, float());
+    ctx.lookup.LookUp_Rstem.assign(ctx.lookup.nbTbins, float());
     // if(NULL==(LookUp_Rnight=new float[ctx.lookup.nbTbins])) cerr<<"!!! Mem_Alloc LookUp_Rnight" << endl; //newIM: no redundancy anymore between LookUp_Rday and LookUP_Rnight
 #ifdef WATER
     ctx.lookup.nbVPDbins = 600;
     float VPDaccuracy = 0.01;
     ctx.lookup.iVPDaccuracy = 1.0 / VPDaccuracy;
     cout << "Built-in maximal VPD: " << float(ctx.lookup.nbVPDbins) * VPDaccuracy << endl;
-    if (NULL == (ctx.lookup.LookUp_INLR = new float *[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_INLR" << endl;
-    for (int i = 1; i < ctx.lookup.nbTbins; i++)
+    ctx.lookup.LookUp_INLR.resize(ctx.lookup.nbTbins);
+    for (int i = 0; i < ctx.lookup.nbTbins; i++) // row 0 included: it was never allocated (wild pointer), which broke the LUT cache
     {
-        if (NULL == (ctx.lookup.LookUp_INLR[i] = new float[ctx.lookup.nbVPDbins]))
-            cerr << "!!! Mem_Alloc ctx.lookup.LookUp_INLR" << endl;
+        ctx.lookup.LookUp_INLR[i].assign(ctx.lookup.nbVPDbins, float());
     }
     // if(NULL==(LookUp_ESAT=new float[ctx.lookup.nbTbins])) cerr<<"!!! Mem_Alloc LookUp_ESAT" << endl;
-    if (NULL == (ctx.lookup.LookUp_SLOPE = new float[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_SLOPE" << endl;
-    if (NULL == (ctx.lookup.LookUp_GRADN = new float[ctx.lookup.nbTbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_GRADN" << endl;
+    ctx.lookup.LookUp_SLOPE.assign(ctx.lookup.nbTbins, float());
+    ctx.lookup.LookUp_GRADN.assign(ctx.lookup.nbTbins, float());
     float ESAT0 = 0.61121;
 #endif
     for (int i = 1; i < ctx.lookup.nbTbins; i++)
@@ -278,8 +268,7 @@ void InitialiseLookUpTables(Context &ctx)
     ctx.lookup.nbHbins = 2000;
     float Haccuracy = 0.01;
     ctx.lookup.iHaccuracy = 1.0 / Haccuracy;
-    if (NULL == (ctx.lookup.LookUp_Wind = new float[ctx.lookup.nbHbins]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_Wind" << endl;
+    ctx.lookup.LookUp_Wind.assign(ctx.lookup.nbHbins, float());
 
     for (int i = 1; i < ctx.lookup.nbHbins; i++)
     { // loop over "T" in GPPleaf()
@@ -287,6 +276,7 @@ void InitialiseLookUpTables(Context &ctx)
 
         if (h_ratio >= 1)
         {
+            // cppcheck-suppress invalidFunctionArg ; false positive: h_ratio >= 1 here, so the argument is >= 3.33
             ctx.lookup.LookUp_Wind[i] = 0.831 * log(16.67 * ((h_ratio)-0.8)); // drawn from Monteith & Unsworth 2008, with d = 0.8 H and z0 = 0.06 H (cf. Rau et al's TROLL wind manuscript).
         }
         else
@@ -300,16 +290,11 @@ void InitialiseLookUpTables(Context &ctx)
     // look up table for flux averaging/integration
     // division into absorption prior to current voxel (absorb_prev) and absorption in current voxel (absorb_delta)
     // prior absorption has a maximum of 20 m2/m3, while absorption within one voxel can maximally reach 10 m2/m3
-    if (NULL == (ctx.lookup.LookUp_flux_absorption = new float[80000]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_flux" << endl;
-    if (NULL == (ctx.lookup.LookUp_flux = new float[80000]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_flux" << endl;
-    if (NULL == (ctx.lookup.LookUp_ExtinctLW = new float[80000]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_flux" << endl;
-    if (NULL == (ctx.lookup.LookUp_VPD = new float[80000]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_VPD" << endl;
-    if (NULL == (ctx.lookup.LookUp_T = new float[80000]))
-        cerr << "!!! Mem_Alloc ctx.lookup.LookUp_VPD" << endl;
+    ctx.lookup.LookUp_flux_absorption.assign(80000, float());
+    ctx.lookup.LookUp_flux.assign(80000, float());
+    ctx.lookup.LookUp_ExtinctLW.assign(80000, float());
+    ctx.lookup.LookUp_VPD.assign(80000, float());
+    ctx.lookup.LookUp_T.assign(80000, float());
     for (int i = 0; i < 400; i++)
     { // loop over "absorb" in Fluxh()
         for (int j = 0; j < 200; j++)
