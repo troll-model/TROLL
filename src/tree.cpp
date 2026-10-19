@@ -3329,7 +3329,7 @@ void Tree::histdbh(Context &ctx)
 
 #ifdef WATER
 // Standard outputs during the simulation -- written to file
-void Tree::OutputTreeStandard(Context &ctx, fstream &output)
+void Tree::OutputTreeStandard(Context &ctx, std::fstream &output)
 {
     output << ctx.time.iter << "\t" << t_site << "\t" << t_sp_lab << "\t" << t_height << "\t" << t_dbh << "\t" << t_litter << "\t" << t_age << "\t" << t_LA << "\t" << t_youngLA << "\t" << t_matureLA << "\t" << t_oldLA << "\t" << t_CR << "\t" << t_CD << "\t" << t_GPP << "\t" << t_NPP << "\t" << t_Rstem << "\t" << t_Rnight << "\t" << ctx.field.LAI3D[int(t_height)][t_site + ctx.grid.SBORD] << "\t" << ctx.field.LAI3D[int(t_height - t_CD) + 1][t_site + ctx.grid.SBORD] << "\t" << t_root_depth << "\t" << t_phi_root << "\t" << t_WSF << "\t" << t_WSF_A << "\t" << t_transpiration << "\t" << t_LAImax << "\t" << t_LAmax;
     for (int l = 0; l < ctx.soil.nblayers_soil; l++)

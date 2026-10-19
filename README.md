@@ -62,6 +62,11 @@ The regression checks compare against reference outputs stored in `sanity/golden
 
 The leaf kernel (`FluxesLeaf`, `Photosyn`, `QUAD`) is single precision and compiled with `-Wdouble-promotion` as an error (`include/kernel_precision.hpp`): use the `*_F` constants of `constants.hpp` and `f`-suffixed literals there. Building with `-ffast-math` is refused.
 
+### Documentation
+
+- [docs/outputs.md](docs/outputs.md): every output file, its columns and units.
+- API documentation: `make docs` generates it in `build/docs/html` (requires Doxygen); `make docs-check` also reports coverage and fails on documentation errors.
+
 ## Get started
 
 The code of TROLL 4.0 is written in C++ and requires five input files to run a simulation: (i) global parameters (global_inputs), (ii) species parameters (species), (iii) soil characteristics (soil), and finally, meteorological drivers varying at (iv) half-hour (halfhourly_climate) and (v) daily step (daily_climate).

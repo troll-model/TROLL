@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(TROLL VERSION 4.1.2 LANGUAGES C CXX)
+project(TROLL VERSION 4.1.3 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -154,3 +154,27 @@ add_custom_target(threads-check
     COMMAND ${CMAKE_SOURCE_DIR}/sanity/bench.sh --troll $<TARGET_FILE:${PROJECT_NAME}> --threads "1 4" --nbiter 30
     DEPENDS ${PROJECT_NAME} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
     COMMENT "Thread-count independence: 1 vs 4 threads must give identical outputs" USES_TERMINAL VERBATIM)
+
+# --- API documentation (Doxygen) ------------------------------------------------
+# make docs        HTML documentation in <build>/docs/html (open index.html)
+# make docs-check  regenerate it, report coverage, fail on documentation errors
+find_package(Doxygen QUIET)
+if(DOXYGEN_FOUND)
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    set(TROLL_DOCS_DIR ${CMAKE_BINARY_DIR}/docs)
+    configure_file(${CMAKE_SOURCE_DIR}/docs/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
+    add_custom_target(docs
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${TROLL_DOCS_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${TROLL_DOCS_DIR}
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Generating API documentation in ${TROLL_DOCS_DIR}/html" VERBATIM)
+    if(Python3_Interpreter_FOUND)
+        add_custom_target(docs-check
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/docs/doc_coverage.py ${TROLL_DOCS_DIR}
+            DEPENDS docs
+            COMMENT "Documentation coverage and error check" USES_TERMINAL VERBATIM)
+    endif()
+else()
+    message(STATUS "Doxygen not found: 'make docs' and 'make docs-check' unavailable")
+endif()
