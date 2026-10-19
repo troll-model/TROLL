@@ -1,5 +1,4 @@
 #include "troll.hpp"
-#include "kernel_precision.hpp"
 #include "constants.hpp"
 #include "context.hpp"
 
@@ -10,29 +9,7 @@
 #ifdef G0
 
 // Solves the quadratic equation. ROOT: finds smaller (-1), larger (1) root.
-TROLL_FLOAT_KERNEL_BEGIN // QUAD is part of the single-precision kernel (see kernel_precision.hpp)
-float QUAD(float A, float B, float C, int ROOT)
-{
-    float quad = 0.0f;
-    float discriminant = B * B - 4.0f * A * C;
-    // ROOT=-1: smaller root; ROOT=1: larger root
-    if (discriminant < 0)
-    {
-        cerr << "IMAGINARY ROOTS IN QUADRATIC" << endl;
-        quad = 0.0f;
-    }
-    if (A == 0.0f)
-    {
-        if (B == 0.0f)
-            quad = 0.0f;
-        else
-            quad = -C / B;
-    }
-    else
-        quad = (-B + float(ROOT) * sqrtf(discriminant)) / (2.0f * A);
-    return quad;
-}
-TROLL_FLOAT_KERNEL_END
+// QUAD(): see include/quad.hpp (inline since 4.1.2)
 
 #endif
 

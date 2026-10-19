@@ -330,7 +330,7 @@ void LoopLayerUpdateCrownStatistic_template(Context &ctx, int row_center, int co
 float CalcVcmaxm(float lma, float nmass, float pmass);             //!< Returns Vcmaxm, in micromol C g-1 s-1
 float CalcRdark(float lma, float nmass, float pmass, float vcmax); //!< Returns Rdark, in micromol C m-2 s-1
 #ifdef G0
-float QUAD(float A, float B, float C, int ROOT); //!< Returns solution of quadratic equation (larger root of ROOT=1, smaller root if ROOT=-1)
+#include "quad.hpp" // QUAD(A, B, C, ROOT): root of a quadratic equation (inline, numerically stable)
 #endif
 
 // GLOBAL FUNCTIONS

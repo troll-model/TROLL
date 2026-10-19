@@ -1629,7 +1629,7 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     // Solution when electron transport rate is limiting
     float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
     float I = ctx.params.alpha * PPFD;
-    float J = QUAD(ctx.params.theta, -(I + JmaxTW), JmaxTW * I, -1); // ctx.params.theta is the convexity term for electron transport rates (dimensionless, 0–1), here provided in input (default value =0.7, as in von Caemmerer 2000, but a value of 0.85 is used in Duursma' R package
+    float J = ElectronTransportRate(ctx.params.theta, I, JmaxTW); // 4.1.2: stable form of QUAD(theta, -(I + JmaxTW), JmaxTW * I, -1)
     float VJ = J * 0.25f;
     A = ctx.params.g0 + GSDIVA * (VJ - Rday);
     B = (1.0f - CS * GSDIVA) * (VJ - Rday) + ctx.params.g0 * (2.0f * GammaT - CS) - GSDIVA * (VJ * GammaT + 2.0f * GammaT * Rday);
@@ -1707,7 +1707,7 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     // Solution when electron transport rate is limiting
     float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
     float I = ctx.params.alpha * PPFD;
-    float J = (I + JmaxTW - sqrtf((JmaxTW + I) * (JmaxTW + I) - 4.0f * ctx.params.theta * JmaxTW * I)) * 0.5f / ctx.params.theta; // THETA is the convexity term for electron transport rates (dimensionless, 0–1), here provided in input (default value =0.7, as in von Caemmerer 2000, but a value of 0.85 is used in Duursma' R package
+    float J = ElectronTransportRate(ctx.params.theta, I, JmaxTW); // 4.1.2: stable form, see quad.hpp
     AJ = 0.25f * J * (CI - GammaT) / (CI + 2.0f * GammaT);
     if ((AJ - Rday) < 1.0e-6f)
     {
