@@ -1635,7 +1635,7 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     B = (1.0f - CS * GSDIVA) * (VJ - Rday) + ctx.params.g0 * (2.0f * GammaT - CS) - GSDIVA * (VJ * GammaT + 2.0f * GammaT * Rday);
     C = -(1.0f - CS * GSDIVA) * GammaT * (VJ + 2.0f * Rday) - ctx.params.g0 * 2.0f * GammaT * CS;
     float CIJ = QUAD(A, B, C, 1); // Finds larger root of quadratic function
-    AJ = VJ * (CIJ - GammaT) / (CIC + 2.0f * GammaT);
+    AJ = VJ * (CIJ - GammaT) / (CIJ + 2.0f * GammaT); // 4.1.2: was (CIC + 2*GammaT) in the denominator, i.e. the Rubisco-limited Ci; FvCB uses the same Ci (CIJ) in numerator and denominator, as in the fallback below
     if ((AJ - Rday) < 1.0e-6f)
     {
         CIJ = CS; // Below light compensation point
