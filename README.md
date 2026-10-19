@@ -2,9 +2,10 @@
 
 [![DOI](https://zenodo.org/badge/49142579.svg)](https://doi.org/10.5281/zenodo.14013146)
 
-TROLL 4.0 is an individual- and trait-based model of forest dynamics. A full description of the model and discussion of the underlying modelling choices can be found in the following manuscript:
+TROLL 4.0 is an individual- and trait-based model of forest dynamics. The model and its evaluation are described in two companion papers in Geoscientific Model Development:
 
-“_TROLL 4.0: representing water and carbon fluxes, leaf phenology and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description. Maréchaux I, Fischer FJ, Schmitt S, Chave J_” currently in an open review process for Geoscientific Model Development.
+- Maréchaux I., Fischer F.J., Schmitt S., Chave J. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description. *Geosci. Model Dev.*, 18, 5143–5204. https://doi.org/10.5194/gmd-18-5143-2025
+- Schmitt S., Fischer F.J., *et al.* (2025). TROLL 4.0 … – Part 2: Model evaluation for two Amazonian sites. *Geosci. Model Dev.*, 18, 5205–5243. https://doi.org/10.5194/gmd-18-5205-2025
 
 ## Installation
 
@@ -38,7 +39,7 @@ The code of TROLL 4.0 is written in C++ and requires five input files to run a s
 The following command line can be used to run the code:
 
 ```bash
-./TROLLv4_exe -i./example/global_inputs.txt -s./example/species.txt -m./example/daily_climate.txt -d./example/halfhourly_climate.txt -p./example/soil.txt -o./TROLLv4_test
+./build/TROLL -i./example/global_inputs.txt -s./example/species.txt -m./example/daily_climate.txt -d./example/halfhourly_climate.txt -p./example/soil.txt -o./TROLLv4_test
 ```
 
 ## Alternative

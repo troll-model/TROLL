@@ -1,0 +1,28 @@
+name: Documentation
+
+on: [push, pull_request]
+
+jobs:
+  docs:
+    name: Doxygen documentation and coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake libgsl-dev doxygen
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      # Fails on documentation errors (malformed comments, comments attached to
+      # nothing, unknown @param names); reports coverage without failing.
+      - name: Generate documentation and check it
+        run: cmake --build build --target docs-check
+
+      - name: Upload HTML documentation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: troll-api-docs
+          path: build/docs/html

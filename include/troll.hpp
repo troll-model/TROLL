@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
-/*! \mainpage
- *  \section TROLL
+/*! \page history History and bibliography
+ *  \section troll_history TROLL
  *
  *  Individual-based forest dynamics simulator
  *
@@ -15,11 +15,9 @@
  *    - Version 3.1: Isabelle Maréchaux (May-June 2021)
  *    - Version 4.0: Isabelle Maréchaux (Feb 2023)
  *
- * Compiling options
- * -----------------
- *    - Compilation test on osx and linux plateforms
- *    - Compilation command: _g++ main.cpp -O3 -o TROLL.out -lgsl -lgslcblas -Wall_
- *    - Code profiling: _g++ -O3 -Wall -o troll main.cpp -lgsl -lgslcblas -lm -g -pg_
+ * Building
+ * --------
+ *    - See README.md: TROLL is built with CMake since 4.1.0.
  *
  * Bibliography
  * -----------

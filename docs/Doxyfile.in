@@ -1,0 +1,35 @@
+# Doxygen configuration for TROLL (configured by CMake: `make docs`, `make docs-check`)
+PROJECT_NAME           = "TROLL"
+PROJECT_NUMBER         = "@PROJECT_VERSION@"
+PROJECT_BRIEF          = "Individual- and trait-based model of tropical forest dynamics"
+OUTPUT_DIRECTORY       = "@TROLL_DOCS_DIR@"
+INPUT                  = "@CMAKE_SOURCE_DIR@/README.md" \
+                         "@CMAKE_SOURCE_DIR@/docs/outputs.md" \
+                         "@CMAKE_SOURCE_DIR@/sanity/README.md" \
+                         "@CMAKE_SOURCE_DIR@/include" \
+                         "@CMAKE_SOURCE_DIR@/src"
+USE_MDFILE_AS_MAINPAGE = "@CMAKE_SOURCE_DIR@/README.md"
+FILE_PATTERNS          = *.hpp *.cpp *.md
+RECURSIVE              = YES
+STRIP_FROM_PATH        = "@CMAKE_SOURCE_DIR@"
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+JAVADOC_AUTOBRIEF      = YES
+MARKDOWN_SUPPORT       = YES
+# Model options as in the default build (include/troll_defines.hpp)
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+PREDEFINED             = WATER CROWN_UMBRELLA LCP_alternative G0 PHENO_DROUGHT FULL_CLIMATE FF_todiscuss CHM_SPIKEFREE \
+                         "TROLL_FLOAT_KERNEL_BEGIN=" "TROLL_FLOAT_KERNEL_END="
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_PROGRAMLISTING     = NO
+SOURCE_BROWSER         = YES
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_LOGFILE           = "@TROLL_DOCS_DIR@/doxygen-warnings.txt"
