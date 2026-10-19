@@ -1,0 +1,20 @@
+iter	variable	value	residual
+1	Mean PPFDground	527.1	27.5653
+2	Mean PPFDground	320.75	16.9556
+3	Mean PPFDground	302.119	16.0161
+4	Mean PPFDground	370.585	19.8656
+5	Mean PPFDground	441.815	23.6633
+6	Mean PPFDground	470.334	25.3892
+7	Mean PPFDground	386.676	21.0268
+8	Mean PPFDground	431.763	23.7993
+9	Mean PPFDground	610.49	34.0528
+10	Mean PPFDground	536.213	30.4189
+11	Mean PPFDground	625.227	36.033
+12	Mean PPFDground	664.812	38.9703
+13	Mean PPFDground	527.216	31.3867
+14	Mean PPFDground	604.696	36.5582
+15	Mean PPFDground	642.828	39.4846
+16	Mean PPFDground	617.358	38.6499
+17	Mean PPFDground	552.616	35.2411
+18	Mean PPFDground	468.507	30.2882
+19	Mean PPFDground	353.642	23.2145

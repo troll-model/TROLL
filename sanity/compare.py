@@ -29,6 +29,8 @@ def parse_args():
     p.add_argument("--ignore", action="append", default=None,
                    help="regex of lines to ignore (repeatable; replaces the defaults)")
     p.add_argument("--max-report", type=int, default=5, help="differing lines to print per file")
+    p.add_argument("--reference-only", action="store_true",
+                   help="compare only files present in the reference (stored golden outputs omit large files)")
     p.add_argument("--include", default=None,
                    help="regex: compare only files whose name matches (e.g. stand-level aggregates)")
     return p.parse_args()
@@ -92,8 +94,10 @@ def compare_file(ref_path, cand_path, rtol, atol, ignore, max_report):
 def main():
     args = parse_args()
     ignore = [re.compile(r) for r in (args.ignore if args.ignore is not None else DEFAULT_IGNORE)]
-    ref_files = set(os.listdir(args.reference))
-    cand_files = set(os.listdir(args.candidate))
+    def outputs(d):  # simulation outputs only (stored references carry a README)
+        return {f for f in os.listdir(d) if os.path.isfile(os.path.join(d, f)) and not f.startswith("README")}
+    ref_files = outputs(args.reference)
+    cand_files = outputs(args.candidate)
     if args.include:
         keep = re.compile(args.include)
         ref_files = {f for f in ref_files if keep.search(f)}
@@ -105,9 +109,10 @@ def main():
     for name in sorted(ref_files - cand_files):
         print(f"{name} [MISSING in candidate]")
         failed += 1
-    for name in sorted(cand_files - ref_files):
-        print(f"{name} [MISSING in reference]")
-        failed += 1
+    if not args.reference_only:
+        for name in sorted(cand_files - ref_files):
+            print(f"{name} [MISSING in reference]")
+            failed += 1
     common = sorted(ref_files & cand_files)
     for name in common:
         problems, max_rel = compare_file(os.path.join(args.reference, name), os.path.join(args.candidate, name),

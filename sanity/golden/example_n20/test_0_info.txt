@@ -1,0 +1,21 @@
+TROLL version : 4.1.2
+Random seed : 1 (_NONRANDOM)
+
+TROLL simulator
+
+
+   2D discrete network: horizontal step = 1 m, one tree per 1 m^2 
+
+
+   Tree : (t_dbh,t_height,t_CR,t_CD) 
+
+
+            + one species label 
+
+ Number of sites      : 200x200
+ Number of iterations : 20
+ Duration of timestep : 0.00273973 years
+ Number of Species    : 14
+
+Average computation time : 8.90913 seconds.
+End of simulation.
