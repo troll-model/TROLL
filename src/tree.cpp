@@ -1,6 +1,7 @@
 #include "troll.hpp"
 #include "constants.hpp"
 #include "context.hpp"
+#include "kernel_precision.hpp"
 
 
 // #############################################
@@ -1426,6 +1427,8 @@ float Tree::DeathRate(Context &ctx, float dbh, float carbon_starv)
 //! - BEWARE: slight inconsistency through use of 365.25 when daily ctx.time.timestep is likely to be given as 365, but not incorrect.
 //! - It uses lookup tables for acceleration of computation of T dependencies. cf. Bernacchi et al 2003 PCE; von Caemmerer 2000
 
+TROLL_FLOAT_KERNEL_BEGIN // single-precision kernel: FluxesLeaf and Photosyn (see kernel_precision.hpp)
+
 //!  the function Tree::FluxesLeaf implements an iterative algorithm to determine the leaf temperature, and CO2 concentration and VPD at the leaf surface, ie the ones that should be taken as arguments of the Farquhar and stomatal conductance models. The latters are themeselves implemented within the function Tree::Photosyn (analogy with the MAESTRA/MAESPA code from which this iterative scheme has been inspired, see Medlyn et al. 2007 Tree physiology). At each iteration, Tree::FluxesLeaf computes carbon and water fluxes at the leaf level using the Farqhuar model and the Penman-Monteith equation, and updates T, CO2 and VPD accordingly. Starting by assuming that leaf T, CO2 and VPD equal the ones of the surrounding air, the iterative scheme stops when the difference in leaf T between two consecutive iterations is negligble. The corresponding carbon assimilation and water transpiration are then retained and provided as outputs of Tree::FluxesLeaf.
 leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop)
 {
@@ -1740,6 +1743,8 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
 }
 
 #endif
+
+TROLL_FLOAT_KERNEL_END
 
 //! - Function Tree::dailyGPPleaf when the WATER option is off, Tree::dailyFluxesLeaf when WATER option is on
 //! - Returns the *daily* primary productivity (assimilation; computed from Tree::GPPleaf, or Tree::FluxesLeaf) averaged across the daily fluctuations in climatic conditions, per unit leaf area, in micromoles C/ctx.params.m^2/s.
