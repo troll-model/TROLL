@@ -6,13 +6,13 @@
 #
 # Prints wall time, time in the simulation loop (from _info.txt) and start-up
 # + output time per thread count, and checks that outputs are identical to the
-# single-thread run.
+# single-thread run (exit status 1 if any thread count gives different outputs).
 # ----------------------------------------------------------------------------
 set -euo pipefail
 SANITY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EX="$SANITY_DIR/../example"
 FX="$SANITY_DIR/fixtures/stand_1ha"
-TROLL_EXE=""; NBITER=60; THREADS="1 2 4 8"
+TROLL_EXE=""; NBITER=60; THREADS="1 2 4 8"; STATUS=0
 while [[ $# -gt 0 ]]; do
     case "$1" in
     --troll) TROLL_EXE="$2"; shift 2 ;;
@@ -38,7 +38,8 @@ for t in $THREADS; do
     rest=$(python3 -c "print(f'{$wall - $loop:.2f}')")
     same="-"
     if [[ -d "$WORK/t1" && "$t" != 1 ]]; then
-        python3 "$SANITY_DIR/compare.py" "$WORK/t1" "$WORK/t$t" > "$WORK/cmp$t.txt" && same="identical" || same="DIFFERENT (see compare.py)"
+        python3 "$SANITY_DIR/compare.py" "$WORK/t1" "$WORK/t$t" > "$WORK/cmp$t.txt" && same="identical" || { same="DIFFERENT (see compare.py)"; STATUS=1; }
     fi
     printf "%-8s %10s %10s %14s %s\n" "$t" "$wall" "$loop" "$rest" "$same"
 done
+exit $STATUS

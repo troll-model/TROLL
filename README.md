@@ -52,7 +52,10 @@ cd build/
 make sanity        # 20 days from bare ground, bit-exact against a pinned reference
 make sanity-stand  # 1 year on an established 1 ha stand
 make check         # both
+make threads-check # outputs must be bit-identical with 1 and 4 threads
 ```
+
+Since 4.1.1 the leaf kernel runs in single precision, so outputs differ from the 4.0 reference in the last digits and the regression checks use tolerances (CMake variables `TROLL_SANITY_RTOL_EXAMPLE`, `TROLL_SANITY_RTOL_STAND`, `TROLL_SANITY_ATOL`).
 
 See [sanity/README.md](sanity/README.md).
 

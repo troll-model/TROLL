@@ -28,11 +28,9 @@ jobs:
       - name: Established 1 ha stand, 1 year
         run: cmake --build build --target sanity-stand
 
-      # The OpenMP sections must not change results: rerun with several threads
-      - name: Established stand, 4 threads (results must not depend on thread count)
-        env:
-          OMP_NUM_THREADS: 4
-        run: cmake --build build --target sanity-stand
+      # The OpenMP sections must not change results: 1 and 4 threads, bit-identical
+      - name: Thread-count independence (bit-exact)
+        run: cmake --build build --target threads-check
 
       - name: Upload run logs on failure
         if: failure()

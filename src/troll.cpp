@@ -1,4 +1,7 @@
 #include <cerrno>
+#ifndef TROLL_VERSION
+#define TROLL_VERSION "unknown" // set by CMake from project(VERSION)
+#endif
 #include <chrono>
 #include <cstring>
 #include <stdexcept>
@@ -146,6 +149,7 @@ static int RunTroll(int argc, char *argv[])
     ctx.out.output_info.open(ctx.fileio.outputinfo, ios::out);
     if (!ctx.out.output_info)
         cerr << "ERROR with info file" << endl;
+    ctx.out.output_info << "TROLL version : " << TROLL_VERSION << "\n";
     ctx.out.output_info << "Random seed : " << seed << " (" << seed_source << ")\n";
 
     Initialise(ctx); // Read global parameters

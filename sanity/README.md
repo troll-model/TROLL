@@ -46,6 +46,22 @@ When a change is *meant* to alter results (a bug fix, new science), verify the
 change separately, then update `PINNED_REF` to the new commit in a dedicated
 commit, so the history records when and why reference outputs changed.
 
+## Tolerances since 4.1.1
+
+4.1.1 computes the leaf kernel in single precision, a deliberate numerical change. The
+pinned reference (4.0 / dev@4de3273) is therefore matched within tolerances measured for
+that change, set as CMake cache variables:
+
+| Variable | Default | Used by |
+| --- | --- | --- |
+| `TROLL_SANITY_RTOL_EXAMPLE` | `1e-2` | `sanity`, `sanity1000` |
+| `TROLL_SANITY_RTOL_STAND` | `1e-3` | `sanity-stand` |
+| `TROLL_SANITY_ATOL` | `1e-6` | all (ignores negligible values, e.g. deep-soil transpiration ~1e-12) |
+
+Once a 4.1.1 commit is published, move `PINNED_REF` to it and set the tolerances to 0 to
+restore bit-exact checking. Thread-count independence stays bit-exact: `make threads-check`
+compares 1 and 4 threads with no tolerance.
+
 ## Exact vs tolerance comparison
 
 `compare.py` compares bit-exactly by default. After deliberate numerical

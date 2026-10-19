@@ -15,6 +15,7 @@
 #   --ref SHA       reference commit (default: $TROLL_SANITY_REF or the pinned SHA below)
 #   --rtol X        relative tolerance for numeric fields (default 0 = bit-exact)
 #   --atol X        absolute tolerance for numeric fields (default 0)
+#   --files REGEX   compare only output files whose name matches REGEX (default: all)
 #
 # The reference build and its outputs are cached in sanity/.ref/<sha>/.
 # ----------------------------------------------------------------------------
@@ -36,6 +37,7 @@ SEED=""
 REF="${TROLL_SANITY_REF:-$PINNED_REF}"
 RTOL="0"
 ATOL="0"
+FILES=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -46,7 +48,8 @@ while [[ $# -gt 0 ]]; do
     --ref) REF="$2"; shift 2 ;;
     --rtol) RTOL="$2"; shift 2 ;;
     --atol) ATOL="$2"; shift 2 ;;
-    -h | --help) sed -n '2,22p' "$0"; exit 0 ;;
+    --files) FILES="$2"; shift 2 ;;
+    -h | --help) sed -n '2,23p' "$0"; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
     esac
 done
@@ -139,7 +142,9 @@ run_troll "$TROLL_EXE" "$WORK/new/test" "$WORK/run.log" || { tail -20 "$WORK/run
 echo -e "${GREEN}✔ run complete${NC}"
 
 info "Comparing outputs ..."
-if python3 "$SANITY_DIR/compare.py" "$REF_RUN/out" "$WORK/new" --rtol "$RTOL" --atol "$ATOL"; then
+COMPARE_ARGS=(--rtol "$RTOL" --atol "$ATOL")
+if [[ -n "$FILES" ]]; then COMPARE_ARGS+=(--include "$FILES"); fi
+if python3 "$SANITY_DIR/compare.py" "$REF_RUN/out" "$WORK/new" "${COMPARE_ARGS[@]}"; then
     echo -e "${GREEN}SANITY CHECK PASSED ($CASE_ID)${NC}"
 else
     echo -e "${RED}SANITY CHECK FAILED ($CASE_ID)${NC}"

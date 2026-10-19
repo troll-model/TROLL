@@ -7,7 +7,7 @@ tolerance, which is the right check after deliberate numerical changes
 (compiler upgrade, float -> double, reordered sums...).
 
 Lines matching any --ignore regex are dropped before comparison
-(by default: CPU timing and the random-seed line, which older references lack).
+(by default: timing, and the random-seed and version lines, which older references lack).
 
 Exit status: 0 if everything matches, 1 otherwise.
 """
@@ -17,7 +17,7 @@ import os
 import re
 import sys
 
-DEFAULT_IGNORE = [r"Average computation time", r"^Random seed :"]
+DEFAULT_IGNORE = [r"Average computation time", r"^Random seed :", r"^TROLL version :"]
 
 
 def parse_args():
@@ -29,6 +29,8 @@ def parse_args():
     p.add_argument("--ignore", action="append", default=None,
                    help="regex of lines to ignore (repeatable; replaces the defaults)")
     p.add_argument("--max-report", type=int, default=5, help="differing lines to print per file")
+    p.add_argument("--include", default=None,
+                   help="regex: compare only files whose name matches (e.g. stand-level aggregates)")
     return p.parse_args()
 
 
@@ -92,6 +94,13 @@ def main():
     ignore = [re.compile(r) for r in (args.ignore if args.ignore is not None else DEFAULT_IGNORE)]
     ref_files = set(os.listdir(args.reference))
     cand_files = set(os.listdir(args.candidate))
+    if args.include:
+        keep = re.compile(args.include)
+        ref_files = {f for f in ref_files if keep.search(f)}
+        cand_files = {f for f in cand_files if keep.search(f)}
+        if not ref_files:
+            print(f"No reference file matches --include {args.include!r}")
+            return 1
     failed = 0
     for name in sorted(ref_files - cand_files):
         print(f"{name} [MISSING in candidate]")
