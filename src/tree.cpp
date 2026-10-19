@@ -1452,12 +1452,15 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     // cout << "PPFDtop=" << PPFDtop << " PPFD=" << PPFD <<" PPFDinc=" << PPFDinc << " RSOL=" << RSOL << " RSOL_NIR=" << RSOL_NIR << endl;
     // }
     float LHV = (H2OLV0_F - 2.365e3f * Ta) * H2OMW_F;               // Latent heat of water vapour at air temperature (J mol-1) (this is the "landa" in PM equation)
-    float SLOPE = ctx.lookup.LookUp_SLOPE[convTA];                        /* Slope of the dependence of saturated vapor pressure with temperature (Jones 2013, Equation (5.15f), p.102)
+    float SLOPE = ctx.lookup.LookUp_SLOPE[convTA];                        /* Slope of the dependence of saturated vapor pressure with temperature (Jones 2013, Equation (5.15), p.102)
                                                                 This is constant s in Penman-Monteith equation  (Pa K-1) */
     float CMOLAR = 1000.0f * ctx.params.PRESS / (RCONST_F * (Ta - ABSZERO_F)); // 1000 because ctx.params.PRESS is in kPa
-    float GAMMA = 1000.0f * ctx.params.PRESS * CPAIR_F * AIRMA_F / LHV;        // Psychrometric constant; 1000.0 to convert kPa into Pa. !! IM to be checked !! factor AIRMA not consistent with Jérôme's note and Appendix 3 of Jones, but similar to Duursma 's package
+    const float iLHV = 1.0f / LHV;                          // loop-invariant reciprocals (TROLL 4.1.1)
+    const float iWLEAF = 1.0f / t_wleaf;
+    float GAMMA = 1000.0f * ctx.params.PRESS * CPAIR_AIRMA_F * iLHV;        // Psychrometric constant; 1000.0 to convert kPa into Pa. !! IM to be checked !! factor AIRMA not consistent with Jérôme's note and Appendix 3 of Jones, but similar to Duursma 's package
     float GRADN = ctx.lookup.LookUp_GRADN[convTA];                        // Radiation conductance (mol ctx.params.m-2 s-1) at air temperature (Jones 2013, Eq 5.10 p. 101). // IM to be double-checked with Jones (not fully consistent with Medlyn et al. 2007)
-    float GBHU = 0.003f * sqrtf(WIND / t_wleaf) * CMOLAR;        // Boundary ctx.diag.layer conductance to heat transfer by forced convection (single sided) in mol ctx.params.m-2 s-1; Leuning et al (1995) PC&E 18:1183-1200 Eqn E1; Equation A2 in Medlyn et al. 2007
+    float GBHU = 0.003f * sqrtf(WIND * iWLEAF) * CMOLAR; // Boundary ctx.diag.layer conductance to heat transfer by forced convection (single sided) in mol ctx.params.m-2 s-1; Leuning et al (1995) PC&E 18:1183-1200 Eqn E1; Equation A2 in Medlyn et al. 2007
+    const float GBHF_SCALE = GBH_FREE_F * CMOLAR;           // free-convection coefficient, constant over the iterations
     // Rnetiso = ctx.params.absorptance_leaves*RSOL - ctx.lookup.LookUp_INLR[convTA][convVPDA]; // Calculation of isothermal net radiation (J ctx.params.m-2 s-1; Jones (2013) equation (5.4) p.100)
     Rnetiso = RSOL - ctx.lookup.LookUp_INLR[convTAtop][convVPDAtop] * ExtinctLW; // Calculation of isothermal net radiation (J ctx.params.m-2 s-1; Jones (2013) equation (5.4) p.100). No need of ctx.params.absorptance_leaves, since PPFD provided in argument is already the absorbed flux.
 
@@ -1495,14 +1498,14 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
         { // this is to speed up: calculating GBHF involves a pow, so do only if difftemp is not zero.
             // float GRASHOF = 1.6e8 * abs(TLEAF-TAIR) * pow(WLEAF,3.0); // Grashof number
             // GBHF = 0.5 * DHEAT * pow(GRASHOF,0.25) / WLEAF * CMOLAR;
-            GBHF = 56.2341f * DHEAT_F * sqrtf(sqrtf(fabsf(TLEAF - Ta) / t_wleaf)) * CMOLAR;
+            GBHF = GBHF_SCALE * sqrtf(sqrtf(fabsf(TLEAF - Ta) * iWLEAF));
         }
         else
             GBHF = 0.0f;
         GBH = GBHU + GBHF;      // Total boundary ctx.diag.layer conductance to heat (single sided), in mol ctx.params.m-2 s-1
         GH = 2 * (GBH + GRADN); // GH heat and radiative conductance (free & forced & radiative components), mol ctx.params.m-2 s-1, to be used in the isothermal version of the Penman-Monteith equation (always two sided, hence the factor 2)
         // if (t_sp_lab==6) GBH*=2; // test to see if assuming that Cecropia obtusa is amphistomatous (and not hypostomatous) would solve the issue found when ALEAF is big, wleaf is big (and hence GBH small) that leads to negative CS.... IM 09/09/2021
-        HDIVT = GH * CPAIR_F * AIRMA_F; // in J ctx.params.m-2 s-1 K-1, useful in several calculations below
+        HDIVT = GH * CPAIR_AIRMA_F; // in J ctx.params.m-2 s-1 K-1, useful in several calculations below
         GBV = GBVGBH_F * GBH;         // Boundary ctx.diag.layer conductance for water vapour, for hypostomatous leaves (single-sided value). Note: we thus here assumed that all leaves are hypostomatous, this is a reasonable assumption as few species have been reported to have amphistomatous leaves in tropical forests (e.g. Drake et al. 2019 New phytologist; Muir 2015 Proc Roy Soc; email with Lawren Sack Oct. 29th 2020). Cf. comment in Leuning et al. 1995 after equ. E5.
         GSV = GSVGSC_F * GSC;         // Stomatal conductance for water vapour, in mol H2O ctx.params.m-2 s-1
         if (GSV > 100000.0f * GBV)
@@ -1525,7 +1528,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
         if (lambdaET < 0)
             ET = 0.0f;
         else
-            ET = lambdaET / LHV; // in mol H2O ctx.params.m-2 s-1
+            ET = lambdaET * iLHV; // in mol H2O ctx.params.m-2 s-1
 
         // Update of TLEAF, CS, and DS
         CS = ctx.params.Cair - ALEAF * GBHGBC_F / GBH; // CO2 concentration at the leaf surface, in micromol mol-1
