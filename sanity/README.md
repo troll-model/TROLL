@@ -37,30 +37,50 @@ sanity/check.sh --help
 
 ## The reference
 
-The reference commit is pinned in `check.sh` (`PINNED_REF`), so the comparison
-target never moves silently (the previous script cloned whatever `main` was at
-the time). Reference builds and outputs are cached in `sanity/.ref/<commit>/`
-and in CI.
+Since 4.1.2 the CMake targets compare against **stored reference outputs** in
+`golden/` (all outputs under 256 KB of each case, with a README recording the
+TROLL version and platform that produced them):
 
-When a change is *meant* to alter results (a bug fix, new science), verify the
-change separately, then update `PINNED_REF` to the new commit in a dedicated
-commit, so the history records when and why reference outputs changed.
+| Directory | Case | Target |
+| --- | --- | --- |
+| `golden/example_n20` | example, 20 days | `sanity` |
+| `golden/stand_n365` | established stand, 365 days | `sanity-stand` |
+| `golden/stand_n1000` | established stand, 1000 days | `sanity1000` |
 
-## Tolerances since 4.1.1
+4.1.2 changed results on purpose (Photosyn fix, accurate electron transport), so
+an upstream commit can no longer serve as reference. `check.sh --ref <commit>`
+still builds and runs any commit, e.g. to compare two branches.
 
-4.1.1 computes the leaf kernel in single precision, a deliberate numerical change. The
-pinned reference (4.0 / dev@4de3273) is therefore matched within tolerances measured for
-that change, set as CMake cache variables:
+**When results are meant to change** (bug fix, new science): verify the change
+separately, run `make golden`, review the differences (`git diff sanity/golden`)
+and commit the new references on their own, so the history records when and why
+results changed. Never regenerate references to make a failing refactoring pass.
+
+## Tolerances
+
+On the platform that generated the references (Linux x86-64, GCC 13, glibc),
+results are bit-identical to them, whatever the number of threads. For
+refactoring work, check with no tolerance:
+
+```bash
+cmake -DTROLL_SANITY_RTOL_EXAMPLE=0 -DTROLL_SANITY_RTOL_LONG=0 \
+      -DTROLL_SANITY_ATOL=0 -DTROLL_SANITY_FILES_LONG=. ..
+```
+
+The defaults allow for other compilers and math libraries: lookup tables are
+computed with `exp`/`log`, whose last bits differ between libraries, and after a
+few months such a difference tips a mortality draw, after which per-tree outputs
+follow a different (statistically equivalent) trajectory.
 
 | Variable | Default | Used by |
 | --- | --- | --- |
-| `TROLL_SANITY_RTOL_EXAMPLE` | `1e-2` | `sanity`, `sanity1000` |
-| `TROLL_SANITY_RTOL_STAND` | `1e-3` | `sanity-stand` |
-| `TROLL_SANITY_ATOL` | `1e-6` | all (ignores negligible values, e.g. deep-soil transpiration ~1e-12) |
+| `TROLL_SANITY_RTOL_EXAMPLE` | `1e-2` | `sanity` (all stored files) |
+| `TROLL_SANITY_RTOL_LONG` | `1e-2` | `sanity-stand`, `sanity1000` |
+| `TROLL_SANITY_FILES_LONG` | `sumstats\|water_balance\|LAIprofile` | long runs: stand-level aggregates |
+| `TROLL_SANITY_ATOL` | `1e-6` | all (ignores negligible values) |
 
-Once a 4.1.1 commit is published, move `PINNED_REF` to it and set the tolerances to 0 to
-restore bit-exact checking. Thread-count independence stays bit-exact: `make threads-check`
-compares 1 and 4 threads with no tolerance.
+Thread-count independence stays bit-exact: `make threads-check` compares 1 and
+4 threads with no tolerance.
 
 ## Exact vs tolerance comparison
 

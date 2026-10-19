@@ -329,9 +329,7 @@ void LoopLayerUpdateCrownStatistic_template(Context &ctx, int row_center, int co
 
 float CalcVcmaxm(float lma, float nmass, float pmass);             //!< Returns Vcmaxm, in micromol C g-1 s-1
 float CalcRdark(float lma, float nmass, float pmass, float vcmax); //!< Returns Rdark, in micromol C m-2 s-1
-#ifdef G0
-#include "quad.hpp" // QUAD(A, B, C, ROOT): root of a quadratic equation (inline, numerically stable)
-#endif
+#include "quad.hpp" // QUAD() and ElectronTransportRate(), used by both Photosyn variants (inline)
 
 // GLOBAL FUNCTIONS
 void AssignSpeciesParam(Species &S, const std::string &name, const std::string &value); //!< Global function: assign a species parameter by name

@@ -18,14 +18,18 @@ jobs:
         with:
           path: sanity/.ref
           key: sanity-ref-${{ runner.os }}-${{ hashFiles('sanity/check.sh', 'sanity/fixtures/**', 'example/**') }}
+      # (the cache is only used by check.sh --ref; the CMake targets compare against sanity/golden)
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Example, 20 days from bare ground
+      - name: Unit tests (tests/)
+        run: cmake --build build --target unit-tests
+
+      - name: Example, 20 days from bare ground (vs sanity/golden)
         run: cmake --build build --target sanity
 
-      - name: Established 1 ha stand, 1 year
+      - name: Established 1 ha stand, 1 year (vs sanity/golden)
         run: cmake --build build --target sanity-stand
 
       # The OpenMP sections must not change results: 1 and 4 threads, bit-identical
@@ -50,6 +54,8 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Debug "-DTROLL_SANITIZE=address;undefined" -DTROLL_WARNINGS_AS_ERRORS=ON
       - name: Build
         run: cmake --build build
+      - name: Unit tests under sanitizers
+        run: cmake --build build --target unit-tests
       - name: Run example (20 days) and established stand (30 days)
         env:
           OMP_NUM_THREADS: 2

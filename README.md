@@ -49,15 +49,18 @@ Model options are listed in `include/troll_defines.hpp`. Options that are on by 
 
 ```bash
 cd build/
-make sanity        # 20 days from bare ground, bit-exact against a pinned reference
+make unit-tests    # process-level unit tests (tests/)
+make sanity        # 20 days from bare ground, against stored reference outputs
 make sanity-stand  # 1 year on an established 1 ha stand
-make check         # both
+make check         # all three
+make sanity1000    # 1000 days on the established stand (~4 min)
 make threads-check # outputs must be bit-identical with 1 and 4 threads
+make golden        # regenerate the stored reference outputs (only when results are meant to change)
 ```
 
-Since 4.1.1 the leaf kernel runs in single precision, so outputs differ from the 4.0 reference in the last digits and the regression checks use tolerances (CMake variables `TROLL_SANITY_RTOL_EXAMPLE`, `TROLL_SANITY_RTOL_STAND`, `TROLL_SANITY_ATOL`).
+The regression checks compare against reference outputs stored in `sanity/golden/`. On Linux x86-64 with GCC 13, results reproduce them bit for bit; the default tolerances (CMake variables `TROLL_SANITY_RTOL_EXAMPLE`, `TROLL_SANITY_RTOL_LONG`, `TROLL_SANITY_ATOL`, `TROLL_SANITY_FILES_LONG`) allow for other compilers and math libraries. See [sanity/README.md](sanity/README.md).
 
-See [sanity/README.md](sanity/README.md).
+The leaf kernel (`FluxesLeaf`, `Photosyn`, `QUAD`) is single precision and compiled with `-Wdouble-promotion` as an error (`include/kernel_precision.hpp`): use the `*_F` constants of `constants.hpp` and `f`-suffixed literals there. Building with `-ffast-math` is refused.
 
 ## Get started
 
