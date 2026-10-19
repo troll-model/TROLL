@@ -1,4 +1,7 @@
 -   TROLL 4.1.0 (development): code-health release, no intended change to model results
+    -   Speed: leaf water and carbon fluxes (about 90% of simulation time) computed for all trees in parallel with OpenMP; LAImax lookup table (10000 variants per species, about 80 us each) computed in parallel, or on first use when single-threaded; link-time optimisation. Outputs are bit-identical to the serial code for any number of threads. Single core: 12% faster on an established stand, 40% on short runs.
+    -   The reported computation time is now wall-clock time in the simulation loop (was CPU time summed over threads).
+    -   Fixed: runs with fewer iterations than `nbout` crashed (modulo by zero in `OutputField`).
     -   Regression tests: pinned reference commit, established-stand test case (`make sanity-stand`), tolerance-based comparison (`sanity/compare.py`), working `make sanity1000`.
     -   Build: compiler warnings re-enabled (were silenced by `-w`), zero `-Wall` warnings, CMake options for `-Werror`, sanitizers and model options (`TROLL_DEFINES`); gating cppcheck, sanitizer job and option-matrix build in CI.
     -   Reproducibility: `-r<seed>` / `--seed=<seed>` option; the seed used is written to `_info.txt`.

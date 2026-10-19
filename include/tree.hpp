@@ -18,6 +18,18 @@ struct leafFluxes
 };
 #endif
 
+//! Daily carbon and water fluxes of one tree, as computed by Tree::ComputeRespGPP().
+//! Computing them reads the tree and shared fields but writes nothing, so it can run
+//! for all trees in parallel; Tree::ApplyRespGPP() then stores them in tree order.
+struct RespGPPResult
+{
+    float GPP = 0.0f;
+    float transpiration = 0.0f;
+    float transpiration_1016 = 0.0f; //!< contribution to ctx.soil.transpiration_1016
+    float Rstem = 0.0f;
+    float Rnight = 0.0f;
+};
+
 // ###########################################
 //! Tree class
 // ############################################
@@ -170,7 +182,7 @@ public:
     void Birth(Context &ctx, int, int);
     int BirthFromInventory(Context &ctx, int site, std::vector<std::string> &parameter_names, std::vector<std::string> &parameter_values, int &nb_speciesrandom);
     void Death(Context &ctx);
-    void Growth(Context &ctx);
+    void Growth(Context &ctx, const RespGPPResult *precomputed = nullptr);
 #ifdef WATER
     void Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float &leafarea_layer, float &PPFD_incident, float &ExtinctLW);
 #else
@@ -183,6 +195,10 @@ public:
 #endif
 
     void CalcRespGPP(Context &ctx);
+#ifdef WATER
+    RespGPPResult ComputeRespGPP(Context &ctx); //!< Fluxes for this timestep; modifies neither the tree nor ctx
+    void ApplyRespGPP(Context &ctx, const RespGPPResult &r); //!< Store fluxes in the tree; add to ctx.soil.transpiration_1016
+#endif
     void CalcNPP(Context &ctx);
     void UpdateLeafDynamics(Context &ctx);
     void UpdateTreeBiometry(Context &ctx);
@@ -190,7 +206,7 @@ public:
 
     void DisperseSeed(Context &ctx);
     void Treefall(Context &ctx, float angle);
-    void Update(Context &ctx);
+    void Update(Context &ctx, bool fluxes_precomputed = false);
     void Average(Context &ctx);
     void CalcLAI(Context &ctx);
     void histdbh(Context &ctx);

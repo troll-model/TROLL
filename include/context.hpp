@@ -181,7 +181,10 @@ struct LookupTables
 
     std::vector<float> LookUp_Wind;
 
-    std::vector<float> LookUpLAImax;
+    std::vector<float> LookUpLAImax;      //!< LAImax per (species, intraspecific variant); filled lazily, see GetLAImaxPrecomputed()
+    std::vector<unsigned char> LookUpLAImax_ready; //!< 1 once the matching LookUpLAImax entry has been computed
+    int LookUpLAImax_iter = -1;           //!< ctx.time.iter at initialisation (the entries are defined for these conditions)
+    float LookUpLAImax_tnight = 0.0f;     //!< ctx.climate.tnight at initialisation
 };
 
 struct Soil
@@ -398,6 +401,9 @@ struct Context
     SimFields field;
     std::vector<Species> S; //!< All species
     std::vector<Tree> T;    //!< All tree sites
+#ifdef WATER
+    std::vector<RespGPPResult> resp_gpp; //!< Per-site fluxes precomputed in parallel each timestep (see Evolution)
+#endif
     OutputConfig out;   // last: large fstream objects, accessed rarely
 };
 

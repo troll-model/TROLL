@@ -59,6 +59,10 @@
 #include <random>
 
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
@@ -68,6 +72,17 @@
 #include <gsl/gsl_errno.h>
 
 using namespace std;
+
+//! Number of OpenMP threads available to TROLL (1 when built without OpenMP).
+//! Parallel sections are written so that results do not depend on this number.
+inline int TrollThreads()
+{
+#ifdef _OPENMP
+    return omp_get_max_threads();
+#else
+    return 1;
+#endif
+}
 
 #include "context.hpp"
 
@@ -328,6 +343,7 @@ void ReadInputClimate(Context &ctx);                                //!< Global 
 void ReadInputSoil(Context &ctx);                                   //!< Global function: read in soil data
 void Initialise(Context &ctx);                                      //!< Global function: initialisation with bare ground conditions
 void InitialiseIntraspecific(Context &ctx);                         //!< Global function: initialise intraspecific variables
+float GetLAImaxPrecomputed(Context &ctx, int spp, int dev);                 //!< Global function: LAImax lookup, computed on first use
 void InitialiseLookUpLAImax(Context &ctx);                          //!< Global function: initialise lookup table for LAImax
 void InitialiseLookUpTables(Context &ctx);                          //!< Global function: initialise lookup tables
 void InitialiseOutputStreams(Context &ctx);                         //!< Global function: initialisation of output streams

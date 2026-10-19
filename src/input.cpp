@@ -140,7 +140,7 @@ void ReadInputGeneral(Context &ctx)
         ctx.grid.LV = 1.0 / ctx.grid.NV;
         ctx.grid.LH = 1.0 / ctx.grid.NH;
         if (ctx.time.nbout)
-            ctx.time.freqout = ctx.time.nbiter / ctx.time.nbout;
+            ctx.time.freqout = max(1, ctx.time.nbiter / ctx.time.nbout); // at least 1: runs shorter than nbout iterations crashed on "iter % 0"
 
         ctx.params.kpar = ctx.params.klight * ctx.params.absorptance_leaves; // ctx.params.kpar is the ctx.params.klight factor times the absorptance of leaves
         // convert correlations to covariances

@@ -58,3 +58,9 @@ Lines with CPU time and the random seed are ignored.
 `--seed N` passes `-rN` to both executables. The reference must support
 `-r` (it was introduced together with this test harness), so seed tests need a
 `--ref` at or after that commit.
+
+## Benchmarking
+
+`sanity/bench.sh --troll build/TROLL --threads "1 2 4 8"` times the established
+stand for each thread count and checks that outputs are identical to the
+single-thread run (they must be: see the OpenMP notes in `src/simulation.cpp`).

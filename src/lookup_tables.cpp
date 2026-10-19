@@ -129,54 +129,97 @@ void InitialiseIntraspecific(Context &ctx)
 
 #ifdef LCP_alternative
 // v.3.1.5: create a LookUp table based on species identity and intraspecific deviation
+//! LAImax of one pseudo-tree (species spp, intraspecific variant dev) under the current
+//! ctx conditions; callers make sure these are the initialisation conditions.
+static float ComputeLAImaxEntry(Context &ctx, int spp, int dev)
+{
+    Tree pseudotree(ctx);
+    pseudotree.t_sp_lab = spp;
+
+    pseudotree.t_Pmass = ctx.S[spp].s_Pmass * ctx.intra.d_intraspecific_P[dev];
+    pseudotree.t_Nmass = ctx.S[spp].s_Nmass * ctx.intra.d_intraspecific_N[dev];
+    pseudotree.t_LMA = ctx.S[spp].s_LMA * ctx.intra.d_intraspecific_LMA[dev];
+
+#ifdef WATER
+    pseudotree.t_leafarea = ctx.S[spp].s_leafarea * ctx.intra.d_intraspecific_leafarea[dev];
+    pseudotree.t_wsg = fmaxf(ctx.S[spp].s_wsg + ctx.intra.d_intraspecific_wsg[dev], 0.05);
+    pseudotree.t_wleaf = sqrt(pseudotree.t_leafarea * 0.0001);
+    pseudotree.t_WSF = 1;
+    pseudotree.t_WSF_A = 1;
+    pseudotree.t_g1 = (-3.97 * pseudotree.t_wsg + 6.53); // this is the relationship provided by Lin et al. 2015
+#endif
+
+    pseudotree.t_Vcmax = CalcVcmaxm(pseudotree.t_LMA, pseudotree.t_Nmass, pseudotree.t_Pmass) * pseudotree.t_LMA;
+    pseudotree.t_Jmax = pseudotree.CalcJmaxm(ctx) * pseudotree.t_LMA;
+    pseudotree.t_Rdark = CalcRdark(pseudotree.t_LMA, pseudotree.t_Nmass, pseudotree.t_Pmass, pseudotree.t_Vcmax);
+
+    pseudotree.CalcLAImax(ctx); // reads ctx only: safe to call from several threads
+    return pseudotree.t_LAImax;
+}
+
+//! LAImax for species spp (1-based) and intraspecific variant dev, computed on first use.
+//! Computing all 10000 * nbspp entries upfront cost ~80 us each (about 11 s for 14
+//! species, minutes for species-rich parameterisations), while short runs use few of them.
+float GetLAImaxPrecomputed(Context &ctx, int spp, int dev)
+{
+    const int index = dev + (spp - 1) * 10000;
+    if (!ctx.lookup.LookUpLAImax_ready[index])
+    {
+        // The table is defined for the conditions at initialisation (iteration -1, which makes
+        // dailyFluxesLeaf use yearly mean climate, and the initial night temperature). An entry
+        // computed later during the run temporarily restores them, so it is bit-identical to
+        // the former eager computation.
+        const int iter_now = ctx.time.iter;
+        const float tnight_now = ctx.climate.tnight;
+        ctx.time.iter = ctx.lookup.LookUpLAImax_iter;
+        ctx.climate.tnight = ctx.lookup.LookUpLAImax_tnight;
+        ctx.lookup.LookUpLAImax[index] = ComputeLAImaxEntry(ctx, spp, dev);
+        ctx.time.iter = iter_now;
+        ctx.climate.tnight = tnight_now;
+        ctx.lookup.LookUpLAImax_ready[index] = 1;
+    }
+    return ctx.lookup.LookUpLAImax[index];
+}
+
+//! Set up the LAImax table (10000 intraspecific variants per species).
+//! With several OpenMP threads, all entries are computed now, in parallel: they are
+//! independent and use no random numbers, so results do not depend on the thread count.
+//! With a single thread, entries are computed on first use by GetLAImaxPrecomputed(),
+//! which saves most of the start-up time of short runs.
 void InitialiseLookUpLAImax(Context &ctx)
 {
-    ctx.lookup.LookUpLAImax.reserve(10000 * ctx.grid.nbspp); // 10000 is the possible number of combinations for intraspecific variation
+    const int nb_entries = 10000 * ctx.grid.nbspp;
+    ctx.lookup.LookUpLAImax.assign(nb_entries, 0.0f);
+    ctx.lookup.LookUpLAImax_ready.assign(nb_entries, 0);
+    ctx.lookup.LookUpLAImax_iter = ctx.time.iter;
+    ctx.lookup.LookUpLAImax_tnight = ctx.climate.tnight;
 
-    // since LAImax is defined at Tree level, we create pseudo trees (i.e. trees with only information on Pmass, Nmass and LMA) to calculate it from
-    // for control purposes output min and max LAImax
+    if (TrollThreads() <= 1)
+    {
+        cout << "LookUp table for LAImax: entries computed on first use (single thread)." << endl;
+        return;
+    }
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 256)
+#endif
+    for (int index = 0; index < nb_entries; index++)
+    {
+        ctx.lookup.LookUpLAImax[index] = ComputeLAImaxEntry(ctx, index / 10000 + 1, index % 10000);
+        ctx.lookup.LookUpLAImax_ready[index] = 1;
+    }
 
     float minLAImax = 10.0; // fixed upper limit of LAImax is currently 10.0 m2/m2
     float maxLAImax = 0.0;
     float avgLAImax = 0.0;
-
-    for (int spp = 1; spp < ctx.grid.nbspp + 1; spp++)
+    for (int index = 0; index < nb_entries; index++)
     {
-        for (int dev = 0; dev < 10000; dev++)
-        {
-            Tree pseudotree(ctx);
-            pseudotree.t_sp_lab = spp;
-
-            pseudotree.t_Pmass = ctx.S[spp].s_Pmass * ctx.intra.d_intraspecific_P[dev];
-            pseudotree.t_Nmass = ctx.S[spp].s_Nmass * ctx.intra.d_intraspecific_N[dev];
-            pseudotree.t_LMA = ctx.S[spp].s_LMA * ctx.intra.d_intraspecific_LMA[dev];
-
-#ifdef WATER
-            pseudotree.t_leafarea = ctx.S[spp].s_leafarea * ctx.intra.d_intraspecific_leafarea[dev];
-            pseudotree.t_wsg = fmaxf(ctx.S[spp].s_wsg + ctx.intra.d_intraspecific_wsg[dev], 0.05);
-            pseudotree.t_wleaf = sqrt(pseudotree.t_leafarea * 0.0001);
-            pseudotree.t_WSF = 1;
-            pseudotree.t_WSF_A = 1;
-            pseudotree.t_g1 = (-3.97 * pseudotree.t_wsg + 6.53); // this is the relationship provided by Lin et al. 2015
-#endif
-
-            pseudotree.t_Vcmax = CalcVcmaxm(pseudotree.t_LMA, pseudotree.t_Nmass, pseudotree.t_Pmass) * pseudotree.t_LMA;
-            pseudotree.t_Jmax = pseudotree.CalcJmaxm(ctx) * pseudotree.t_LMA;
-            pseudotree.t_Rdark = CalcRdark(pseudotree.t_LMA, pseudotree.t_Nmass, pseudotree.t_Pmass, pseudotree.t_Vcmax);
-
-            pseudotree.CalcLAImax(ctx);
-
-            ctx.lookup.LookUpLAImax.push_back(pseudotree.t_LAImax);
-            if (pseudotree.t_LAImax < minLAImax)
-                minLAImax = pseudotree.t_LAImax;
-            if (pseudotree.t_LAImax > maxLAImax)
-                maxLAImax = pseudotree.t_LAImax;
-            avgLAImax += pseudotree.t_LAImax;
-        }
+        minLAImax = fminf(minLAImax, ctx.lookup.LookUpLAImax[index]);
+        maxLAImax = fmaxf(maxLAImax, ctx.lookup.LookUpLAImax[index]);
+        avgLAImax += ctx.lookup.LookUpLAImax[index];
     }
-
-    avgLAImax *= 1.0 / float(10000 * ctx.grid.nbspp);
-    cout << "Calculated LookUp table for LAImax. Min LAImax is: " << minLAImax << " | max LAImax is: " << maxLAImax << " avg LAImax is: " << avgLAImax << endl;
+    avgLAImax *= 1.0 / float(nb_entries);
+    cout << "Calculated LookUp table for LAImax on " << TrollThreads() << " threads. Min LAImax is: " << minLAImax << " | max LAImax is: " << maxLAImax << " avg LAImax is: " << avgLAImax << endl;
 }
 #endif
 

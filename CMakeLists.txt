@@ -14,6 +14,8 @@ message(STATUS "CXX compiler ${CMAKE_CXX_COMPILER}, build type ${CMAKE_BUILD_TYP
 # --- Options -----------------------------------------------------------------
 option(TROLL_WARNINGS_AS_ERRORS "Treat compiler warnings as errors (-Werror); ON in CI" OFF)
 option(TROLL_EXTRA_WARNINGS "Add -Wextra -Wshadow -Wconversion (advisory: several hundred warnings today)" OFF)
+option(TROLL_OPENMP "Parallelise leaf fluxes and the LAImax table with OpenMP (results do not depend on the thread count)" ON)
+option(TROLL_LTO "Link-time optimisation (results unchanged, a few percent faster)" ON)
 set(TROLL_SANITIZE "" CACHE STRING "Semicolon-separated sanitizers, e.g. address;undefined")
 set(TROLL_DEFINES "" CACHE STRING
     "Compile-time model options, e.g. \"Output_ABC;TROLL_NO_WATER\" (see include/troll_defines.hpp)")
@@ -42,6 +44,25 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/internal
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE GSL::gsl GSL::gslcblas)
+
+if(TROLL_OPENMP)
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+        message(STATUS "OpenMP enabled (set OMP_NUM_THREADS to choose the number of threads)")
+    else()
+        message(WARNING "OpenMP not found: building single-threaded. On macOS: brew install libomp")
+    endif()
+endif()
+
+if(TROLL_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT _troll_ipo OUTPUT _troll_ipo_msg)
+    if(_troll_ipo AND NOT TROLL_SANITIZE)
+        set_property(TARGET ${PROJECT_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        message(STATUS "Link-time optimisation enabled")
+    endif()
+endif()
 
 # Warnings are ON (the former global "-w" silently disabled all of them).
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)

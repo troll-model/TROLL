@@ -34,10 +34,35 @@ void Evolution(Context &ctx)
         TriggerTreefall(ctx);          // Compute and distribute Treefall events, caused by wind drag
     }
 
+#ifdef WATER
+    // Parallel phase: water availability and leaf fluxes of every living tree. These
+    // dominate run time, read only fields that are fixed during the tree loop below
+    // (updated in UpdateField), write only the tree's own state and ctx.resp_gpp, and draw
+    // no random numbers. Mortality draws, deaths, growth and the plot-level sums stay in
+    // the serial loop, in site order, so results do not depend on the number of threads.
+    ctx.resp_gpp.resize(ctx.grid.sites);
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 64)
+#endif
+    for (int site = 0; site < ctx.grid.sites; site++)
+    {
+        Tree &tree = ctx.T[site];
+        if (tree.t_age)
+        {
+            tree.Water_availability(ctx);
+            ctx.resp_gpp[site] = tree.ComputeRespGPP(ctx);
+        }
+    }
+#endif
+
     for (int site = 0; site < ctx.grid.sites; site++)
     {
         //**** Tree evolution: Growth or death ****
+#ifdef WATER
+        ctx.T[site].Update(ctx, true);
+#else
         ctx.T[site].Update(ctx);
+#endif
     }
 
     for (int d = 0; d < ctx.grid.nbdcells; d++)

@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <chrono>
 #include <cstring>
 #include <stdexcept>
 #include "troll.hpp"
@@ -222,15 +223,14 @@ static int RunTroll(int argc, char *argv[])
     else
         OutputSnapshot(ctx, ctx.out.output_basic[1], 1, 0.1); // Initial Pattern, for trees > 0.1m DBH
 
-    double start_time, stop_time, duration = 0.0; // for simulation duration
-    stop_time = clock();
+    // Wall-clock time spent in Evolution(). (clock() measured CPU time, which adds up all
+    // threads and so hid any speed-up from the OpenMP-parallel sections.)
+    std::chrono::steady_clock::duration duration{};
     for (ctx.time.iter = 0; ctx.time.iter < ctx.time.nbiter; ctx.time.iter++)
     {
-        start_time = stop_time;
-
+        const auto evolution_start = std::chrono::steady_clock::now();
         Evolution(ctx);
-        stop_time = clock();
-        duration += fmaxf(stop_time - start_time, 0.0);
+        duration += std::chrono::steady_clock::now() - evolution_start;
 
         if (ctx.opt._OUTPUT_extended == 1 && ctx.crown.extent_visual > 0)
         {
@@ -298,7 +298,7 @@ static int RunTroll(int argc, char *argv[])
     //***********************
     //** End of simulation **
     //***********************
-    float durf = duration / double(CLOCKS_PER_SEC); // output of the effective CPU time
+    float durf = std::chrono::duration<float>(duration).count(); // wall-clock seconds spent in Evolution()
     {
         cout << "\n";
         ctx.out.output_info << "Average computation time : " << durf << " seconds.\n";

@@ -39,6 +39,8 @@ make
 | `-DTROLL_WARNINGS_AS_ERRORS=ON` | `OFF` | `-Werror` (used in CI) |
 | `-DTROLL_EXTRA_WARNINGS=ON` | `OFF` | adds `-Wextra -Wshadow -Wconversion` (advisory) |
 | `-DTROLL_SANITIZE="address;undefined"` | empty | builds with sanitizers (use with `-DCMAKE_BUILD_TYPE=Debug`) |
+| `-DTROLL_OPENMP=OFF` | `ON` | parallel leaf fluxes and LAImax table (OpenMP); results do not depend on the thread count |
+| `-DTROLL_LTO=OFF` | `ON` | link-time optimisation |
 | `-DTROLL_DEFINES="..."` | empty | compile-time model options, see below |
 
 Model options are listed in `include/troll_defines.hpp`. Options that are on by default are switched off with `TROLL_NO_<OPTION>`; options that are off by default are switched on by naming them, e.g. `cmake -DTROLL_DEFINES="LAI_gradient;CACHE_LUT" ..`. CI builds each option; `TROLL_NO_WATER`, `TROLL_NO_CROWN_UMBRELLA`, `TROLL_NO_FULL_CLIMATE`, `Output_ABC` and `TRACK_INDIVIDUALS` currently do not compile.
@@ -65,6 +67,8 @@ The following command line can be used to run the code:
 ```
 
 Optional arguments: `-f<file>` and `-w<file>` initialise the forest and soil water from an inventory (e.g. the `_final_pattern.txt` and `_final_SWC3D.txt` outputs of a previous run), `-n<index>` sets the run index used in output file names, and `-r<seed>` (or `--seed=<seed>`) sets the random seed. Without `-r`, the seed is 1 if `_NONRANDOM` is 1 in the global inputs and time-based otherwise. The seed actually used is written to the `_info.txt` output so every run can be reproduced.
+
+TROLL uses all available cores by default; set `OMP_NUM_THREADS` to choose the number of threads (e.g. `OMP_NUM_THREADS=1` when running many simulations side by side). Outputs are bit-identical whatever the number of threads. The reported "computation time" is wall-clock time spent in the simulation loop.
 
 ## Alternative
 

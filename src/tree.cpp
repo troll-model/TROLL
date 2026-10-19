@@ -60,8 +60,7 @@ void Tree::Birth(Context &ctx, int nume, int site0)
     // ######################
     // # first test LAImax ##
     // ######################
-    int index_LAImax = dev_rand + (nume - 1) * 10000;
-    float LAImax_precomputed = ctx.lookup.LookUpLAImax[index_LAImax];
+    float LAImax_precomputed = GetLAImaxPrecomputed(ctx, nume, dev_rand);
 
     if (ctx.field.LAI3D[0][site0 + ctx.grid.SBORD] < LAImax_precomputed)
     {
@@ -2398,7 +2397,7 @@ float Tree::predLeafLifespanKikuzawa(Context &ctx)
 // #############################################
 //  Tree growth
 // #############################################
-void Tree::Growth(Context &ctx)
+void Tree::Growth(Context &ctx, const RespGPPResult *precomputed)
 {
     // update age
     t_age += ctx.time.timestep; // new v.2.2: increments are not 1 yr, but the duration of the ctx.time.timestep (usually 1 or <1, i.e. 1/12 if monthly, 1/365 if daily
@@ -2410,7 +2409,15 @@ void Tree::Growth(Context &ctx)
 #endif
 
     // calculate GPP and respiration
+#ifdef WATER
+    if (precomputed)
+        ApplyRespGPP(ctx, *precomputed); // computed in parallel in Evolution()
+    else
+        CalcRespGPP(ctx);
+#else
+    (void)precomputed;
     CalcRespGPP(ctx);
+#endif
 
     //! calculate NPP
     CalcNPP(ctx);
@@ -2515,54 +2522,34 @@ void Tree::Growth(Context &ctx)
 // #####################################################
 //! - new v.2.4: t_GPP and t_Rday are updated in separate function (thus adaptable for different modules)
 //! - but this is not the case when WATER is activated: indeed Rday is now computed within Photosyn and FluxesLeaf functions and thus included in GPP computation.
-void Tree::CalcRespGPP(Context &ctx)
-{
-
 #ifdef WATER
-    float tree_transpiration_1016 = 0.0;
-#endif
+//! Carbon and water fluxes of this tree for the current timestep (WATER version of
+//! CalcRespGPP). Reads the tree and ctx but modifies neither, so Evolution() can run it
+//! for all trees in parallel. Statements are those of the former CalcRespGPP, with the
+//! tree's accumulators replaced by fields of r, so results are bit-identical.
+RespGPPResult Tree::ComputeRespGPP(Context &ctx)
+{
+    RespGPPResult r;
+    r.GPP = t_GPP;          // CalcRespGPP left t_GPP untouched (then scaled it) when t_LA <= 0
+    r.transpiration = 0.0f; // Growth() resets t_transpiration to 0 before computing fluxes
 
     if (t_LA > 0.0)
     {
-#ifdef WATER
-#else
-        if (ctx.opt._GPPcrown)
-        {
-            // v.2.3.1 -- fast GPP calculation option.
-            float PPFD = 0.0, VPD = 0.0, Tmp = 0.0, leafarea_layer;
-            Fluxh(ctx, int(t_height) + 1, PPFD, VPD, Tmp, leafarea_layer);
-            t_GPP = Tree::dailyGPPcrown(ctx, PPFD, VPD, Tmp, t_LAI);
-            t_Rday = Tree::dailyRdayleaf(ctx, Tmp);
-        }
-        else
-        {
-#endif
         // Photosynthesis and respiration, set to zero
-        t_GPP = 0.0;
-#ifdef WATER // the computation of leaf respiration during the day is accounted for in the Photosyn function
-#else
-            t_Rday = 0.0;
-#endif
+        r.GPP = 0.0;
 
         int crown_above_base = int(t_height - t_CD) + 1; // for flux above crown base
         int crown_above_top = int(t_height) + 1;         // for flux above crown top
 
-#ifdef CROWN_UMBRELLA
         int h_stop = max(crown_above_base, crown_above_top - 3);
-#else
-            int h_stop = crown_above_base;
-#endif
         float leafarea_cumulated = 0.0;
 
-#ifdef WATER
         float leafarea_toprounding = 0.0; // newIM
         float MeanDCELLHeight = ctx.soil.Canopy_height_DCELL[ctx.grid.site_DCELL[t_site]];
-#endif
 
         for (int h = crown_above_top; h >= h_stop; h--)
         {
             float PPFD = 0.0, VPD = 0.0, Tmp = 0.0, leafarea_layer = 0;
-#ifdef WATER
             float PPFD_incident = 0.0, ExtinctLW = 0.0;
             // float W=WS*exp(-0.5*ctx.soil.LAI_DCELL[h][ctx.grid.site_DCELL[t_site]]); // computation of wind speed, which is here assumed to declined exponentially with the cumulative LAI within a given neighborhood (here taken as the tree's dcell) (see equation B11 in Medvigy et al. 2009; see Leuning et al. 1995 PCE equ. E2). We could alternatively used the aerodynamic momentum transfer model (Monteith and Unsworth 2008) using Lorey'sheight (see E-Ping's second manuscript) -- to be discussed. // to be computed with a lookup table maybe, and within Fluxh probably.
             int convHratio = int(ctx.lookup.iHaccuracy * h / MeanDCELLHeight);
@@ -2575,12 +2562,7 @@ void Tree::CalcRespGPP(Context &ctx)
             // cout << " Wind=" << W << " h=" << h << " MeanDCELLHeight=" << MeanDCELLHeight <<" convHratio=" << convHratio << " ctx.lookup.LookUp_Wind[convHratio]=" << ctx.lookup.LookUp_Wind[convHratio] << " ctx.soil.TopWindSpeed_DCELL[ctx.grid.site_DCELL[t_site]]=" << ctx.soil.TopWindSpeed_DCELL[ctx.grid.site_DCELL[t_site]] << endl;
 
             Fluxh(ctx, h, PPFD, VPD, Tmp, leafarea_layer, PPFD_incident, ExtinctLW);
-#else
 
-                Fluxh(ctx, h, PPFD, VPD, Tmp, leafarea_layer);
-#endif
-
-#ifdef WATER
             if (leafarea_toprounding > 0)
             {
                 // cout << "Rounding when h=" <<h << " with crown_above_top=" << crown_above_top << " and leafarea_toprounding=" << leafarea_toprounding << endl;
@@ -2602,33 +2584,115 @@ void Tree::CalcRespGPP(Context &ctx)
             {
                 float water_flux_1016 = 0.0;
                 leafFluxes dailyF = Tree::dailyFluxesLeaf(ctx, PPFD, VPD, Tmp, W, ExtinctLW, PPFD_incident, water_flux_1016);
-                t_GPP += leafarea_layer * dailyF.carbon_flux;
-                t_transpiration += leafarea_layer * dailyF.water_flux;
-                tree_transpiration_1016 += leafarea_layer * water_flux_1016;
+                r.GPP += leafarea_layer * dailyF.carbon_flux;
+                r.transpiration += leafarea_layer * dailyF.water_flux;
+                r.transpiration_1016 += leafarea_layer * water_flux_1016;
 
-                if (isnan(t_GPP) || isnan(t_transpiration) || t_transpiration < 0.0)
-                    cout << "Problem at site: " << t_site << ", t_GPP= " << t_GPP << ", transpiration= " << t_transpiration << ", leafarea_layer= " << leafarea_layer << ", PPFD=" << PPFD << ", VPD= " << VPD << ", T= " << Tmp << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << endl;
+                if (isnan(r.GPP) || isnan(r.transpiration) || r.transpiration < 0.0)
+                    cout << "Problem at site: " << t_site << ", r.GPP= " << r.GPP << ", transpiration= " << r.transpiration << ", leafarea_layer= " << leafarea_layer << ", PPFD=" << PPFD << ", VPD= " << VPD << ", T= " << Tmp << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << endl;
 
-#else
-                t_GPP += leafarea_layer * Tree::dailyGPPleaf(ctx, PPFD, VPD, Tmp);
-                // if(isnan(t_GPP) || t_GPP < 0.0 || PPFD == 0.0) cout << "Problem at site: " <<  t_site << " leafarea_layer: " << leafarea_layer << " GPP: " << t_GPP << " PPFD: " << PPFD << " VPD: " << VPD << " T: " << Tmp << endl << endl;
-#endif
 
-#ifdef WATER
-#else
-                t_Rday += leafarea_layer * Tree::dailyRdayleaf(ctx, Tmp);
-#endif
                 leafarea_cumulated += leafarea_layer;
                 // if(t_dbh > 0.2) cout << crown_above_top - h << "PPFD: " << PPFD << " VPD: " << VPD << " Tmp: " << Tmp << " leafarea_layer: " << endl;
 
-#ifdef WATER
             }
             else
             {
                 if (leafarea_layer > 0.0)
                     leafarea_toprounding = leafarea_layer;
             }
+        }
+
+        // Averaging across layers. To check consistency, leafarea_layer can be added up and the sum compared to t_LA
+        float ileafarea_cumulated;
+        if (leafarea_cumulated > 0.0)
+            ileafarea_cumulated = 1.0 / leafarea_cumulated;
+        else
+            ileafarea_cumulated = 0.0;
+
+        r.GPP *= ileafarea_cumulated;
+        r.transpiration *= ileafarea_cumulated;
+        r.transpiration_1016 *= ileafarea_cumulated;
+    }
+
+    float effLA = 0.5 * (t_LA + t_matureLA) * ctx.time.nbhours_covered * 15.7788 * ctx.time.timestep;                        // we convert  from micromoles C/ctx.params.m^2/s into gC per ctx.params.m^2 of leaf per ctx.time.timestep by "ctx.time.nbhours_covered*15.7788*ctx.time.timestep" where 15.7788 = 3600*365.25*12/1000000 (seconds, days, and mass of carbon) and ctx.time.nbhours_covered is the amount of time that is covered by the daily variation file.
+    float effLA_night = (0.75 * t_LA + 0.25 * t_matureLA) * (24.0 - ctx.time.nbhours_covered) * 15.7788 * ctx.time.timestep; // same as during the day, but inverse of hours covered (we assume that non-covered hours are night values), and assuming that respiration of young and old leaves are 75% the one of mature leaves:  Kitajima et al. 2002 found no or small reductions in respiration with leaf age, Reich et al. 2009 did (Rdark/Amax constant), but often respiration declines are less steep than photosynthetic capacity, cf. Villar et al. 1995.
+
+    r.GPP *= effLA;
+
+    float effLAT = (0.75 * t_LA + 0.25 * t_matureLA) * ctx.time.nbhours_covered * 23.652 * 0.000001 * ctx.time.timestep; // assuming that the decline in stomatal conductance of young and old leaves is less than for photosynthetic capacities (cf. ALbert et al. 2018)(75% the one of mature leaves), ie the water use efficiencies is lower of young and old leaves. Note that idally the Farquhar model should be applied to each leaf cohorts separately... 23.652=18.10^-6 * 3600*365, where 18.10^-6 is to convert micromol H20 into g, 3600*365 to convert s into year (as ctx.time.timestep is given in year); and 0.000001 is to convert g in m3.
+    r.transpiration *= effLAT;                                                                         // this is the amount of water transpired by the tree during the ctx.time.timestep in m3.  CHECK: from our WILT data of sapflow of several canopy mature trees, and assuming a constant sapwood thickness of 4cm, this can be 5-110 liter/day, ie. 0.005-0.11 m3/day. See also values in Granier et al. 1996 (0.250-0.3 m3/day for a big dominant canopy tree), or Andrade et al. 1998 Oecologia (46-379 kg/day, ie. 0.046-0.379 m3/day). Note, in this version, we never account for nighttime transpiration... to be discussed.
+    r.transpiration_1016 *= (0.75 * t_LA + 0.25 * t_matureLA) * 0.0324 * 0.000001;                  // where 0.0324= 18.10^-6*3600*0.5
+
+    int convT = int(ctx.lookup.iTaccuracy * ctx.climate.tDailyMean);  // temperature data at a resolution of Taccuracy=0.1°C -- stored in lookup tables ranging from 0°C to 50°C ---
+    int convTnight = int(ctx.lookup.iTaccuracy * ctx.climate.tnight); // temperature data at a resolution of Taccuracy=0.1°C -- stored in lookup tables ranging from 0°C to 50°C ---
+
+    r.Rstem = t_sapwood_area * (t_height - t_CD) * 0.5 * (ctx.lookup.LookUp_Rstem[convT] + ctx.lookup.LookUp_Rstem[convTnight]);
+
+    // the following two lines should maybe be revised, because the decline in respiration might not be the same as in photosynthetic activity. Kitajima et al. 2002 found no or small reductions in respiration with leaf age, Reich et al. 2009 did (Rdark/Amax constant), but often respiration declines are less steep than photosynthetic capacity, cf. Villar et al. 1995
+    r.Rnight = t_Rdark * effLA_night * ctx.lookup.LookUp_Rleaf[convTnight];
+    return r;
+}
+
+//! Store fluxes computed by ComputeRespGPP() in the tree; called in site order, so the
+//! plot total ctx.soil.transpiration_1016 is summed in the same order as before.
+void Tree::ApplyRespGPP(Context &ctx, const RespGPPResult &r)
+{
+    t_GPP = r.GPP;
+    t_transpiration = r.transpiration;
+    ctx.soil.transpiration_1016 += r.transpiration_1016;
+    t_Rstem = r.Rstem;
+    t_Rnight = r.Rnight;
+}
 #endif
+
+void Tree::CalcRespGPP(Context &ctx)
+{
+#ifdef WATER
+    ApplyRespGPP(ctx, ComputeRespGPP(ctx));
+#else
+
+
+    if (t_LA > 0.0)
+    {
+        if (ctx.opt._GPPcrown)
+        {
+            // v.2.3.1 -- fast GPP calculation option.
+            float PPFD = 0.0, VPD = 0.0, Tmp = 0.0, leafarea_layer;
+            Fluxh(ctx, int(t_height) + 1, PPFD, VPD, Tmp, leafarea_layer);
+            t_GPP = Tree::dailyGPPcrown(ctx, PPFD, VPD, Tmp, t_LAI);
+            t_Rday = Tree::dailyRdayleaf(ctx, Tmp);
+        }
+        else
+        {
+        // Photosynthesis and respiration, set to zero
+        t_GPP = 0.0;
+            t_Rday = 0.0;
+
+        int crown_above_base = int(t_height - t_CD) + 1; // for flux above crown base
+        int crown_above_top = int(t_height) + 1;         // for flux above crown top
+
+#ifdef CROWN_UMBRELLA
+        int h_stop = max(crown_above_base, crown_above_top - 3);
+#else
+            int h_stop = crown_above_base;
+#endif
+        float leafarea_cumulated = 0.0;
+
+
+        for (int h = crown_above_top; h >= h_stop; h--)
+        {
+            float PPFD = 0.0, VPD = 0.0, Tmp = 0.0, leafarea_layer = 0;
+
+                Fluxh(ctx, h, PPFD, VPD, Tmp, leafarea_layer);
+
+                t_GPP += leafarea_layer * Tree::dailyGPPleaf(ctx, PPFD, VPD, Tmp);
+                // if(isnan(t_GPP) || t_GPP < 0.0 || PPFD == 0.0) cout << "Problem at site: " <<  t_site << " leafarea_layer: " << leafarea_layer << " GPP: " << t_GPP << " PPFD: " << PPFD << " VPD: " << VPD << " T: " << Tmp << endl << endl;
+
+                t_Rday += leafarea_layer * Tree::dailyRdayleaf(ctx, Tmp);
+                leafarea_cumulated += leafarea_layer;
+                // if(t_dbh > 0.2) cout << crown_above_top - h << "PPFD: " << PPFD << " VPD: " << VPD << " Tmp: " << Tmp << " leafarea_layer: " << endl;
+
         }
 
         // Averaging across layers. To check consistency, leafarea_layer can be added up and the sum compared to t_LA
@@ -2639,13 +2703,8 @@ void Tree::CalcRespGPP(Context &ctx)
             ileafarea_cumulated = 0.0;
 
         t_GPP *= ileafarea_cumulated;
-#ifdef WATER
-        t_transpiration *= ileafarea_cumulated;
-        tree_transpiration_1016 *= ileafarea_cumulated;
-#else
             t_Rday *= ileafarea_cumulated;
         }
-#endif
     }
 
     float effLA = 0.5 * (t_LA + t_matureLA) * ctx.time.nbhours_covered * 15.7788 * ctx.time.timestep;                        // we convert  from micromoles C/ctx.params.m^2/s into gC per ctx.params.m^2 of leaf per ctx.time.timestep by "ctx.time.nbhours_covered*15.7788*ctx.time.timestep" where 15.7788 = 3600*365.25*12/1000000 (seconds, days, and mass of carbon) and ctx.time.nbhours_covered is the amount of time that is covered by the daily variation file.
@@ -2653,12 +2712,6 @@ void Tree::CalcRespGPP(Context &ctx)
 
     t_GPP *= effLA;
 
-#ifdef WATER
-    float effLAT = (0.75 * t_LA + 0.25 * t_matureLA) * ctx.time.nbhours_covered * 23.652 * 0.000001 * ctx.time.timestep; // assuming that the decline in stomatal conductance of young and old leaves is less than for photosynthetic capacities (cf. ALbert et al. 2018)(75% the one of mature leaves), ie the water use efficiencies is lower of young and old leaves. Note that idally the Farquhar model should be applied to each leaf cohorts separately... 23.652=18.10^-6 * 3600*365, where 18.10^-6 is to convert micromol H20 into g, 3600*365 to convert s into year (as ctx.time.timestep is given in year); and 0.000001 is to convert g in m3.
-    t_transpiration *= effLAT;                                                                         // this is the amount of water transpired by the tree during the ctx.time.timestep in m3.  CHECK: from our WILT data of sapflow of several canopy mature trees, and assuming a constant sapwood thickness of 4cm, this can be 5-110 liter/day, ie. 0.005-0.11 m3/day. See also values in Granier et al. 1996 (0.250-0.3 m3/day for a big dominant canopy tree), or Andrade et al. 1998 Oecologia (46-379 kg/day, ie. 0.046-0.379 m3/day). Note, in this version, we never account for nighttime transpiration... to be discussed.
-    tree_transpiration_1016 *= (0.75 * t_LA + 0.25 * t_matureLA) * 0.0324 * 0.000001;                  // where 0.0324= 18.10^-6*3600*0.5
-    ctx.soil.transpiration_1016 += tree_transpiration_1016;
-#endif
 
     int convT = int(ctx.lookup.iTaccuracy * ctx.climate.tDailyMean);  // temperature data at a resolution of Taccuracy=0.1°C -- stored in lookup tables ranging from 0°C to 50°C ---
     int convTnight = int(ctx.lookup.iTaccuracy * ctx.climate.tnight); // temperature data at a resolution of Taccuracy=0.1°C -- stored in lookup tables ranging from 0°C to 50°C ---
@@ -2667,8 +2720,6 @@ void Tree::CalcRespGPP(Context &ctx)
 
     // the following two lines should maybe be revised, because the decline in respiration might not be the same as in photosynthetic activity. Kitajima et al. 2002 found no or small reductions in respiration with leaf age, Reich et al. 2009 did (Rdark/Amax constant), but often respiration declines are less steep than photosynthetic capacity, cf. Villar et al. 1995
     t_Rnight = t_Rdark * effLA_night * ctx.lookup.LookUp_Rleaf[convTnight];
-#ifdef WATER
-#else
     t_Rday *= effLA * 0.4; // inhibition of respiration by ca. 40%, cf. Atkin et al. 2000
 #endif
 }
@@ -3092,7 +3143,9 @@ void Tree::DisperseSeed(Context &ctx)
 //  Tree death and growth
 // ##################################
 //! - This routine calls the appropriate DeathRate modules; if the death condition is met, function Tree::Death() is called, otherwise function Tree::Growth is called
-void Tree::Update(Context &ctx)
+//! fluxes_precomputed: Water_availability() and ComputeRespGPP() already ran for this tree
+//! in this timestep (in parallel, see Evolution), with the fluxes in ctx.resp_gpp.
+void Tree::Update(Context &ctx, bool fluxes_precomputed)
 {
     int death;
     if (t_age)
@@ -3107,7 +3160,8 @@ void Tree::Update(Context &ctx)
         // Start new in v3.0 IM
         // Fluxh(int(t_height)+1);            //strangly, t_PPFD was not updated at the beginning of Tree::Update (as I here suggest to do now),but only in Tree::Growth and CalcRespGPP, even though t_PPFD was already used in the first part of Tree::Update (death).
         // End new in v3.0 IM
-        Water_availability(ctx); // here, t_phi_root and WSF are updated, which is needed to compute Deathrate, carbon assimilation and transpiration
+        if (!fluxes_precomputed)
+            Water_availability(ctx); // here, t_phi_root and WSF are updated, which is needed to compute Deathrate, carbon assimilation and transpiration
 #endif
         // v.2.4.0: outputs have been moved to Death() function
         if (ctx.opt._NDD)
@@ -3128,7 +3182,14 @@ void Tree::Update(Context &ctx)
         if (death)
             Death(ctx);
         else
-            Growth(ctx); // v.2.4: t_hurt is now updated in the TriggerTreefallSecondary() function
+        {
+#ifdef WATER
+            Growth(ctx, fluxes_precomputed ? &ctx.resp_gpp[t_site] : nullptr); // v.2.4: t_hurt is now updated in the TriggerTreefallSecondary() function
+#else
+            (void)fluxes_precomputed;
+            Growth(ctx);
+#endif
+        }
     }
 }
 
