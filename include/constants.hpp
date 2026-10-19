@@ -28,6 +28,25 @@
 #define LSQ 0.15          //!< Light spectral quality: effective spectral quality of light
 #define DAYRESP 0.4       //!< Inhibition of leaf dark respiration in day light by ca. 40%, cf. Atkin et al. 2000. Note: should be given in the input file probably
 
+// Single-precision versions for the leaf-flux kernel (Tree::FluxesLeaf, Tree::Photosyn, QUAD).
+// All kernel variables are float; with the double constants above, every expression was
+// evaluated in double and converted back, which cost ~40% of simulation time (TROLL 4.1.1).
+// Keep the kernel in float: use these constants and f-suffixed literals there
+// (the kernel files are compiled with -Wdouble-promotion to catch regressions).
+constexpr float ABSZERO_F = -273.15f;
+constexpr float AIRMA_F = 0.02896279f;
+constexpr float CPAIR_F = 1010.0f;
+constexpr float H2OLV0_F = 2.501e6f;
+constexpr float H2OMW_F = 18.0e-3f;
+constexpr float RCONST_F = 8.314f;
+constexpr float DHEAT_F = 21.5e-6f;
+constexpr float GBHGBC_F = 1.32f;
+constexpr float GBVGBH_F = 1.075f;
+constexpr float GSVGSC_F = 1.57f;
+constexpr float DAYRESP_F = 0.4f;
+constexpr float CPAIR_AIRMA_F = CPAIR_F * AIRMA_F;   //!< heat capacity of air per mole (J/mol/K)
+constexpr float GBH_FREE_F = 56.2341f * DHEAT_F;     //!< free-convection coefficient for boundary-layer conductance
+
 // the following parameter values could be provided in input
 #define Rtot_by_Rabove 1.5 //!< Multiplier coefficient used to roughly account for belowground respiration (coarse and fine root respiration)
 #define Rtotleaf_by_Rdark 1.4 //!< Multiplier coefficient used to roughly account for leaf respiration during the day

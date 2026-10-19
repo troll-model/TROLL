@@ -1430,10 +1430,10 @@ float Tree::DeathRate(Context &ctx, float dbh, float carbon_starv)
 leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop)
 {
 
-    float TLEAF = 0.0, CS = 0.0, DS = 0.0,                              // leaf temperature and CO2 concentration and vapour pressure deficit at the leaf surface.
-        ALEAF = 0.0, ET = 0.0,                                          // net assimilation rate and leaf-level evapotranspiration
-        GH = 0.0, GBV = 0.0, GSV = 0.0, GV = 0.0, GSC = 0.0, GBH = 0.0, // conductance terms for Penman-Monteith calculation
-        Rnetiso = 0.0, lambdaET = 0.0, HDIVT = 0.0;                     // terms used for Penman-Monteth calculation
+    float TLEAF = 0.0f, CS = 0.0f, DS = 0.0f,                              // leaf temperature and CO2 concentration and vapour pressure deficit at the leaf surface.
+        ALEAF = 0.0f, ET = 0.0f,                                          // net assimilation rate and leaf-level evapotranspiration
+        GH = 0.0f, GBV = 0.0f, GSV = 0.0f, GV = 0.0f, GSC = 0.0f, GBH = 0.0f, // conductance terms for Penman-Monteith calculation
+        Rnetiso = 0.0f, lambdaET = 0.0f, HDIVT = 0.0f;                     // terms used for Penman-Monteth calculation
 
     int ITERMAX = 30;
     // int itmax=ITERMAX;
@@ -1447,17 +1447,17 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     // Computation of Penman-Monteith terms that do not depend on TLEAF, CS and DS :
 
     // float RSOL = PPFD*ctx.params.PPFDtoSW;   // Incoming solar energy in J ctx.params.m-2 s-1 -- ctx.params.PPFDtoSW is to account for the fact that PAR actually account for ca. 50% of the total solar energy at the Earth's surface (ie after its way through the atmosphere), and Penman-Monteith should include all the shortwave energy (ie PAR + NIR), and convert from micromol quanta to J (ctx.params.PPFDtoSW~ 2.0/ 4.57).
-    float RSOL = 0.2188 * PPFD + 0.0015 * PPFDtop + 0.0174 * PPFDinc; // this is based on the relationship between NIR/PAR ratio in the understory and PARtop/PAR or LAI, reported in Kume et al. 2011 Journal of Plant Research (Fig. 4 therein), to account for the absorbed NIR. 0.2188=1/4.47; 0.0015=0.1/(4.57*14.48) with 0.1~leaf absorptance in NIR and 14.48 fitted parameter in Kumme et al; 0.0174=0.1*11.52/(4.57*14.48), with 11.52 the other fitted parameter in Kumme et al., and 1/4.57 is to convert from microml ctx.params.m-2 s-1 to J.
+    float RSOL = 0.2188f * PPFD + 0.0015f * PPFDtop + 0.0174f * PPFDinc; // this is based on the relationship between NIR/PAR ratio in the understory and PARtop/PAR or LAI, reported in Kume et al. 2011 Journal of Plant Research (Fig. 4 therein), to account for the absorbed NIR. 0.2188=1/4.47; 0.0015=0.1/(4.57*14.48) with 0.1~leaf absorptance in NIR and 14.48 fitted parameter in Kumme et al; 0.0174=0.1*11.52/(4.57*14.48), with 11.52 the other fitted parameter in Kumme et al., and 1/4.57 is to convert from microml ctx.params.m-2 s-1 to J.
     // if (PPFDinc/PPFDtop <0.8) {
     // cout << "PPFDtop=" << PPFDtop << " PPFD=" << PPFD <<" PPFDinc=" << PPFDinc << " RSOL=" << RSOL << " RSOL_NIR=" << RSOL_NIR << endl;
     // }
-    float LHV = (H2OLV0 - 2.365e3 * Ta) * H2OMW;               // Latent heat of water vapour at air temperature (J mol-1) (this is the "landa" in PM equation)
-    float SLOPE = ctx.lookup.LookUp_SLOPE[convTA];                        /* Slope of the dependence of saturated vapor pressure with temperature (Jones 2013, Equation (5.15), p.102)
+    float LHV = (H2OLV0_F - 2.365e3f * Ta) * H2OMW_F;               // Latent heat of water vapour at air temperature (J mol-1) (this is the "landa" in PM equation)
+    float SLOPE = ctx.lookup.LookUp_SLOPE[convTA];                        /* Slope of the dependence of saturated vapor pressure with temperature (Jones 2013, Equation (5.15f), p.102)
                                                                 This is constant s in Penman-Monteith equation  (Pa K-1) */
-    float CMOLAR = 1000.0 * ctx.params.PRESS / (RCONST * (Ta - ABSZERO)); // 1000 because ctx.params.PRESS is in kPa
-    float GAMMA = 1000.0 * ctx.params.PRESS * CPAIR * AIRMA / LHV;        // Psychrometric constant; 1000.0 to convert kPa into Pa. !! IM to be checked !! factor AIRMA not consistent with Jérôme's note and Appendix 3 of Jones, but similar to Duursma 's package
+    float CMOLAR = 1000.0f * ctx.params.PRESS / (RCONST_F * (Ta - ABSZERO_F)); // 1000 because ctx.params.PRESS is in kPa
+    float GAMMA = 1000.0f * ctx.params.PRESS * CPAIR_F * AIRMA_F / LHV;        // Psychrometric constant; 1000.0 to convert kPa into Pa. !! IM to be checked !! factor AIRMA not consistent with Jérôme's note and Appendix 3 of Jones, but similar to Duursma 's package
     float GRADN = ctx.lookup.LookUp_GRADN[convTA];                        // Radiation conductance (mol ctx.params.m-2 s-1) at air temperature (Jones 2013, Eq 5.10 p. 101). // IM to be double-checked with Jones (not fully consistent with Medlyn et al. 2007)
-    float GBHU = 0.003 * sqrt(WIND / t_wleaf) * CMOLAR;        // Boundary ctx.diag.layer conductance to heat transfer by forced convection (single sided) in mol ctx.params.m-2 s-1; Leuning et al (1995) PC&E 18:1183-1200 Eqn E1; Equation A2 in Medlyn et al. 2007
+    float GBHU = 0.003f * sqrtf(WIND / t_wleaf) * CMOLAR;        // Boundary ctx.diag.layer conductance to heat transfer by forced convection (single sided) in mol ctx.params.m-2 s-1; Leuning et al (1995) PC&E 18:1183-1200 Eqn E1; Equation A2 in Medlyn et al. 2007
     // Rnetiso = ctx.params.absorptance_leaves*RSOL - ctx.lookup.LookUp_INLR[convTA][convVPDA]; // Calculation of isothermal net radiation (J ctx.params.m-2 s-1; Jones (2013) equation (5.4) p.100)
     Rnetiso = RSOL - ctx.lookup.LookUp_INLR[convTAtop][convVPDAtop] * ExtinctLW; // Calculation of isothermal net radiation (J ctx.params.m-2 s-1; Jones (2013) equation (5.4) p.100). No need of ctx.params.absorptance_leaves, since PPFD provided in argument is already the absorbed flux.
 
@@ -1491,21 +1491,21 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
 
         // Computation of the different conductance terms
         float GBHF; // Boundary ctx.diag.layer conductance to heat transfer by free convection (single sided) in mol ctx.params.m-2 s-1. Leuning et al (1995) PC&E 18:1183-1200 Eqns E3 & E4. Equation A1 in Medlyn et al. 2007
-        if (abs(TLEAF - Ta) > 0.01)
+        if (fabsf(TLEAF - Ta) > 0.01f)
         { // this is to speed up: calculating GBHF involves a pow, so do only if difftemp is not zero.
             // float GRASHOF = 1.6e8 * abs(TLEAF-TAIR) * pow(WLEAF,3.0); // Grashof number
             // GBHF = 0.5 * DHEAT * pow(GRASHOF,0.25) / WLEAF * CMOLAR;
-            GBHF = 56.2341 * DHEAT * pow(abs(TLEAF - Ta) / t_wleaf, 0.25) * CMOLAR;
+            GBHF = 56.2341f * DHEAT_F * sqrtf(sqrtf(fabsf(TLEAF - Ta) / t_wleaf)) * CMOLAR;
         }
         else
-            GBHF = 0.0;
+            GBHF = 0.0f;
         GBH = GBHU + GBHF;      // Total boundary ctx.diag.layer conductance to heat (single sided), in mol ctx.params.m-2 s-1
         GH = 2 * (GBH + GRADN); // GH heat and radiative conductance (free & forced & radiative components), mol ctx.params.m-2 s-1, to be used in the isothermal version of the Penman-Monteith equation (always two sided, hence the factor 2)
         // if (t_sp_lab==6) GBH*=2; // test to see if assuming that Cecropia obtusa is amphistomatous (and not hypostomatous) would solve the issue found when ALEAF is big, wleaf is big (and hence GBH small) that leads to negative CS.... IM 09/09/2021
-        HDIVT = GH * CPAIR * AIRMA; // in J ctx.params.m-2 s-1 K-1, useful in several calculations below
-        GBV = GBVGBH * GBH;         // Boundary ctx.diag.layer conductance for water vapour, for hypostomatous leaves (single-sided value). Note: we thus here assumed that all leaves are hypostomatous, this is a reasonable assumption as few species have been reported to have amphistomatous leaves in tropical forests (e.g. Drake et al. 2019 New phytologist; Muir 2015 Proc Roy Soc; email with Lawren Sack Oct. 29th 2020). Cf. comment in Leuning et al. 1995 after equ. E5.
-        GSV = GSVGSC * GSC;         // Stomatal conductance for water vapour, in mol H2O ctx.params.m-2 s-1
-        if ((GSV / GBV) > 100000)
+        HDIVT = GH * CPAIR_F * AIRMA_F; // in J ctx.params.m-2 s-1 K-1, useful in several calculations below
+        GBV = GBVGBH_F * GBH;         // Boundary ctx.diag.layer conductance for water vapour, for hypostomatous leaves (single-sided value). Note: we thus here assumed that all leaves are hypostomatous, this is a reasonable assumption as few species have been reported to have amphistomatous leaves in tropical forests (e.g. Drake et al. 2019 New phytologist; Muir 2015 Proc Roy Soc; email with Lawren Sack Oct. 29th 2020). Cf. comment in Leuning et al. 1995 after equ. E5.
+        GSV = GSVGSC_F * GSC;         // Stomatal conductance for water vapour, in mol H2O ctx.params.m-2 s-1
+        if (GSV > 100000.0f * GBV)
             GV = GBV;
         else
             GV = (GBV * GSV) / (GBV + GSV); // Total conductance to water vapour (single-sided value: hypostomatous; stomatal & bdry ctx.diag.layer components in series), mol H2O ctx.params.m-2 s-1 //
@@ -1516,21 +1516,21 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
         }
 
         // Computation of leaf-level evapotranspiration (ET) using the Penman-Monteith equation (mol H2O ctx.params.m-2 s-1).
-        if (GV > 0.0)
-            lambdaET = (SLOPE * Rnetiso + 1000.0 * VPDa * HDIVT) / (SLOPE + GAMMA * GH / GV);
+        if (GV > 0.0f)
+            lambdaET = (SLOPE * Rnetiso + 1000.0f * VPDa * HDIVT) / (SLOPE + GAMMA * GH / GV);
         else
-            lambdaET = 0.0;
+            lambdaET = 0.0f;
 
         // if (lambdaET<0) lambdaET = 0.0; // check whether this is ok. remy says keep negative value but force ET TO ZERO
         if (lambdaET < 0)
-            ET = 0.0;
+            ET = 0.0f;
         else
             ET = lambdaET / LHV; // in mol H2O ctx.params.m-2 s-1
 
         // Update of TLEAF, CS, and DS
-        CS = ctx.params.Cair - ALEAF * GBHGBC / GBH; // CO2 concentration at the leaf surface, in micromol mol-1
-        if (CS < 0.0)
-            CS = 1.0;
+        CS = ctx.params.Cair - ALEAF * GBHGBC_F / GBH; // CO2 concentration at the leaf surface, in micromol mol-1
+        if (CS < 0.0f)
+            CS = 1.0f;
         DS = ET * ctx.params.PRESS / GSV; // in kPa; IM important change in regards to Duursma R package or MAESTRA/MAESPA code: GV replaced by GSV (cf for eg Medvigy et al. 2009 equ B16, cf. doc comments on Physiol V6)
         // DS = ET * ctx.params.PRESS / GV; // test cluster 14/05/22
 
@@ -1547,8 +1547,8 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
         // float TLEAF1 = Ta + (Rnetiso - lambdaET)/HDIVT; // Leaf temperature inferred from Jones (2013) equation (9.7), p.225. Note : in Vezy et al. 2018 they accounted for the rate of evaporation of water at the leaf sufarce when the leaf is wet in addition to the one of tranpiration. To do so they use Penman-Monteith with an "infinitly" large stomatal conductance to water vapor and use a weighted mean of both PM values...
 
         float TDIFF = (Rnetiso - lambdaET) / HDIVT;
-        float TLEAF1 = Ta + 0.25 * TDIFF; // divide by 4 to slow down convergence and avoid big changes -- taken from code from Vezy et al. 2018 -- cf. discussion with Guerric Le Maire
-        if (abs(TLEAF - TLEAF1) < 0.01)
+        float TLEAF1 = Ta + 0.25f * TDIFF; // divide by 4 to slow down convergence and avoid big changes -- taken from code from Vezy et al. 2018 -- cf. discussion with Guerric Le Maire
+        if (fabsf(TLEAF - TLEAF1) < 0.01f)
         {
             // itmax=ITER;
             ITER = ITERMAX;
@@ -1556,7 +1556,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
         } // If Tleaf diff < 0.01°C, stop search // check whether this threshold value is optimal
         TLEAF = TLEAF1; // update TLEAF for next iteration // cf. Vezy et al. and discussion with Guerric Lemaire: suggest to make smaller steps at each iteration to ease convergence (TDIFF -> TDIFF/4)
 
-        if (isnan(DS) || isnan(ET) || isnan(ALEAF) || ET < 0.0 || TLEAF <= 0.0 || TLEAF > 50.0 || CS < 0 || DS < 0 || CS > 100000)
+        if (isnan(DS) || isnan(ET) || isnan(ALEAF) || ET < 0.0f || TLEAF <= 0.0f || TLEAF > 50.0f || CS < 0 || DS < 0 || CS > 100000)
         {
             cout << "Warning in FluxesLeaf: " << " ALEAF= " << ALEAF << ", ET= " << ET << ", CS= " << CS << ", PPFD=" << PPFD << ", DS= " << DS << ", TLEAF= " << TLEAF << ", GSV=" << GSV << ", GV= " << GV << ", Rnetsiso=" << Rnetiso << "; lambdaET=" << lambdaET << "; HDIVT=" << HDIVT << "; TDIFF=" << TDIFF << "; Ta=" << Ta << "; Cair=" << ctx.params.Cair << "; GBH=" << GBH << "; Cair=" << ctx.params.Cair << "; GBHGBC=" << GBHGBC << "; t_site=" << t_site << "; t_sp_lab=" << t_sp_lab << "; ITER=" << ITER << endl;
         }
@@ -1565,7 +1565,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     // cout << "itmax=" << itmax << endl;
 
     // At the end of loop, return water (ET, in umol H2O ctx.params.m-2 s-1) and carbon (assimilation) fluxes
-    ET = ET * 1e6;
+    ET = ET * 1e6f;
 
     // if (ctx.time.iter > 4000 && t_height> 10.0) {
     //     cout << " species:" << ctx.S[t_sp_lab].s_name << " Tree height=" << t_height << " ET=" << ET << " SLOPE=" << SLOPE << " Rnetiso=" << Rnetiso << " SLOPE*Rnetiso=" << SLOPE*Rnetiso <<  " 1000*VPDa*HDIVT=" << 1000.0*VPDa*HDIVT << " VPDa=" << VPDa << " HDIVT=" << HDIVT << " GAMMA*GH/GV=" << GAMMA*GH/GV << endl;
@@ -1588,14 +1588,14 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     int convT = int(ctx.lookup.iTaccuracy * TLEAF);
     float KmT = ctx.lookup.LookUp_KmT[convT];                        // with temperature dependencies
     float GammaT = ctx.lookup.LookUp_GammaT[convT];                  // with temperature dependencies
-    float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
+    float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP_F; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
 
     ////////////// Model of stomatal conductance for CO2 /////////////
     float GSDIVA;
-    if (DS < 0.0005)
-        GSDIVA = (1.0 + t_g1 / sqrt(0.0005)) / CS; // VPDMIN in MAESPA/Plantecophys R package
+    if (DS < 0.0005f)
+        GSDIVA = (1.0f + t_g1 / sqrtf(0.0005f)) / CS; // VPDMIN in MAESPA/Plantecophys R package
     else
-        GSDIVA = (1.0 + t_g1 / sqrt(DS)) / CS; // Medlyn et al. 2011 Global Change Biology. Note that ctx.params.g1 is now a tree class variable that is initiated at tree birth (in Tree::Birth) and updated in Tree::Water_Availability depending on the tree water stress.
+        GSDIVA = (1.0f + t_g1 / sqrtf(DS)) / CS; // Medlyn et al. 2011 Global Change Biology. Note that ctx.params.g1 is now a tree class variable that is initiated at tree birth (in Tree::Birth) and updated in Tree::Water_Availability depending on the tree water stress.
     // float GSDIVA = (1.0 + ctx.params.g1/sqrt(VPD))/(CS-GammaT); //Dewar et al. 2018 New Phytologist
     if (GSDIVA <= 0 || isnan(GSDIVA))
     {
@@ -1610,12 +1610,12 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     // Solution when Rubisco activity is limiting
     float VcmaxTW = t_Vcmax * ctx.lookup.LookUp_VcmaxT[convT] * t_WSF_A;
     A = ctx.params.g0 + GSDIVA * (VcmaxTW - Rday);
-    B = (1.0 - CS * GSDIVA) * (VcmaxTW - Rday) + ctx.params.g0 * (KmT - CS) - GSDIVA * (VcmaxTW * GammaT + KmT * Rday);
-    C = -(1.0 - CS * GSDIVA) * (VcmaxTW * GammaT + KmT * Rday) - ctx.params.g0 * KmT * CS;
+    B = (1.0f - CS * GSDIVA) * (VcmaxTW - Rday) + ctx.params.g0 * (KmT - CS) - GSDIVA * (VcmaxTW * GammaT + KmT * Rday);
+    C = -(1.0f - CS * GSDIVA) * (VcmaxTW * GammaT + KmT * Rday) - ctx.params.g0 * KmT * CS;
     float CIC = QUAD(A, B, C, 1); // Finds larger root of quadratic function
-    if ((CIC <= 0.0) || (CIC - CS > 0.01))
+    if ((CIC <= 0.0f) || (CIC - CS > 0.01f))
     { // newIM: have replaced CIC>CS by (CIC-CS>0.01) to avoid error due to comparing floats (maybe there would be a best way to fix this...)
-        AC = 0.0;
+        AC = 0.0f;
     }
     else
         AC = VcmaxTW * (CIC - GammaT) / (CIC + KmT);
@@ -1624,16 +1624,16 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
     float I = ctx.params.alpha * PPFD;
     float J = QUAD(ctx.params.theta, -(I + JmaxTW), JmaxTW * I, -1); // ctx.params.theta is the convexity term for electron transport rates (dimensionless, 0–1), here provided in input (default value =0.7, as in von Caemmerer 2000, but a value of 0.85 is used in Duursma' R package
-    float VJ = J * 0.25;
+    float VJ = J * 0.25f;
     A = ctx.params.g0 + GSDIVA * (VJ - Rday);
-    B = (1.0 - CS * GSDIVA) * (VJ - Rday) + ctx.params.g0 * (2.0 * GammaT - CS) - GSDIVA * (VJ * GammaT + 2.0 * GammaT * Rday);
-    C = -(1.0 - CS * GSDIVA) * GammaT * (VJ + 2.0 * Rday) - ctx.params.g0 * 2.0 * GammaT * CS;
+    B = (1.0f - CS * GSDIVA) * (VJ - Rday) + ctx.params.g0 * (2.0f * GammaT - CS) - GSDIVA * (VJ * GammaT + 2.0f * GammaT * Rday);
+    C = -(1.0f - CS * GSDIVA) * GammaT * (VJ + 2.0f * Rday) - ctx.params.g0 * 2.0f * GammaT * CS;
     float CIJ = QUAD(A, B, C, 1); // Finds larger root of quadratic function
-    AJ = VJ * (CIJ - GammaT) / (CIC + 2.0 * GammaT);
-    if ((AJ - Rday) < 1.0e-6)
+    AJ = VJ * (CIJ - GammaT) / (CIC + 2.0f * GammaT);
+    if ((AJ - Rday) < 1.0e-6f)
     {
         CIJ = CS; // Below light compensation point
-        AJ = VJ * (CIJ - GammaT) / (CIJ + 2.0 * GammaT);
+        AJ = VJ * (CIJ - GammaT) / (CIJ + 2.0f * GammaT);
     }
 
     // Co-limitation
@@ -1644,9 +1644,9 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
         cout << "Warning in Photosyn: " << ", Anet= " << Anet << ", GSDIVA=" << GSDIVA << "; Anet*GSDIVA=" << Anet * GSDIVA << ", AC= " << AC << ", AJ= " << AJ << ", Rday=" << Rday << ", CS=" << CS << "; CIC=" << CIC << "; CIJ=" << CIJ << ", DS= " << DS << ", TLEAF= " << TLEAF << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << "; GammaT=" << GammaT << "; KmT=" << KmT << "; J=" << J << "; PPFD=" << PPFD << "; T_Rdark=" << t_Rdark << "; convT=" << convT << endl;
     }
 
-    if (isnan(Anet * GSDIVA) && Anet == 0.0)
+    if (isnan(Anet * GSDIVA) && Anet == 0.0f)
     { // to solve nan issue when Anet=0 and GSDIVA=inf
-        Anet = 1.0e-5;
+        Anet = 1.0e-5f;
     }
 
     leafFluxes outPhotosyn;
@@ -1674,10 +1674,10 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     int convT = int(ctx.lookup.iTaccuracy * TLEAF);
     float KmT = ctx.lookup.LookUp_KmT[convT];                        // with temperature dependencies
     float GammaT = ctx.lookup.LookUp_GammaT[convT];                  // with temperature dependencies
-    float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
+    float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP_F; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
 
     // Model of stomatal conductance for CO2
-    float GSDIVA = (1.0 + t_g1 / sqrt(DS)) / CS; // Medlyn et al. 2011 Global Change Biology. Note that ctx.params.g1 is now a tree class variable that is initiated at tree birth (in Tree::Birth) and updated in Tree::Water_Availability depending on the tree water stress.
+    float GSDIVA = (1.0f + t_g1 / sqrtf(DS)) / CS; // Medlyn et al. 2011 Global Change Biology. Note that ctx.params.g1 is now a tree class variable that is initiated at tree birth (in Tree::Birth) and updated in Tree::Water_Availability depending on the tree water stress.
     // float GSDIVA = (1.0 + ctx.params.g1/sqrt(VPD))/(CS-GammaT); //Dewar et al. 2018 New Phytologist
     if (GSDIVA <= 0 || isnan(GSDIVA))
     {
@@ -1686,27 +1686,27 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     }
 
     // Internal CO2 concentration, assuming that minimal conductance (cf. Duursma et al. 2019 New Phytologist, ~cuticular conductance) is negligeable (ctx.params.g0~0) [Note that, if ctx.params.g0>0, then a quadratic solution must be computed, which complexifies and should lengthen the speed of the code ==> to try later]. Expression derived using Medlyn et al. 2011 GCB model (see equ. 7 in Marechaux & Chave 2017, and equ. 13 in Medlyn et al. 2011 corrigendum)
-    CI = CS * t_g1 / (t_g1 + sqrt(DS));
+    CI = CS * t_g1 / (t_g1 + sqrtf(DS));
 
     // Farquhar model of photosynthesis
     // Solution when Rubisco activity is limiting
     float AC, AJ;
     float VcmaxTW = t_Vcmax * ctx.lookup.LookUp_VcmaxT[convT] * t_WSF_A;
-    if ((CI <= 0.0) || (CI - CS > 0.01))
+    if ((CI <= 0.0f) || (CI - CS > 0.01f))
     { // newIM: have replaced CI>CS by (CI-CS>0.01) to avoid error due to comparing floats (maybe there would be a best way to fix this...)
-        AC = 0.0;
+        AC = 0.0f;
     }
     else
         AC = VcmaxTW * (CI - GammaT) / (CI + KmT);
     // Solution when electron transport rate is limiting
     float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
     float I = ctx.params.alpha * PPFD;
-    float J = (I + JmaxTW - sqrt((JmaxTW + I) * (JmaxTW + I) - 4.0 * ctx.params.theta * JmaxTW * I)) * 0.5 / ctx.params.theta; // THETA is the convexity term for electron transport rates (dimensionless, 0–1), here provided in input (default value =0.7, as in von Caemmerer 2000, but a value of 0.85 is used in Duursma' R package
-    AJ = 0.25 * J * (CI - GammaT) / (CI + 2.0 * GammaT);
-    if ((AJ - Rday) < 1.0e-6)
+    float J = (I + JmaxTW - sqrtf((JmaxTW + I) * (JmaxTW + I) - 4.0f * ctx.params.theta * JmaxTW * I)) * 0.5f / ctx.params.theta; // THETA is the convexity term for electron transport rates (dimensionless, 0–1), here provided in input (default value =0.7, as in von Caemmerer 2000, but a value of 0.85 is used in Duursma' R package
+    AJ = 0.25f * J * (CI - GammaT) / (CI + 2.0f * GammaT);
+    if ((AJ - Rday) < 1.0e-6f)
     {
         CI = CS; // Below light compensation point
-        AJ = 0.25 * J * (CI - GammaT) / (CI + 2.0 * GammaT);
+        AJ = 0.25f * J * (CI - GammaT) / (CI + 2.0f * GammaT);
     }
     Anet = fminf(AC, AJ) - Rday; // compute the *net* assimilation rate, in micromol C02 ctx.params.m-2 s-1
 
@@ -1715,15 +1715,15 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
         cout << "Warning in Photosyn: " << ", Anet= " << Anet << ", GSDIVA=" << GSDIVA << "; Anet*GSDIVA=" << Anet * GSDIVA << ", AC= " << AC << ", AJ= " << AJ << ", Rday=" << Rday << ", CS=" << CS << "; CI=" << CI << ", DS= " << DS << ", TLEAF= " << TLEAF << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << "; GammaT=" << GammaT << "; KmT=" << KmT << "; J=" << J << "; PPFD=" << PPFD << "; T_Rdark=" << t_Rdark << "; convT=" << convT << endl;
     }
 
-    if (isnan(Anet * GSDIVA) && Anet == 0.0)
+    if (isnan(Anet * GSDIVA) && Anet == 0.0f)
     { // to solve nan issue when ANet=0 and GSDIVA=inf
-        Anet = 1.0e-5;
+        Anet = 1.0e-5f;
     }
 
     leafFluxes outPhotosyn;
     outPhotosyn.carbon_flux = Anet; // in micromol C02 ctx.params.m-2 s-1
-    if (fabs(GSDIVA * Anet) < 1.0e-6)
-        outPhotosyn.water_flux = 1.0e-5; // GSC should not have null values
+    if (fabs(GSDIVA * Anet) < 1.0e-6f)
+        outPhotosyn.water_flux = 1.0e-5f; // GSC should not have null values
     else
         outPhotosyn.water_flux = fabs(GSDIVA * Anet); // in mol CO2 ctx.params.m-2 s-1, the conversion to mol H20 is made in function FluxesLeaf. Note that it is here assumed that the minimal stomatal conductance (ctx.params.g0) is negligeable.
     // if (outPhotosyn.water_flux<ctx.params.g0) outPhotosyn.water_flux=ctx.params.g0; // just as a reminder: in both Duursma's pacakage and Vezy's MAESPA code, such line is added (in Duursma, it is written: "# Extra step here; GS can be negative", in Vezy, it is written: "! Set nearly zero conductance (for numerical reasons)". this results in no possible negative values or zero values for GSC.

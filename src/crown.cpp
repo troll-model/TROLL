@@ -11,23 +11,23 @@
 // Solves the quadratic equation. ROOT: finds smaller (-1), larger (1) root.
 float QUAD(float A, float B, float C, int ROOT)
 {
-    float quad = 0.0;
-    float discriminant = B * B - 4.0 * A * C;
+    float quad = 0.0f;
+    float discriminant = B * B - 4.0f * A * C;
     // ROOT=-1: smaller root; ROOT=1: larger root
     if (discriminant < 0)
     {
         cerr << "IMAGINARY ROOTS IN QUADRATIC" << endl;
-        quad = 0.0;
+        quad = 0.0f;
     }
-    if (A == 0.0)
+    if (A == 0.0f)
     {
-        if (B == 0.0)
-            quad = 0.0;
+        if (B == 0.0f)
+            quad = 0.0f;
         else
             quad = -C / B;
     }
     else
-        quad = (-B + ROOT * sqrt(discriminant)) / (2.0 * A);
+        quad = (-B + float(ROOT) * sqrtf(discriminant)) / (2.0f * A);
     return quad;
 }
 
