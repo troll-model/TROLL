@@ -46,7 +46,8 @@ def main():
             files[path][0] += 1
             files[path][1] += documented
             if kind == "function":
-                plist = [p for p in m.findall("param") if text(p.find("declname"))]
+                # declarations in headers often leave parameters unnamed: use the definition name too
+                plist = [p for p in m.findall("param") if text(p.find("declname")) or text(p.find("defname"))]
                 if plist:
                     params[0] += 1
                     dd = m.find("detaileddescription")

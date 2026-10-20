@@ -14,6 +14,10 @@ int easympi_rank = 0;
 // ###########################################
 // ###########################################
 
+//! Run one simulation: parse arguments, read inputs, initialise, loop over timesteps, write outputs.
+//! Returns the process exit code.
+//! @param argc number of command-line arguments
+//! @param argv command-line arguments (see README: -i, -s, -m, -d, -p, -o)
 int main(int argc, char *argv[])
 {
     Context ctx{};

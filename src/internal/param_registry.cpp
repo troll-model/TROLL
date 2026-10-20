@@ -200,6 +200,7 @@ std::unordered_map<std::string, ParamSpec> parameter_registry;
 // ============================================================================
 //   RegisterParameters()
 // ============================================================================
+//! @param ctx simulation context (all model state)
 void RegisterParameters(Context &ctx)
 {
     parameter_registry.clear();
@@ -331,6 +332,8 @@ void RegisterParameters(Context &ctx)
 // ============================================================================
 //   AssignParamFromRegistry()
 // ============================================================================
+//! @param name parameter name
+//! @param value value read from the global parameter file (text)
 void AssignParamFromRegistry(const std::string &name,
                              const std::string &value)
 {

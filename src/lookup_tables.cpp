@@ -2,6 +2,7 @@
 #include "constants.hpp"
 #include "context.hpp"
 
+//! @param ctx simulation context (all model state)
 void InitialiseIntraspecific(Context &ctx)
 {
     float max_intraspecific_height = 0.0, min_intraspecific_height = 1000.0,

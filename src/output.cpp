@@ -2,10 +2,17 @@
 #include "constants.hpp"
 #include "context.hpp"
 
+//! Percentage num/den*100, or 0 when den is 0 (avoids printing "-nan" when a size class is empty)
+static double PercentOrZero(double num, double den)
+{
+    return den > 0.0 ? 100.0 * num / den : 0.0;
+}
+
 // ##############################################
 //  Global function: calculation of the global averages every ctx.time.timestep
 // ##############################################
 
+//! @param ctx simulation context (all model state)
 void Average(Context &ctx)
 {
 
@@ -415,6 +422,7 @@ void Average(Context &ctx)
 // ##############################################
 //  Global function: output of the field variables every ctx.time.timestep
 // ##############################################
+//! @param ctx simulation context (all model state)
 void OutputField(Context &ctx)
 {
     int site, h;
@@ -458,6 +466,10 @@ void OutputField(Context &ctx)
 //  Global function: output snapshots of the scene at one point in time
 // ##############################################
 //! - This can be used to take snapshots of the forest in more detail and track its development over time.
+//! @param ctx simulation context (all model state)
+//! @param output output stream (file of the snapshot)
+//! @param header write the header line first if true
+//! @param dbh_limit minimum DBH of the trees written (m)
 void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
 {
     cout << "Writing snapshot of forest to file." << endl;
@@ -571,6 +583,8 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
 // ## Make a spikefree CHM ##
 // ##########################
 //! Compute the spike-free canopy height of each site into chm_spikefree (used for CHM.txt; CHM_SPIKEFREE option)
+//! @param ctx simulation context (all model state)
+//! @param chm_spikefree [out] spike-free canopy height per site (m)
 void MakeCHMspikefree(Context &ctx, vector<int> &chm_spikefree)
 {
     chm_spikefree.clear();
@@ -627,6 +641,7 @@ void MakeCHMspikefree(Context &ctx, vector<int> &chm_spikefree)
 // ################################
 // ### Output for visualization ###
 // ################################
+//! @param ctx simulation context (all model state)
 void OutputVisual(Context &ctx)
 {
     // first simple chm output
