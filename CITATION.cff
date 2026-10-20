@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+message: "If you use TROLL, please cite the model description paper below and the software version you used."
+title: "TROLL: an individual- and trait-based model of tropical forest dynamics"
+version: 4.1.4
+date-released: 2026-10-20
+license: GPL-3.0-only
+repository-code: "https://github.com/troll-model/TROLL"
+authors:
+  - family-names: Chave
+    given-names: Jérôme
+  - family-names: Maréchaux
+    given-names: Isabelle
+    orcid: "https://orcid.org/0000-0002-5401-0197"
+  - family-names: Fischer
+    given-names: Fabian Jörg
+  - family-names: Schmitt
+    given-names: Sylvain
+    orcid: "https://orcid.org/0000-0001-7759-7106"
+preferred-citation:
+  type: article
+  title: "TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description"
+  authors:
+    - family-names: Maréchaux
+      given-names: Isabelle
+    - family-names: Fischer
+      given-names: Fabian Jörg
+    - family-names: Schmitt
+      given-names: Sylvain
+    - family-names: Chave
+      given-names: Jérôme
+  journal: "Geoscientific Model Development"
+  volume: 18
+  start: 5143
+  end: 5204
+  year: 2025
+  doi: "10.5194/gmd-18-5143-2025"
+references:
+  - type: article
+    title: "TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 2: Model evaluation for two Amazonian sites"
+    authors:
+      - family-names: Schmitt
+        given-names: Sylvain
+      - name: "et al."
+    journal: "Geoscientific Model Development"
+    volume: 18
+    start: 5205
+    end: 5243
+    year: 2025
+    doi: "10.5194/gmd-18-5205-2025"

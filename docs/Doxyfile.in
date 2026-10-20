@@ -5,6 +5,10 @@ PROJECT_BRIEF          = "Individual- and trait-based model of tropical forest d
 OUTPUT_DIRECTORY       = "@TROLL_DOCS_DIR@"
 INPUT                  = "@CMAKE_SOURCE_DIR@/README.md" \
                          "@CMAKE_SOURCE_DIR@/docs/outputs.md" \
+                         "@CMAKE_SOURCE_DIR@/docs/inputs.md" \
+                         "@CMAKE_SOURCE_DIR@/docs/equations.md" \
+                         "@CMAKE_SOURCE_DIR@/docs/open-questions.md" \
+                         "@CMAKE_SOURCE_DIR@/CONTRIBUTING.md" \
                          "@CMAKE_SOURCE_DIR@/sanity/README.md" \
                          "@CMAKE_SOURCE_DIR@/include" \
                          "@CMAKE_SOURCE_DIR@/src"
