@@ -1,6 +1,6 @@
 #include <cerrno>
 #ifndef TROLL_VERSION
-#define TROLL_VERSION "unknown" // set by CMake from project(VERSION)
+#define TROLL_VERSION "unknown" //!< TROLL version string, set by CMake from project(VERSION)
 #endif
 #include <chrono>
 #include <cstring>
@@ -28,6 +28,8 @@ static long long ParseSeed(const char *text)
     return value;
 }
 
+//! Run one simulation: parse arguments, read inputs, initialise, loop over timesteps, write outputs.
+//! Returns the process exit code.
 static int RunTroll(int argc, char *argv[])
 {
     Context ctx{};
@@ -317,6 +319,7 @@ static int RunTroll(int argc, char *argv[])
     return 0; // return (not exit) so that ctx and its streams are destroyed normally
 }
 
+//! Entry point: runs RunTroll() and reports configuration errors (exceptions) with exit code 1.
 int main(int argc, char *argv[])
 {
     try

@@ -557,6 +557,7 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
 // ##########################
 // ## Make a spikefree CHM ##
 // ##########################
+//! Compute the spike-free canopy height of each site into chm_spikefree (used for CHM.txt; CHM_SPIKEFREE option)
 void MakeCHMspikefree(Context &ctx, vector<int> &chm_spikefree)
 {
     chm_spikefree.clear();

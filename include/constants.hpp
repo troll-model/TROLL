@@ -33,17 +33,17 @@
 // evaluated in double and converted back, which cost ~40% of simulation time (TROLL 4.1.1).
 // Keep the kernel in float: use these constants and f-suffixed literals there
 // (the kernel files are compiled with -Wdouble-promotion to catch regressions).
-constexpr float ABSZERO_F = -273.15f;
-constexpr float AIRMA_F = 0.02896279f;
-constexpr float CPAIR_F = 1010.0f;
-constexpr float H2OLV0_F = 2.501e6f;
-constexpr float H2OMW_F = 18.0e-3f;
-constexpr float RCONST_F = 8.314f;
-constexpr float DHEAT_F = 21.5e-6f;
-constexpr float GBHGBC_F = 1.32f;
-constexpr float GBVGBH_F = 1.075f;
-constexpr float GSVGSC_F = 1.57f;
-constexpr float DAYRESP_F = 0.4f;
+constexpr float ABSZERO_F = -273.15f; //!< Single-precision version of ABSZERO
+constexpr float AIRMA_F = 0.02896279f; //!< Single-precision version of AIRMA
+constexpr float CPAIR_F = 1010.0f; //!< Single-precision version of CPAIR
+constexpr float H2OLV0_F = 2.501e6f; //!< Single-precision version of H2OLV0
+constexpr float H2OMW_F = 18.0e-3f; //!< Single-precision version of H2OMW
+constexpr float RCONST_F = 8.314f; //!< Single-precision version of RCONST
+constexpr float DHEAT_F = 21.5e-6f; //!< Single-precision version of DHEAT
+constexpr float GBHGBC_F = 1.32f; //!< Single-precision version of GBHGBC
+constexpr float GBVGBH_F = 1.075f; //!< Single-precision version of GBVGBH
+constexpr float GSVGSC_F = 1.57f; //!< Single-precision version of GSVGSC
+constexpr float DAYRESP_F = 0.4f; //!< Single-precision version of DAYRESP
 constexpr float CPAIR_AIRMA_F = CPAIR_F * AIRMA_F;   //!< heat capacity of air per mole (J/mol/K)
 constexpr float GBH_FREE_F = 56.2341f * DHEAT_F;     //!< free-convection coefficient for boundary-layer conductance
 

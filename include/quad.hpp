@@ -14,6 +14,9 @@ TROLL_FLOAT_KERNEL_BEGIN // part of the single-precision leaf kernel
 //! (max relative error 1.3e-6 measured over 2.3e7 calls). For the electron-transport rate,
 //! use ElectronTransportRate() below.
 //! Inline (4.1.2) so it is inlined into Photosyn even without link-time optimisation.
+//! @param A, B, C  coefficients of the quadratic
+//! @param ROOT     1 or -1, sign in front of the square root
+//! @return the selected root; NaN if B^2 - 4AC < 0 (a warning is printed)
 inline float QUAD(float A, float B, float C, int ROOT)
 {
     float quad = 0.0f;
@@ -42,6 +45,11 @@ inline float QUAD(float A, float B, float C, int ROOT)
 //! cancellation at low light (I << Jmax), which in single precision lost up to three
 //! significant digits (max relative error 1.9e-3; now ~2e-7). Same cost: one sqrt, one
 //! division, no branches. Requires 0 < theta <= 1, I >= 0, Jmax >= 0 (discriminant >= 0).
+//! GMD Part 1, Eq. 25.
+//! @param theta  curvature of the light response (dimensionless)
+//! @param I      light usable for electron transport, alpha x PPFD (umol e- m-2 s-1)
+//! @param Jmax   maximum electron transport rate at leaf temperature (umol e- m-2 s-1)
+//! @return J (umol e- m-2 s-1)
 inline float ElectronTransportRate(float theta, float I, float Jmax)
 {
     const float s = I + Jmax;

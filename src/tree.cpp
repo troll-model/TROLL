@@ -1585,6 +1585,14 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
 
 #ifdef G0
 
+//! Farquhar-von Caemmerer-Berry photosynthesis coupled with Medlyn stomatal conductance at the
+//! leaf surface (GMD Part 1, Sect. 2.5.1, Eqs. 24-25).
+//! @param ctx    simulation context
+//! @param PPFD   photosynthetic photon flux density on the leaf (umol photons m-2 s-1)
+//! @param TLEAF  leaf temperature (degC)
+//! @param CS     CO2 concentration at the leaf surface (umol mol-1)
+//! @param DS     vapour pressure deficit at the leaf surface (kPa)
+//! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: stomatal conductance to CO2 (mol m-2 s-1)
 leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS)
 {
 
@@ -1671,6 +1679,14 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
 
 #else
 
+//! Farquhar-von Caemmerer-Berry photosynthesis coupled with Medlyn stomatal conductance at the
+//! leaf surface (GMD Part 1, Sect. 2.5.1, Eqs. 24-25).
+//! @param ctx    simulation context
+//! @param PPFD   photosynthetic photon flux density on the leaf (umol photons m-2 s-1)
+//! @param TLEAF  leaf temperature (degC)
+//! @param CS     CO2 concentration at the leaf surface (umol mol-1)
+//! @param DS     vapour pressure deficit at the leaf surface (kPa)
+//! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: stomatal conductance to CO2 (mol m-2 s-1)
 leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS)
 {
 

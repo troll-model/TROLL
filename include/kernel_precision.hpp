@@ -21,7 +21,7 @@
 #define TROLL_FLOAT_KERNEL_END _Pragma("GCC diagnostic pop")
 #else
 #define TROLL_FLOAT_KERNEL_BEGIN
-#define TROLL_FLOAT_KERNEL_END
+#define TROLL_FLOAT_KERNEL_END //!< End of a single-precision kernel region (no-op on compilers other than GCC/Clang)
 #endif
 
 #endif // KERNEL_PRECISION_HPP

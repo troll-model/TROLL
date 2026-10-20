@@ -17,7 +17,7 @@
 
 // test with positive g0 in stomatal conductance model
 #ifndef TROLL_NO_G0
-#define G0
+#define G0 //!< Photosynthesis variant solving the coupled Farquhar-Medlyn system with minimum conductance g0 (default)
 #endif
 
 //! small additions and quick fixes that need to be checked/discussed very carefully
@@ -31,7 +31,7 @@
 #endif
 
 #ifndef TROLL_NO_PHENO_DROUGHT
-#define PHENO_DROUGHT
+#define PHENO_DROUGHT //!< Drought-accelerated shedding of old leaves (default; GMD Part 2, Eq. 1)
 #endif
 
 //! new in v.2.4.1, modified in v.2.5: If activated, crowns are assumed to grow cylindrical until they reach 3m in depth, then the center of the crown will experience quicker height growth than the outer parts of the crown, thus leading to an umbrella like crown shape (with slope depending on crown depth and width). Depending on the slope parameter, trees will look more like cylinders or more like cones. Contrary to previous versions, however, the crown will not fill its shape underneath the first three layers. The crown will simply become umbrella-like, with a dense layer that spans out from its stem, and empty space underneath. This allows for a very simple computation of just three crown layers, while retaining their spread across the crown depth, enough realism for LiDAR derived CHMs and for eventual non vertical light penetration. New in v.2.5: Entirely modelled through one template that simulates loops across a crown layer/shell and can be applied to any calculation that requires to calculate crown properties (CalcLAI, Fluxh, etc.). Furthermore, enhanced flexibility for future incorporation of other crown shape functions (e.g. spherical, etc.)

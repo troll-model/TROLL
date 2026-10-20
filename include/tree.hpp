@@ -13,8 +13,8 @@ struct Context;
 //! Global structure: For GPPleaf FUNCTION
 struct leafFluxes
 {
-    float carbon_flux;
-    float water_flux;
+    float carbon_flux; //!< Net leaf carbon assimilation (umol CO2 m-2 s-1)
+    float water_flux;  //!< Leaf water flux: transpiration from FluxesLeaf (umol H2O m-2 s-1); stomatal conductance to CO2 from Photosyn (mol m-2 s-1)
 };
 #endif
 
@@ -23,11 +23,11 @@ struct leafFluxes
 //! for all trees in parallel; Tree::ApplyRespGPP() then stores them in tree order.
 struct RespGPPResult
 {
-    float GPP = 0.0f;
-    float transpiration = 0.0f;
+    float GPP = 0.0f;                //!< Gross primary production of the tree in the timestep (gC, as Tree::t_GPP)
+    float transpiration = 0.0f;      //!< Transpiration of the tree in the timestep (as Tree::t_transpiration)
     float transpiration_1016 = 0.0f; //!< contribution to ctx.soil.transpiration_1016
-    float Rstem = 0.0f;
-    float Rnight = 0.0f;
+    float Rstem = 0.0f;              //!< Stem respiration of the tree in the timestep (gC)
+    float Rnight = 0.0f;             //!< Leaf respiration at night in the timestep (gC)
 };
 
 // ###########################################
@@ -41,7 +41,7 @@ public:
     int t_NPPneg;            //!< Diagnostic variable: number of consecutive timesteps with NPP<0; v.2.2
     int t_CrownDisplacement; //!< Displacement of the crown center with respect to the stem.
 #ifdef MIP_Lichstein
-    int t_inInventory;
+    int t_inInventory; //!< 1 if the tree was read from the input inventory (MIP_Lichstein outputs)
 #endif
 
     float t_age;       //!< Tree age, also indicates whether tree is alive (live trees are such that t_age > 0.0)
@@ -76,13 +76,13 @@ public:
     float t_WSF;                       //!< Tree water stress factor for stomatal conductance, unitless, between 0 and 1
     float t_WSF_A;                     //!< Tree water stress factor for photosynthetic capacities, unitless, between 0 and 1
     float t_transpiration;             //!< Amount of water taken up from the soil and transpired at each timestep
-    float t_g1_0;
-    float t_g1;
+    float t_g1_0;                      //!< Medlyn stomatal slope g1 of the tree from wood specific gravity, g1 = 6.53 - 3.97 wsg (Lin et al. 2015) (kPa^0.5)
+    float t_g1;                        //!< Medlyn g1 used for stomatal conductance (kPa^0.5); currently equal to t_g1_0 (the water-stress adjustment is commented out)
 
 #ifdef PHENO_DROUGHT
-    int t_Ndays_dry;
-    int t_Ndays_wet;
-    float t_pheno_factor;
+    int t_Ndays_dry;       //!< Days with root-zone water potential below the species turgor loss point (PHENO_DROUGHT)
+    int t_Ndays_wet;       //!< Counterpart of t_Ndays_dry for days above the turgor loss point (PHENO_DROUGHT)
+    float t_pheno_factor;  //!< Multiplicative factor (<= 1) on the residence time of old leaves under drought; f0 in GMD Part 2, Sect. 2
 #endif
 
 #endif
@@ -144,41 +144,36 @@ public:
 #endif
 
 #ifdef TRACK_INDIVIDUALS
-    int t_month_born; //!< Not documented  !!!UPDATE
+    int t_month_born; //!< Month of birth (TRACK_INDIVIDUALS; note: tree.cpp uses t_timeofyear_born, so this option does not compile)
 
-    int t_seedsproduced;
-    int t_seedsproduced_sumyear;
-    int t_time_carbonstarvation;
-    int t_time_carbonstarvation_year;
-
-    float t_GPP_sumyear;
-    float t_NPP_sumyear;
-    float t_GPPsquared_sumyear;
-    float t_NPPsquared_sumyear;
-    float t_Rday_sumyear;
-    float t_Rnight_sumyear;
-    float t_Rstem_sumyear;
-    float t_LAIabove_effavgyear;
-    float t_carbon_storage_avgyear;
-
-    float t_dbh_tracked;
-    float t_height_tracked;
-    float t_CR_tracked;
-    float t_agb_tracked;
-
-    float t_LAIcum;
-    float t_LAIeffcum;
-    float t_GPPcum;
-    float t_NPPcum;
-    float t_LAIsquared_cum;
-    float t_LAIeffsquared_cum;
-    float t_GPPsquared_cum;
-    float t_NPPsquared_cum;
-
+    int t_seedsproduced; //!< Seeds produced in the timestep (TRACK_INDIVIDUALS)
+    int t_seedsproduced_sumyear; //!< Seeds produced in the current year (TRACK_INDIVIDUALS)
+    int t_time_carbonstarvation; //!< Number of timesteps with carbon starvation (TRACK_INDIVIDUALS)
+    int t_time_carbonstarvation_year; //!< Number of timesteps with carbon starvation in the current year (TRACK_INDIVIDUALS)
+    float t_GPP_sumyear; //!< Sum of GPP over the current year (TRACK_INDIVIDUALS)
+    float t_NPP_sumyear; //!< Sum of NPP over the current year (TRACK_INDIVIDUALS)
+    float t_GPPsquared_sumyear; //!< Sum of squared GPP over the current year (for the variance) (TRACK_INDIVIDUALS)
+    float t_NPPsquared_sumyear; //!< Sum of squared NPP over the current year (for the variance) (TRACK_INDIVIDUALS)
+    float t_Rday_sumyear; //!< Sum of daytime leaf respiration over the current year (TRACK_INDIVIDUALS)
+    float t_Rnight_sumyear; //!< Sum of night-time leaf respiration over the current year (TRACK_INDIVIDUALS)
+    float t_Rstem_sumyear; //!< Sum of stem respiration over the current year (TRACK_INDIVIDUALS)
+    float t_LAIabove_effavgyear; //!< Mean effective LAI above the tree over the current year (TRACK_INDIVIDUALS)
+    float t_carbon_storage_avgyear; //!< Mean carbon storage over the current year (TRACK_INDIVIDUALS)
+    float t_dbh_tracked; //!< DBH at the start of the tracking period (m) (TRACK_INDIVIDUALS)
+    float t_height_tracked; //!< Height at the start of the tracking period (m) (TRACK_INDIVIDUALS)
+    float t_CR_tracked; //!< Crown radius at the start of the tracking period (m) (TRACK_INDIVIDUALS)
+    float t_agb_tracked; //!< Aboveground biomass at the start of the tracking period (TRACK_INDIVIDUALS)
+    float t_LAIcum; //!< LAI above the tree, cumulated over the tracking period (TRACK_INDIVIDUALS)
+    float t_LAIeffcum; //!< Effective LAI above the tree, cumulated over the tracking period (TRACK_INDIVIDUALS)
+    float t_GPPcum; //!< GPP cumulated over the tracking period (TRACK_INDIVIDUALS)
+    float t_NPPcum; //!< NPP cumulated over the tracking period (TRACK_INDIVIDUALS)
+    float t_LAIsquared_cum; //!< Squared LAI cumulated over the tracking period (for the variance) (TRACK_INDIVIDUALS)
+    float t_LAIeffsquared_cum; //!< Squared effective LAI cumulated over the tracking period (TRACK_INDIVIDUALS)
+    float t_GPPsquared_cum; //!< Squared GPP cumulated over the tracking period (TRACK_INDIVIDUALS)
+    float t_NPPsquared_cum; //!< Squared NPP cumulated over the tracking period (TRACK_INDIVIDUALS)
 #endif
     // Constructor
-    Tree(Context &ctx);
-
+    Tree(Context &ctx); //!< Constructor: an empty site (no tree), with per-tree vectors sized for this simulation
     void Birth(Context &ctx, int, int);
     int BirthFromInventory(Context &ctx, int site, std::vector<std::string> &parameter_names, std::vector<std::string> &parameter_values, int &nb_speciesrandom);
     void Death(Context &ctx);
@@ -194,44 +189,41 @@ public:
     void Water_uptake(Context &ctx);
 #endif
 
-    void CalcRespGPP(Context &ctx);
+    void CalcRespGPP(Context &ctx); //!< Carbon and water fluxes of the tree in the timestep: GPP, transpiration, stem and night-time respiration (WATER: ComputeRespGPP then ApplyRespGPP)
 #ifdef WATER
     RespGPPResult ComputeRespGPP(Context &ctx); //!< Fluxes for this timestep; modifies neither the tree nor ctx
     void ApplyRespGPP(Context &ctx, const RespGPPResult &r); //!< Store fluxes in the tree; add to ctx.soil.transpiration_1016
 #endif
-    void CalcNPP(Context &ctx);
+    void CalcNPP(Context &ctx); //!< Net primary production of the timestep, from GPP and respiration
     void UpdateLeafDynamics(Context &ctx);
     void UpdateTreeBiometry(Context &ctx);
-    void UpdateVolumeDensity();
-
+    void UpdateVolumeDensity(); //!< Crown leaf area index t_LAI: leaf area over the crown area filled with leaves (gaps excluded)
     void DisperseSeed(Context &ctx);
     void Treefall(Context &ctx, float angle);
     void Update(Context &ctx, bool fluxes_precomputed = false);
-    void Average(Context &ctx);
+    void Average(Context &ctx); //!< Add the tree to the per-species sums of its species (sumstats outputs)
     void CalcLAI(Context &ctx);
-    void histdbh(Context &ctx);
-
-    float CalcJmaxm(Context &ctx);
-    float CalcAGB(Context &ctx);
-    float CalcIncrementDBH(Context &ctx, float delta_agb);
-    float CalcCarbonStorageMax(Context &ctx);
+    void histdbh(Context &ctx); //!< Add the tree to the DBH histogram ctx.diag.nbdbh (1 cm classes, rounded down)
+    float CalcJmaxm(Context &ctx); //!< Maximum electron transport rate per leaf mass from the tree's leaf traits
+    float CalcAGB(Context &ctx); //!< Aboveground biomass of the tree (kg)
+    float CalcIncrementDBH(Context &ctx, float delta_agb); //!< DBH increment corresponding to an aboveground biomass increment delta_agb
+    float CalcCarbonStorageMax(Context &ctx); //!< Maximum non-structural carbon storage: 5% of the tree carbon (half of NSC), x1.25 for roots (gC)
     float CalcCt(Context &ctx);
 
     void CalcLeafLifespan(Context &ctx);
-    void InitialiseLeafPools(Context &ctx);
+    void InitialiseLeafPools(Context &ctx); //!< Initial partition of leaf area into young, mature and old leaves
     void UpdateSapwoodArea(Context &ctx, float ddbh);
-    void UpdateHeight(Context &ctx);
-    void UpdateCR(Context &ctx);
-    void UpdateCD(Context &ctx);
-
-    float DeathRateNDD(Context &ctx, float, float, float);
+    void UpdateHeight(Context &ctx); //!< Height from DBH (Michaelis-Menten allometry, GMD Part 1 Eq. 16)
+    void UpdateCR(Context &ctx); //!< Crown radius from DBH (GMD Part 1 Eq. 17)
+    void UpdateCD(Context &ctx); //!< Crown depth from height (GMD Part 1 Eq. 18)
+    float DeathRateNDD(Context &ctx, float, float, float); //!< Death rate including negative density dependence (NDD option); arguments: PPFD, DBH, NDD index
 #ifdef WATER
-    float DeathRate(Context &ctx, float, float, float);
+    float DeathRate(Context &ctx, float, float, float); //!< Death rate of the tree per timestep; arguments: PPFD, DBH, carbon starvation time
     leafFluxes FluxesLeaf(Context &ctx, float, float, float, float, float, float, float, float, float);
     leafFluxes dailyFluxesLeaf(Context &ctx, float, float, float, float, float, float, float &);
-    leafFluxes Photosyn(Context &ctx, float, float, float, float);
-    void OutputTreeStandard(Context &ctx, std::fstream &output);
-    void OutputTreeStandard(Context &ctx);
+    leafFluxes Photosyn(Context &ctx, float, float, float, float); //!< Leaf photosynthesis and stomatal conductance (see the definition for parameters)
+    void OutputTreeStandard(Context &ctx, std::fstream &output); //!< Write the tree's state to a snapshot or site output stream
+    void OutputTreeStandard(Context &ctx); //!< Write the tree's state to standard output
 #else
     float DeathRate(Context &ctx, float, float);
     float GPPleaf(Context &ctx, float, float, float);
@@ -239,13 +231,11 @@ public:
     float dailyGPPcrown(Context &ctx, float, float, float, float);
 #endif
     float Rdayleaf(Context &ctx, float T);
-    float dailyRdayleaf(Context &ctx, float T);
-
+    float dailyRdayleaf(Context &ctx, float T); //!< Daytime leaf respiration averaged over the half-hourly steps of a day
     void CalcLAImax(Context &ctx);
     void CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax);
     float predLeafLifespanKikuzawa(Context &ctx);
-    float GetCrownAreaFilled(float crown_area);
-
+    float GetCrownAreaFilled(float crown_area); //!< Crown area actually filled with leaves, given the crown gap fraction (m2)
 #ifdef TRACK_INDIVIDUALS
     float StartTracking(Context &ctx);
 #endif

@@ -247,10 +247,17 @@ struct Soil
 struct Diagnostics
 {
     int nblivetrees; //!< For output -- number of live trees at each timestep
-    int nbtrees_n10, nbtrees_n30; //!< For output -- number of trees dbh > 10 cm, computed at beginning of each timestep
-    int nbdead_n1, nbdead_n10, nbdead_n30; //!< For output -- number of deaths dbh > 1 cm, computed at each timestep
-    int nbTreefall1, nbTreefall10, nbTreefall30; //!< For output -- number of treefalls at each timestep (dbh > 1cm), _BASICTREEFALL
-    int nbtrees_carbstarv_n1, nbtrees_carbstarv_n10, nbtrees_carbstarv_n30; //!< For output -- number of trees > 1 cm with carbon starvation
+    int nbtrees_n10; //!< Number of trees with DBH >= 10 cm, at the beginning of the timestep (outputs)
+    int nbtrees_n30; //!< Number of trees with DBH >= 30 cm, at the beginning of the timestep (outputs)
+    int nbdead_n1;  //!< Deaths in the timestep, DBH >= 1 cm (outputs)
+    int nbdead_n10; //!< Deaths in the timestep, DBH >= 10 cm (outputs)
+    int nbdead_n30; //!< Deaths in the timestep, DBH >= 30 cm (outputs)
+    int nbTreefall1;  //!< Treefalls in the timestep, DBH >= 1 cm (_BASICTREEFALL; outputs)
+    int nbTreefall10; //!< Treefalls in the timestep, DBH >= 10 cm
+    int nbTreefall30; //!< Treefalls in the timestep, DBH >= 30 cm
+    int nbtrees_carbstarv_n1;  //!< Trees in carbon starvation, DBH >= 1 cm (outputs)
+    int nbtrees_carbstarv_n10; //!< Trees in carbon starvation, DBH >= 10 cm
+    int nbtrees_carbstarv_n30; //!< Trees in carbon starvation, DBH >= 30 cm
 
     std::vector<int> nbdbh; //!< Number of trees per 1 cm DBH class, for outputs
     std::vector<float> layer; //!< Plot sum of LAI3D per height layer, for outputs (m2 m-2 summed over sites)
@@ -330,14 +337,19 @@ struct CrownGeometry
 {
     float crown_gap_fraction; //!< Fraction of gaps in a crown, new in v.2.4.1: adds gaps according to a predetermined gap_fraction in tree crown. Gaps inserted regularly (i.e. every 4 pixels for a gap fraction of 0.25). In v.2.5:  gap fraction is now given as a target fraction and, in filling up a tree's crown, gaps are inserted when fraction_filled is too high: more accurate approximation of gap fraction (e.g., gap fractions > 0.5 are now possible). Also in v.2.5: intraspecific variation in crown radius affects gap fraction: trees with larger crowns also have more gaps, so large crowns get more open and smaller crowns denser, while keeping the same leaf area. !!!IMPROVE_IN_FUTURE
     float shape_crown; //!< Percentage of crown radius that reaches the crown top and defines how steep the crown slope is; only required if CROWN_UMBRELLA is activated, but added to main code so that input sheet does not have to be modified.
-    float Rndd, deltaR, deltaD; //!< Distance beyond which negative density dependence (NDD) effect is not accounted anymore
+    float Rndd;   //!< Distance beyond which negative density dependence (NDD) is not accounted for (m)
+    float deltaR; //!< NDD coefficient for recruitment; not read by the current code
+    float deltaD; //!< NDD coefficient for mortality (Tree death rate)
 
     float BAtot; //!< !!!UPDATE
 
     int extent_visual; //!< Extent of visualization outputs, bounded by extent of simulation
-    int mincol_visual, maxcol_visual; //!< ! Global variables: computed from extent, defining the two visualization outputs
-    int minrow_visual, maxrow_visual; //!< ! Global variables: computed from extent, defining the two visualization outputs
-    int minrow_visual_slice, maxrow_visual_slice; //!< ! Global variables: computed from extent, defining the two visualization outputs
+    int mincol_visual; //!< First column of the visualization window (computed from extent)
+    int maxcol_visual; //!< Last column of the visualization window
+    int minrow_visual; //!< First row of the visualization window
+    int maxrow_visual; //!< Last row of the visualization window
+    int minrow_visual_slice; //!< First row of the vertical-slice visualization output
+    int maxrow_visual_slice; //!< Last row of the vertical-slice visualization output
 };
 
 //! Global model parameters read from the global parameter file
@@ -422,7 +434,7 @@ struct Context
 #ifdef WATER
     std::vector<RespGPPResult> resp_gpp; //!< Per-site fluxes precomputed in parallel each timestep (see Evolution)
 #endif
-    OutputConfig out;   // last: large fstream objects, accessed rarely
+    OutputConfig out;   //!< Output file streams (placed last: large objects, accessed rarely)
 };
 
 #endif

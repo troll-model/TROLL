@@ -10,8 +10,8 @@
 #include <iostream>
 #include <filesystem> // C++17 feature
 
-// The tables depend on the input parameters, so the cache file name contains a
-// hash of the input files and of the compile-time options that change the layout.
+//! The tables depend on the input parameters, so the cache file name contains a
+//! hash of the input files and of the compile-time options that change the layout.
 // (A single fixed file name silently reused tables computed for other inputs.)
 static std::string LutCacheFile(const Context &ctx)
 {
@@ -40,10 +40,12 @@ static std::string LutCacheFile(const Context &ctx)
     std::snprintf(name, sizeof(name), "./.troll_cache/lut_%016llx.bin", (unsigned long long)hash);
     return name;
 }
+//! Format tag at the start of the cache file; caches without it are rejected
 static const char LUT_CACHE_MAGIC[8] = {'T', 'R', 'O', 'L', 'L', 'L', 'T', '2'}; // bump when the format changes
 
 // --- Save LUTs to file -------------------------------------------------------
 
+//! Write the lookup tables to the cache file (CACHE_LUT option); false on failure
 bool SaveLookUpTablesToCache(Context &ctx)
 {
 
@@ -115,6 +117,7 @@ bool SaveLookUpTablesToCache(Context &ctx)
 
 // --- Load LUTs from file -----------------------------------------------------
 
+//! Read the lookup tables from the cache file (CACHE_LUT option); false if missing, outdated or unreadable
 bool LoadLookUpTablesFromCache(Context &ctx)
 {
     std::ifstream in(LutCacheFile(ctx), std::ios::binary);

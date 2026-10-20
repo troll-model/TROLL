@@ -375,8 +375,8 @@ int CalcIntabsorb(float absorb_prev);                         //!< Helper functi
 // DATA READING FUNCTIONS
 // update v.3.1: already defined here to enable calling from functions of class Tree()
 template <typename N>
-void SetParameter(string &parameter_name, string &parameter_value, N &parameter, N parameter_min, N parameter_max, N parameter_default, bool quiet);
-void SetParameter(string &parameter_name, string &parameter_value, string &parameter, string parameter_default, bool quiet);
+void SetParameter(string &parameter_name, string &parameter_value, N &parameter, N parameter_min, N parameter_max, N parameter_default, bool quiet); //!< See param_registry.hpp: numeric parameter with range check
+void SetParameter(string &parameter_name, string &parameter_value, string &parameter, string parameter_default, bool quiet); //!< See param_registry.hpp: string parameter
 
 #ifdef Output_ABC
 // these are functions needed to create ABC output
@@ -403,12 +403,14 @@ void TrackingData_andOutput(Context &ctx); //!< Global function: tree level trac
 
 //// UTIL Templates
 
+//! True if value1 and value2 are equal to the given number of decimal places
 template <typename N>
 bool AreEqual(N value1, N value2, int precision)
 {
     return abs(value1 - value2) < pow(10, -precision); // make sure that namespace std is activated, otherwise abs is only defined for integers
 }
 
+//! Value of parameter_name in the parallel lists of names and values read from a parameter file ("" if absent)
 inline string GetParameter(string &parameter_name, vector<string> &parameter_names, vector<string> &parameter_values)
 {
     unsigned int parameter_index = 0;
@@ -435,6 +437,7 @@ inline string GetParameter(string &parameter_name, vector<string> &parameter_nam
     return (parameter_value);
 }
 
+//! Report how a parameter value compares with its allowed range and default (diagnostics when reading inputs)
 template <typename N>
 void CompareParameters(N &parameter_value, N parameter_min, N parameter_max, N parameter_default, string &parameter_name, vector<string> &parameter_names, vector<string> &parameter_values, bool quiet)
 {

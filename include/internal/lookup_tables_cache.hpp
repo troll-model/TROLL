@@ -3,7 +3,7 @@
 
 struct Context;
 
-bool LoadLookUpTablesFromCache(Context &ctx);
-bool SaveLookUpTablesToCache(Context &ctx);
+bool LoadLookUpTablesFromCache(Context &ctx); //!< Read the lookup tables from the cache (CACHE_LUT); false if unavailable
+bool SaveLookUpTablesToCache(Context &ctx);   //!< Write the lookup tables to the cache (CACHE_LUT); false on failure
 
 #endif // LOOKUPTABLES_CACHE_HPP

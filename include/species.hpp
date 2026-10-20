@@ -39,7 +39,19 @@ public:
     float s_seedmass;     //!< Seed mass (g); See Baraloto & Forget 2007 dataset v.2.3; deprecated in v.2.2, but still necessary for SEEDTRADEOFF
     float s_iseedmass;    //!< Inverse of seed mass (1/g), v.2.3
     // float s_output_field[12];         // scalar output fields, deprecated since v.3.1, replaced by actual sumstats for readability/code accessibility
-    float s_sum1, s_sum10, s_sum30, s_ba, s_ba10, s_agb, s_gpp, s_npp, s_rday, s_rnight, s_rstem, s_litterfall; // species level summary statistics
+    // Per-species sums for sumstats_species.txt and sumstats.txt, reset each timestep
+    float s_sum1; //!< Living trees of the species (output sums, before per-hectare scaling)
+    float s_sum10; //!< Trees with DBH >= 10 cm
+    float s_sum30; //!< Trees with DBH >= 30 cm
+    float s_ba; //!< Basal area, all trees (m2)
+    float s_ba10; //!< Basal area, trees with DBH >= 10 cm (m2)
+    float s_agb; //!< Aboveground biomass (kg)
+    float s_gpp; //!< GPP in the timestep (gC)
+    float s_npp; //!< NPP in the timestep (gC)
+    float s_rday; //!< Daytime leaf respiration in the timestep (gC)
+    float s_rnight; //!< Night-time leaf respiration in the timestep (gC)
+    float s_rstem; //!< Stem respiration in the timestep (gC)
+    float s_litterfall; //!< Leaf litterfall in the timestep (g dry mass)
 
     float s_tlp; //!< Leaf water potential at turgor loss point (MPa); defined for consistency when WATER is deactivated
 #ifdef WATER     // Some of these parameters may include intraspecific variability, as in v.2.4.1.
