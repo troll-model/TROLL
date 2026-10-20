@@ -16,12 +16,19 @@
 //! Global functions to compute Vcmax (on a mass basis) and leaf dark respiration (on a leaf area basis)
 // newIM : to avoid repeating same functions in Tree and Species class. Was needed for the Species class to correctly initialise Rdark and compute LCP
 
+//! @param LMA leaf mass per area (g m-2)
+//! @param Nmass leaf nitrogen per dry mass (g g-1; converted to mg g-1 inside)
+//! @param Pmass leaf phosphorus per dry mass (g g-1; converted to mg g-1 inside)
 float CalcVcmaxm(float LMA, float Nmass, float Pmass)
 {
     float SLA = 10000.0 / LMA;                                                                                                                               // in cm2 g-1
     float Vcmaxm = pow(10.0, fminf((-1.56 + 0.43 * log10(Nmass * 1000.0) + 0.37 * log10(SLA)), (-0.80 + 0.45 * log10(Pmass * 1000.0) + 0.25 * log10(SLA)))); // this is equation 2 in Domingues et al 2010 PCE (coefficients from fig7) which made better fits than equation 1 (without LMA). Nmass and Pmass are given in g g-1, but should be in mg g-1 in equ 2 in Domingues et al. 2010, hence the mutiplication by 1000.
     return (Vcmaxm);                                                                                                                                         //  in micromol C g-1 s-1
 }
+//! @param LMA leaf mass per area (g m-2)
+//! @param Nmass leaf nitrogen per dry mass (g g-1)
+//! @param Pmass leaf phosphorus per dry mass (g g-1)
+//! @param Vcmax maximum carboxylation rate per leaf area (umol m-2 s-1)
 float CalcRdark(float LMA, float Nmass, float Pmass, float Vcmax)
 {
     float Parea = Pmass * LMA;                                                                         // in g ctx.params.m-2
@@ -33,6 +40,10 @@ float CalcRdark(float LMA, float Nmass, float Pmass, float Vcmax)
 #ifdef CROWN_UMBRELLA
 
 // Global function: linear decrease of crown radius
+//! @param ctx simulation context (all model state)
+//! @param CR crown radius (m)
+//! @param crown_extent number of layers over which the radius decreases (umbrella part of the crown)
+//! @param crown_position position of the layer within crown_extent (layers)
 float GetRadiusSlope(Context &ctx, float CR, float crown_extent, float crown_position)
 {
     float crown_slope = CR * (1.0 - ctx.crown.shape_crown) / crown_extent;
@@ -41,12 +52,16 @@ float GetRadiusSlope(Context &ctx, float CR, float crown_extent, float crown_pos
 }
 
 // Global function: not currently used, but returns the input radius
+//! @param CR crown radius (m)
+//! @param crown_extent unused (common signature with GetRadiusSlope)
+//! @param crown_position unused (common signature with GetRadiusSlope)
 float GetRadiusCylinder(float CR, float crown_extent, float crown_position)
 {
     return (CR);
 }
 
 // Global function: converts floating point crown area into integer value, imposing lower and upper limits
+//! @param crown_radius crown radius (m)
 int GetCrownIntarea(float crown_radius)
 {
     // crown area
@@ -82,6 +97,9 @@ void GetDensitiesGradient(float LAI, float CD, float &dens_top, float &dens_belo
 }
 
 // Global function: deduces within-crown density from LAI, assuming uniform leaf distribution
+//! @param LAI leaf area index of the crown (m2 m-2)
+//! @param CD crown depth (m)
+//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer); [out] for GetDensity*
 void GetDensityUniform(float LAI, float CD, float &dens_layer) // RENAMED: ctx.params.dens → dens_layer
 {
 #ifdef CROWN_UMBRELLA
@@ -93,11 +111,21 @@ void GetDensityUniform(float LAI, float CD, float &dens_layer) // RENAMED: ctx.p
 }
 
 // Global function: dummy function when no modification is needed
+//! @param input value to pass through
+//! @param output [out] receives input unchanged
+//! @param CD unused (common signature of crown modifiers)
+//! @param height unused
+//! @param layer_fromtop unused
 void KeepFloatAsIs(float input, float &output, float CD, float height, int layer_fromtop)
 {
     output = input;
 }
 
+//! @param input value to pass through
+//! @param output [out] receives input unchanged
+//! @param CD unused (common signature of crown modifiers)
+//! @param height unused
+//! @param layer_fromtop unused
 void KeepIntAsIs(int input, int &output, float CD, float height, int layer_fromtop)
 {
     output = input;
@@ -106,6 +134,11 @@ void KeepIntAsIs(int input, int &output, float CD, float height, int layer_fromt
 // Global function: a modifying function that converts LAI to the density of a specific ctx.diag.layer, using the GetDensity functions
 //! - modifier for GPP calculation where we need the leaves per ctx.diag.layer to weight our results
 //! - LAI is the input, dens_layer the output
+//! @param LAI leaf area index of the crown (m2 m-2)
+//! @param dens_layer [out] leaf area density of the layer, cumulated from the crown top (m2 m-2 per 1 m layer)
+//! @param CD crown depth (m)
+//! @param height tree height (m)
+//! @param layer_fromtop layer index counted from the crown top
 void LAI2dens_cumulated(float LAI, float &dens_layer, float CD, float height, int layer_fromtop)
 {
     int crown_top = int(height);
@@ -143,6 +176,11 @@ void LAI2dens_cumulated(float LAI, float &dens_layer, float CD, float height, in
 // Global function: a modifying function that converts LAI to the density of a specific ctx.diag.layer, using the GetDensity functions
 //! - modifier for GPP calculation where we need the leaves per ctx.diag.layer to weight our results
 //! - LAI is the input, dens_layer the output
+//! @param LAI leaf area index of the crown (m2 m-2)
+//! @param dens_layer [out] leaf area density of the layer (m2 m-2 per 1 m layer)
+//! @param CD crown depth (m)
+//! @param height tree height (m)
+//! @param layer_fromtop layer index counted from the crown top
 void LAI2dens(float LAI, float &dens_layer, float CD, float height, int layer_fromtop)
 {
 
@@ -190,12 +228,20 @@ void UpdateLAI3D(Context &ctx, int height, int site, float dens_layer, float &LA
 
 // Global function: remove outliers in canopy height model (CHM); vector option
 #ifdef CHM_SPIKEFREE
+//! @param height height layer reached by a crown (m)
+//! @param site site index
+//! @param noinput unused (common signature of crown modifiers)
+//! @param chm [in,out] canopy height per site, raised to height where lower
 void UpdateCHMvector(int height, int site, float noinput, vector<int> &chm)
 {
     if (chm[site] < height)
         chm[site] = height;
 }
 // Global function: remove outliers in canopy height model (CHM)
+//! @param height height layer reached by a crown (m)
+//! @param site site index
+//! @param noinput unused (common signature of crown modifiers)
+//! @param chm [in,out] canopy height per site, raised to height where lower
 void UpdateCHM(int height, int site, float noinput, int *chm)
 {
     if (chm[site] < height)
@@ -203,6 +249,11 @@ void UpdateCHM(int height, int site, float noinput, int *chm)
 }
 #endif
 
+//! @param ctx simulation context (all model state)
+//! @param height height layer (m)
+//! @param site site index
+//! @param row_slice row of the vertical slice written to the visual output
+//! @param output_statistics [out] statistics accumulated for the slice
 void OutputCrownSliced(Context &ctx, int height, int site, int row_slice, vector<float> &output_statistics)
 {
     int row_current = site / ctx.grid.cols;
@@ -285,6 +336,13 @@ void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, 
 }
 
 // Global function: calculates packing densities
+//! @param ctx simulation context (all model state)
+//! @param row_center row of the crown centre
+//! @param col_center column of the crown centre
+//! @param height tree height (m)
+//! @param CR crown radius (m)
+//! @param CD crown depth (m)
+//! @param crownvolume [in,out] crown volume per height layer (70 layers of 1 m)
 void AddCrownVolumeLayer(Context &ctx, int row_center, int col_center, float height, float CR, float CD, int crownvolume[70])
 {
     int crown_top = int(height);

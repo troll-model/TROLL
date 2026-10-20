@@ -14,7 +14,9 @@ TROLL_FLOAT_KERNEL_BEGIN // part of the single-precision leaf kernel
 //! (max relative error 1.3e-6 measured over 2.3e7 calls). For the electron-transport rate,
 //! use ElectronTransportRate() below.
 //! Inline (4.1.2) so it is inlined into Photosyn even without link-time optimisation.
-//! @param A, B, C  coefficients of the quadratic
+//! @param A     coefficient of x^2
+//! @param B     coefficient of x
+//! @param C     constant term
 //! @param ROOT     1 or -1, sign in front of the square root
 //! @return the selected root; NaN if B^2 - 4AC < 0 (a warning is printed)
 inline float QUAD(float A, float B, float C, int ROOT)

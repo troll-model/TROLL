@@ -6,6 +6,7 @@
 
 //! Global function: initialise intraspecific variables
 //! Global function: initialise output streams
+//! @param ctx simulation context (all model state)
 void InitialiseOutputStreams(Context &ctx)
 {
     char nnn[200];
@@ -328,6 +329,7 @@ void InitialiseOutputStreams(Context &ctx)
 // ######################################
 //  Global function: initialisation with bare ground conditions
 // ######################################
+//! @param ctx simulation context (all model state)
 void Initialise(Context &ctx)
 {
     //** Initialization of the simulation parameters **
@@ -395,6 +397,7 @@ void Initialise(Context &ctx)
 //  Global ABC function: initialise ABC conditions
 // ######################################
 //! - determine area to be taken into consideration for ABC and margin not to be taken into consideration (artefacts along border)
+//! @param ctx simulation context (all model state)
 void InitialiseABC(Context &ctx)
 {
     margin = 0;
@@ -469,6 +472,7 @@ void InitialiseABC(Context &ctx)
 // ######################################
 //  added v.3.1.6
 
+//! @param ctx simulation context (all model state)
 void ReadInputPointcloud(Context &ctx)
 {
     cout << endl
@@ -509,6 +513,7 @@ void ReadInputPointcloud(Context &ctx)
 // ######################################
 
 // completely rewritten in v.3.1
+//! @param ctx simulation context (all model state)
 void ReadInputInventory(Context &ctx)
 {
 
@@ -883,6 +888,7 @@ void ReadInputInventory(Context &ctx)
 // ######################################
 //  Global function: Field dynamic memory allocation
 // ######################################
+//! @param ctx simulation context (all model state)
 void AllocMem(Context &ctx)
 {
     // this needs better commenting and probably a rethink (mainly has to do with MPI)
@@ -1061,6 +1067,7 @@ void AllocMem(Context &ctx)
 }
 
 //!  Free dynamic memory
+//! @param ctx simulation context (all model state)
 void FreeMem(Context &ctx)
 {
     // Model arrays in Context are std::vector members and are released automatically

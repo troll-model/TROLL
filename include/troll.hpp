@@ -213,13 +213,33 @@ inline float carbon_stored_free;       //!< Global variable: --  !!!UPDATE
 // TREESHAPE CALCULATIONS
 // All these calculations are currently defined as non-member functions, but could potentially be converted to class Tree
 // See function description for more details
-void GetPPFDabove(Context &ctx, int height, int site, float noinput, float (&PPFD)[2]); //!< Global function: PPFD retrieval for function leafarea_max()
+//! @param ctx simulation context (all model state)
+//! @param height tree height or height layer (m)
+//! @param site site index
+//! @param noinput unused (common signature of crown statistics)
+//! @param ppfd_CA [in,out] accumulator: [0] PPFD summed over the crown area, [1] number of sites summed
+void GetPPFDabove(Context &ctx, int height, int site, float noinput, float (&ppfd_CA)[2]); //!< Global function: PPFD retrieval for function leafarea_max()
 #ifdef WATER
+//! @param ctx simulation context (all model state)
+//! @param height tree height or height layer (m)
+//! @param site site index
+//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer); [out] for GetDensity*
+//! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area (and with WATER: incident light, longwave extinction)
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[6]); //!< Global function: calculates the canopy environment // RENAMED: dens → dens_layer
 #else
+//! @param ctx simulation context (all model state)
+//! @param height tree height or height layer (m)
+//! @param site site index
+//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer); [out] for GetDensity*
+//! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area (and with WATER: incident light, longwave extinction)
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[4]); //!< Global function: calculates the canopy environment // RENAMED: dens → dens_layer
 #endif
 void AddCrownVolumeLayer(Context &ctx, int row_center, int col_center, float height, float CR, float CD, int crownvolume[70]); //!< Global function: calculates packing densities
+//! @param ctx           simulation context
+//! @param height        height layer (m)
+//! @param site          site index
+//! @param dens_layer    leaf area density of the crown in the layer (m2 m-2 per 1 m layer)
+//! @param LA_cumulated  [in,out] leaf area added to the LAI3D field so far (m2)
 void UpdateLAI3D(Context &ctx, int height, int site, float dens_layer, float &LA_cumulated);                                    //!< Global function: update of LAI3D field, called by CalcLAI() // RENAMED: dens → dens_layer
 #ifdef CHM_SPIKEFREE
 void UpdateCHMvector(int height, int site, float noinput, vector<int> &chm); //!< Global function: remove outliers in canopy height model (CHM); vector option
@@ -230,11 +250,33 @@ void KeepFloatAsIs(float input, float &output, float CD, float height, int layer
 void KeepIntAsIs(int input, int &output, float CD, float height, int layer_fromtop);                //!< Global function: dummy function when no modification is needed
 void LAI2dens(float LAI, float &dens_layer, float CD, float height, int layer_fromtop);             //!< Global function: a modifying function that converts LAI to the density of a specific layer, using the GetDensity functions
 void LAI2dens_cumulated(float LAI, float &dens_layer, float CD, float height, int layer_fromtop);   //!< Global function: a modifying function that converts LAI to percentage LAI in and above the current layer, using the GetDensity functions; can be used to directly allocate LAI without looping over LAI3D field; new in v.3.1
+//! @param LAI            leaf area index of the crown (m2 m-2)
+//! @param CD             crown depth (m)
+//! @param dens_top       [out] leaf area density of the top layer
+//! @param dens_belowtop  [out] leaf area density of the layer below the top
+//! @param dens_layer     [out] leaf area density of the lower layers
 void GetDensitiesGradient(float LAI, float CD, float &dens_top, float &dens_belowtop, float &dens_layer); //!< Global function: deduces within-crown densities from LAI // RENAMED: dens → dens_layer
+//! @param LAI leaf area index of the crown (m2 m-2)
+//! @param CD crown depth (m)
+//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer); [out] for GetDensity*
 void GetDensityUniform(float LAI, float CD, float &dens_layer);                                           //!< Global function: deduces within-crown density from LAI // RENAMED: dens → dens_layer
 int GetCrownIntarea(float radius);                                                                  //!< Global function: converts floating point crown area into integer value, imposing lower and upper limits
 float GetRadiusSlope(Context &ctx, float CR, float crown_extent, float crown_position);                           //!< Global function: linear decrease of crown radius
 float GetRadiusCylinder(float CR, float crown_extent, float crown_position);                        //!< Global function: not currently used, but returns the input radius
+//! Fill one crown layer site by site, in the precomputed spiral order (LookUp_Crown_site), skipping
+//! sites so that the filled fraction tracks fraction_filled_target, and apply UpdateCrownStatistic
+//! to each filled site.
+//! @param ctx                     simulation context
+//! @param row_center              row of the crown centre
+//! @param col_center              column of the crown centre
+//! @param pos_start               first position in the spiral order
+//! @param pos_end                 position after the last one
+//! @param fraction_filled_target  target fraction of the crown area filled with leaves (1 - crown gap fraction)
+//! @param fraction_filled_actual  [in,out] fraction filled so far
+//! @param height_layer            height layer (m)
+//! @param CrownStatistic_input    value passed to UpdateCrownStatistic for each site (e.g. leaf area density of the layer)
+//! @param CrownStatistic_output   [in,out] statistic accumulated over the sites
+//! @param UpdateCrownStatistic    function applied to each site (e.g. UpdateLAI3D, GetCanopyEnvironment)
 template <typename I, typename O, typename F>
 void CircleAreaUpdateCrownStatistic_template(Context &ctx, int row_center, int col_center, int pos_start, int pos_end, float fraction_filled_target, float &fraction_filled_actual, int height_layer, I CrownStatistic_input, O &CrownStatistic_output, F UpdateCrownStatistic)
 {
@@ -263,6 +305,21 @@ void CircleAreaUpdateCrownStatistic_template(Context &ctx, int row_center, int c
 }
 //!< Global function: Template function called by LoopLayerUpdateCrownStatistic_template
 
+//! Apply a crown statistic to every layer of a crown: the crown is processed as shells from the top,
+//! each layer filled by CircleAreaUpdateCrownStatistic_template with the radius given by GetRadiusLayer.
+//! @param ctx                          simulation context
+//! @param row_center                   row of the crown centre
+//! @param col_center                   column of the crown centre
+//! @param height                       tree height (m)
+//! @param CR                           crown radius (m)
+//! @param CD                           crown depth (m)
+//! @param fraction_filled_target       target fraction of the crown area filled with leaves
+//! @param shell_fromtop                offset of the processed shell below the crown top (layers)
+//! @param GetRadiusLayer               radius of a layer from the crown shape (GetRadiusSlope or GetRadiusCylinder)
+//! @param CrownStatistic_input         crown-level input (e.g. crown LAI)
+//! @param CrownStatistic_output        [in,out] statistic accumulated over the crown
+//! @param ModifyCrownStatistic_input   converts the input for each layer (e.g. LAI2dens, KeepFloatAsIs)
+//! @param UpdateCrownStatistic_output  function applied to each site of each layer
 template <typename G, typename I, typename O, typename M, typename F>
 void LoopLayerUpdateCrownStatistic_template(Context &ctx, int row_center, int col_center, float height, float CR, float CD, float fraction_filled_target, int shell_fromtop, G GetRadiusLayer, I CrownStatistic_input, O &CrownStatistic_output, M ModifyCrownStatistic_input, F UpdateCrownStatistic_output)
 {
@@ -331,6 +388,9 @@ float CalcRdark(float lma, float nmass, float pmass, float vcmax); //!< Returns 
 
 // GLOBAL FUNCTIONS
 void AssignSpeciesParam(Species &S, const std::string &name, const std::string &value); //!< Global function: assign a species parameter by name
+//! @param ctx simulation context (all model state)
+//! @param parameter_name parameter name
+//! @param parameter_value value read from the file (text)
 void AssignValuePointcloud(Context &ctx, std::string parameter_name, std::string parameter_value); //!< Global function: assign a pointcloud parameter by name
 void ReadInputGeneral(Context &ctx);                                //!< Global function: read in global parameter sheet
 void ReadInputSpecies(Context &ctx);                                //!< Global function: read in species parameter sheet
@@ -362,6 +422,11 @@ void OutputVisual(Context &ctx);                                                
 void CloseOutputs(Context &ctx);
 void FreeMem(Context &ctx);
 
+//! @param mean_beam            mean number of laser beams per site
+//! @param sd_beam              standard deviation of the number of beams per site
+//! @param klaser               extinction coefficient of the laser in foliage
+//! @param transmittance_laser  transmittance of the laser through empty voxels
+//! @param output_pointcloud    output stream of the point cloud
 void ExportPointcloud(float mean_beam, float sd_beam, float klaser, float transmittance_laser, fstream &output_pointcloud); //!< Global function: point cloud output, v.3.1.6; kept separately from other output functions, as we write to a dedicated external file format (.las)
 
 // HELPER FUNCTIONS
@@ -374,8 +439,20 @@ int CalcIntabsorb(float absorb_prev);                         //!< Helper functi
 
 // DATA READING FUNCTIONS
 // update v.3.1: already defined here to enable calling from functions of class Tree()
+//! @param parameter_name parameter name
+//! @param parameter_value value read from the file (text)
+//! @param parameter [out] variable receiving the value
+//! @param parameter_min minimum allowed value
+//! @param parameter_max maximum allowed value
+//! @param parameter_default default value used when the value is invalid
+//! @param quiet suppress console messages if true
 template <typename N>
 void SetParameter(string &parameter_name, string &parameter_value, N &parameter, N parameter_min, N parameter_max, N parameter_default, bool quiet); //!< See param_registry.hpp: numeric parameter with range check
+//! @param parameter_name parameter name
+//! @param parameter_value value read from the file (text)
+//! @param parameter [out] variable receiving the value
+//! @param parameter_default default value used when the value is invalid
+//! @param quiet suppress console messages if true
 void SetParameter(string &parameter_name, string &parameter_value, string &parameter, string parameter_default, bool quiet); //!< See param_registry.hpp: string parameter
 
 #ifdef Output_ABC
@@ -404,6 +481,9 @@ void TrackingData_andOutput(Context &ctx); //!< Global function: tree level trac
 //// UTIL Templates
 
 //! True if value1 and value2 are equal to the given number of decimal places
+//! @param value1 first value
+//! @param value2 second value
+//! @param precision number of decimal places compared
 template <typename N>
 bool AreEqual(N value1, N value2, int precision)
 {
@@ -411,6 +491,9 @@ bool AreEqual(N value1, N value2, int precision)
 }
 
 //! Value of parameter_name in the parallel lists of names and values read from a parameter file ("" if absent)
+//! @param parameter_name parameter name
+//! @param parameter_names parameter names read from a parameter file
+//! @param parameter_values values read, in the same order as parameter_names
 inline string GetParameter(string &parameter_name, vector<string> &parameter_names, vector<string> &parameter_values)
 {
     unsigned int parameter_index = 0;
@@ -438,6 +521,14 @@ inline string GetParameter(string &parameter_name, vector<string> &parameter_nam
 }
 
 //! Report how a parameter value compares with its allowed range and default (diagnostics when reading inputs)
+//! @param parameter_value value read from the file (text)
+//! @param parameter_min minimum allowed value
+//! @param parameter_max maximum allowed value
+//! @param parameter_default default value used when the value is invalid
+//! @param parameter_name parameter name
+//! @param parameter_names parameter names read from a parameter file
+//! @param parameter_values values read, in the same order as parameter_names
+//! @param quiet suppress console messages if true
 template <typename N>
 void CompareParameters(N &parameter_value, N parameter_min, N parameter_max, N parameter_default, string &parameter_name, vector<string> &parameter_names, vector<string> &parameter_values, bool quiet)
 {

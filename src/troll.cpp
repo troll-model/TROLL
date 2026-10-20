@@ -18,6 +18,7 @@
 // ###########################################
 
 //! Parse a non-negative integer seed; throws on malformed input
+//! @param text seed given on the command line
 static long long ParseSeed(const char *text)
 {
     char *end = nullptr;
@@ -30,6 +31,8 @@ static long long ParseSeed(const char *text)
 
 //! Run one simulation: parse arguments, read inputs, initialise, loop over timesteps, write outputs.
 //! Returns the process exit code.
+//! @param argc number of command-line arguments
+//! @param argv command-line arguments (see README: -i, -s, -m, -d, -p, -o, -f, -w, -n, -r)
 static int RunTroll(int argc, char *argv[])
 {
     Context ctx{};
@@ -320,6 +323,8 @@ static int RunTroll(int argc, char *argv[])
 }
 
 //! Entry point: runs RunTroll() and reports configuration errors (exceptions) with exit code 1.
+//! @param argc number of command-line arguments
+//! @param argv command-line arguments
 int main(int argc, char *argv[])
 {
     try

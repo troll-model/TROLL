@@ -2,6 +2,7 @@
 #include "constants.hpp"
 #include "context.hpp"
 
+//! @param ctx simulation context (all model state)
 void InitialiseIntraspecific(Context &ctx)
 {
     float max_intraspecific_height = 0.0, min_intraspecific_height = 1000.0,
@@ -131,6 +132,9 @@ void InitialiseIntraspecific(Context &ctx)
 // v.3.1.5: create a LookUp table based on species identity and intraspecific deviation
 //! LAImax of one pseudo-tree (species spp, intraspecific variant dev) under the current
 //! ctx conditions; callers make sure these are the initialisation conditions.
+//! @param ctx simulation context (all model state)
+//! @param spp species index (1-based)
+//! @param dev intraspecific variant (0-9999)
 static float ComputeLAImaxEntry(Context &ctx, int spp, int dev)
 {
     Tree pseudotree(ctx);
@@ -160,6 +164,9 @@ static float ComputeLAImaxEntry(Context &ctx, int spp, int dev)
 //! LAImax for species spp (1-based) and intraspecific variant dev, computed on first use.
 //! Computing all 10000 * nbspp entries upfront cost ~80 us each (about 11 s for 14
 //! species, minutes for species-rich parameterisations), while short runs use few of them.
+//! @param ctx simulation context (all model state)
+//! @param spp species index (1-based)
+//! @param dev intraspecific variant (0-9999)
 float GetLAImaxPrecomputed(Context &ctx, int spp, int dev)
 {
     const int index = dev + (spp - 1) * 10000;
@@ -186,6 +193,7 @@ float GetLAImaxPrecomputed(Context &ctx, int spp, int dev)
 //! independent and use no random numbers, so results do not depend on the thread count.
 //! With a single thread, entries are computed on first use by GetLAImaxPrecomputed(),
 //! which saves most of the start-up time of short runs.
+//! @param ctx simulation context (all model state)
 void InitialiseLookUpLAImax(Context &ctx)
 {
     const int nb_entries = 10000 * ctx.grid.nbspp;
@@ -228,6 +236,7 @@ void InitialiseLookUpLAImax(Context &ctx)
 //! -# temperature dependence on Farquhar model parameters (following von Caemmerer 2000 and Bernacchi et al. 2003 PCE)
 //! -# flux averaging with the canopy
 //! -# ctx.grid.sites within a crown in order of distance from the center
+//! @param ctx simulation context (all model state)
 void InitialiseLookUpTables(Context &ctx)
 {
 

@@ -3,6 +3,8 @@
 #include "context.hpp"
 
 //! Percentage num/den*100, or 0 when den is 0 (avoids printing "-nan" when a size class is empty)
+//! @param num numerator
+//! @param den denominator; 0 gives 0 instead of NaN
 static double PercentOrZero(double num, double den)
 {
     return den > 0.0 ? 100.0 * num / den : 0.0;
@@ -12,6 +14,7 @@ static double PercentOrZero(double num, double den)
 //  Global function: calculation of the global averages every ctx.time.timestep
 // ##############################################
 
+//! @param ctx simulation context (all model state)
 void Average(Context &ctx)
 {
 
@@ -408,6 +411,7 @@ void Average(Context &ctx)
 // ##############################################
 //  Global function: output of the field variables every ctx.time.timestep
 // ##############################################
+//! @param ctx simulation context (all model state)
 void OutputField(Context &ctx)
 {
     int site, h;
@@ -445,6 +449,10 @@ void OutputField(Context &ctx)
 //  Global function: output snapshots of the scene at one point in time
 // ##############################################
 //! - This can be used to take snapshots of the forest in more detail and track its development over time.
+//! @param ctx simulation context (all model state)
+//! @param output output stream (file of the snapshot)
+//! @param header write the header line first if true
+//! @param dbh_limit minimum DBH of the trees written (m)
 void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
 {
     cout << "Writing snapshot of forest to file." << endl;
@@ -558,6 +566,8 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
 // ## Make a spikefree CHM ##
 // ##########################
 //! Compute the spike-free canopy height of each site into chm_spikefree (used for CHM.txt; CHM_SPIKEFREE option)
+//! @param ctx simulation context (all model state)
+//! @param chm_spikefree [out] spike-free canopy height per site (m)
 void MakeCHMspikefree(Context &ctx, vector<int> &chm_spikefree)
 {
     chm_spikefree.clear();
@@ -614,6 +624,7 @@ void MakeCHMspikefree(Context &ctx, vector<int> &chm_spikefree)
 // ################################
 // ### Output for visualization ###
 // ################################
+//! @param ctx simulation context (all model state)
 void OutputVisual(Context &ctx)
 {
     // first simple chm output
@@ -723,6 +734,8 @@ void OutputVisual(Context &ctx)
 // ##################
 // ### Output CHM ###
 // ##################
+//! @param ctx simulation context (all model state)
+//! @param output_CHM output stream of CHM.txt
 void OutputCHM(Context &ctx, fstream &output_CHM)
 {
 #ifdef CHM_SPIKEFREE
@@ -757,6 +770,8 @@ void OutputCHM(Context &ctx, fstream &output_CHM)
 // ##############################################
 //  Global function: writes the whole 3D LAI voxel field to file
 // ##############################################
+//! @param ctx simulation context (all model state)
+//! @param output_transmLAI3D output stream of LAI.txt
 void OutputLAI(Context &ctx, fstream &output_transmLAI3D)
 {
     output_transmLAI3D << "s\trow\tcol\th\tLAI3D" << endl;
@@ -777,6 +792,13 @@ void OutputLAI(Context &ctx, fstream &output_transmLAI3D)
 //! - This approach makes lots of simplifying assumptions, among which are: no flightline, no angles, no beam diameter/divergence, Lambert-Beer extinction, including assumptions about the conversion between transmittance probability and energy extinction. Importantly, a TROLL forest contains no woody material and does not represent topography at the moment, all of which may influence sampling densities as well.
 //! - One further question concerns the probability of obtaining a ground return: there is a long discussion in the literature about backscatter ratios between vegetation and ground. However, this seems to be neither a constant ratio nor seems there to be agreement on how it varies, likely due to dependence on footprint size and composition of reflecting surfaces. Cf., for example, Ni-Meister et al. 2001, IEEE Transactions: they use a ratio of mostly 1.0 (the implicit assumption in this simulation as well), but state that it should vary from site to site. Knapp et al. 2021, Remote Sensing, on the other hand: "The reflectance of the forest ground voxels was down-weighted by dividing by 2.5 in order to account for the lower reflectivity of the ground vs. vegetation." This specifically concerns GEDI waveform simulations, so large-footprint lasers, but the source publication does not seem to give a direct reference for the value. Furthermore, it would imply that the ratio of ground to vegetation reflectance is 0.4 for large-footprint full-waveform lidar, which seems to be in stark contrast to Chen et al. 2014, Remote Sensing of Environment, who looked at footprints of up to 8m and found a constant ratio ground/vegetation of 1.7 (they measured vegetation/ground ratio as ~0.57, so 1.7 = 1.0/0.57). However, their Figure 11 seems to indicate an inverse relationship for small footprints (~0.4m) with a ground to vegetation backscatter ratio of ca. 0.8. In the future, it would be worth running TROLL voxel output through an explicit raytracing simulator, with a much more detailed parameterization of surfaces (e.g. DART or Helios++, https://github.com/3dgeo-heidelberg/helios) and compare our simplified simulations to its outcomes/adjust accordingly.
 
+//! @param ctx simulation context (all model state)
+//! @param beams [in,out] number of laser beams per site
+//! @param beams_returns [in,out] laser returns per voxel
+//! @param mean_beam mean number of beams per site
+//! @param sd_beam standard deviation of the number of beams per site
+//! @param klaser extinction coefficient of the laser in foliage
+//! @param transmittance_laser transmittance of the laser through empty voxels
 void GenerateVoxelreturnsALS(Context &ctx, vector<int> &beams, vector<float> &beams_returns, float mean_beam, float sd_beam, float klaser, float transmittance_laser)
 {
 
@@ -1144,6 +1166,7 @@ void GenerateVoxelreturnsALS(Context &ctx, vector<int> &beams, vector<float> &be
 // ##############################################
 //  Global function: tree level tracking of key variables
 // ##############################################
+//! @param ctx simulation context (all model state)
 void TrackingData_andOutput(Context &ctx)
 {
     for (int site = 0; site < ctx.grid.sites; site++)
@@ -1210,6 +1233,7 @@ void TrackingData_andOutput(Context &ctx)
 // ##############################################
 //! - Statistics averaged over one year for ten years and then used for the point estimates in the OutputABC(...) routine
 //! - !!!: TODO needs to be checked for different timesteps than 1 month
+//! @param ctx simulation context (all model state)
 void UpdateMovingAveragesABC(Context &ctx)
 {
 
@@ -1272,6 +1296,7 @@ void UpdateMovingAveragesABC(Context &ctx)
 // ##############################################
 //  Global ABC function: update DBH function for ABC routines
 // ##############################################
+//! @param ctx simulation context (all model state)
 void UpdateDBHtrackingABC(Context &ctx)
 {
     for (int r = row_start; r < row_end; r++)
@@ -1492,6 +1517,7 @@ void UpdateTransmittanceCHM_ABC(float mean_beam, float sd_beam, float klaser, fl
 // ##############################################
 //  Global ABC function: output general ABC statistics
 // ##############################################
+//! @param ctx simulation context (all model state)
 void OutputABC(Context &ctx)
 {
     cout << " ABC: Conservation of Traits " << endl;
@@ -3071,6 +3097,7 @@ namespace
 //! Close (and thereby flush) every output stream, whether or not it was opened.
 //! Previously only a subset was closed and the rest relied on exit() running global
 //! destructors; with a local Context those buffers could be lost.
+//! @param ctx simulation context (all model state)
 void CloseOutputs(Context &ctx)
 {
     CloseStream(ctx.out.output_info);

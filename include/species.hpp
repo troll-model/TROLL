@@ -70,6 +70,7 @@ public:
     //! Constructor of the Species class
     Species();
 
+    //! @param ctx simulation context (all model state)
     void Init(Context &ctx);
 };
 

@@ -6,6 +6,7 @@
 // ######################################
 //  Global function: Evolution at each ctx.time.timestep
 // ######################################
+//! @param ctx simulation context (all model state)
 void Evolution(Context &ctx)
 {
 #ifdef CHECK_CARBON
@@ -86,6 +87,7 @@ void Evolution(Context &ctx)
 // #################################
 //  Global function: Compute field Seed
 // #################################
+//! @param ctx simulation context (all model state)
 void UpdateSeeds(Context &ctx)
 {
     // With MPI option: Pass seeds across processors => two more fields to be communicated between n.n. (nearest neighbor) processors. NB: dispersal distance is bounded by the value of 'ctx.grid.rows'. At least 99 % of the seeds should be dispersed within the stripe or on the n.n. stripe. Hence ctx.grid.rows > 4.7*max(dist_moy_dissemination),for an exponential dispersal kernel.
@@ -157,6 +159,7 @@ void UpdateSeeds(Context &ctx)
 // #################################
 //! - This is an important function for TROLL -- Includes many of the operations
 //! - set the iteration environment -- nb: the current structure of code suppose that environment is periodic (a period = a year), if one wants to input a variable climate, with interannual variation and climate change along the simulation, a full climatic input needs to be input (ie number of columns=ctx.time.iter and not ctx.time.iterperyear) and change ctx.time.iterperyear by ctx.time.nbiter here.
+//! @param ctx simulation context (all model state)
 void UpdateField(Context &ctx)
 {
 
@@ -515,6 +518,10 @@ void UpdateField(Context &ctx)
 // #############################
 //  Global function: update ctx.species.SPECIES_SEEDS field
 // #############################
+//! @param ctx simulation context (all model state)
+//! @param col column of the site receiving a seed
+//! @param row row of the site receiving a seed
+//! @param spp species index
 void FillSeed(Context &ctx, int col, int row, int spp)
 {
     if ((col >= 0) && (col < ctx.grid.cols))
@@ -536,6 +543,7 @@ void FillSeed(Context &ctx, int col, int row, int spp)
 // #############################
 //  Global function: tree germination module
 // #############################
+//! @param ctx simulation context (all model state)
 void RecruitTree(Context &ctx)
 {
     for (int site = 0; site < ctx.grid.sites; site++)
@@ -602,6 +610,7 @@ void RecruitTree(Context &ctx)
 //  Global function: Treefall gap formation
 // #############################
 //! change in v.2.4: resetting ctx.field.Thurt[0] field is done in TriggerSecondaryTreefall() at the beginning of each iteration. Further changes: rewriting of Tree::FallTree() which is now Tree::Treefall(angle). t_hurt can now persist longer, so new treefall events are added to older damages (that, in turn are decaying)
+//! @param ctx simulation context (all model state)
 void TriggerTreefall(Context &ctx)
 {
     for (int site = 0; site < ctx.grid.sites; site++)
@@ -637,6 +646,7 @@ void TriggerTreefall(Context &ctx)
 //! - NEW in v.2.4: TriggerSecondaryTreefall(), called at the beginning of each iteration
 //! - translates damages from previous round into tree deaths, partly treefalls, partly removing them only (e.g. splintering)
 //! - in the limit of ctx.params.p_tfsecondary = 0.0, this is equivalent to the previous computation
+//! @param ctx simulation context (all model state)
 void TriggerTreefallSecondary(Context &ctx)
 {
     ctx.diag.nbTreefall1 = 0;
@@ -677,6 +687,7 @@ void TriggerTreefallSecondary(Context &ctx)
 }
 
 // Helper function
+//! @param ctx simulation context (all model state)
 int GetTimeofyear(Context &ctx)
 {
     // new function to derive time of year, extended to negative iterations (-1 would be treated as last iteration of previous year)
@@ -687,6 +698,9 @@ int GetTimeofyear(Context &ctx)
         timeofyear = ctx.time.iter % ctx.time.iterperyear;
     return (timeofyear);
 };
+//! @param ah height-DBH parameter a_h (m)
+//! @param hmax asymptotic height h_lim (m)
+//! @param dbh diameter at breast height (m)
 float CalcHeightBaseline(float &ah, float &hmax, float &dbh)
 {
     // height allometry
@@ -694,6 +708,8 @@ float CalcHeightBaseline(float &ah, float &hmax, float &dbh)
     return (height);
 }
 
+//! @param ctx simulation context (all model state)
+//! @param dbh diameter at breast height (m)
 float CalcCRBaseline(Context &ctx, float &dbh)
 {
     // crown radius allometry
@@ -710,6 +726,8 @@ float CalcCRBaseline(Context &ctx, float &dbh)
     return (CR);
 }
 
+//! @param ctx simulation context (all model state)
+//! @param height tree height (m)
 float CalcCDBaseline(Context &ctx, float &height)
 {
     // crown depth allometry
@@ -719,6 +737,8 @@ float CalcCDBaseline(Context &ctx, float &height)
 }
 
 //! - upper bound on LAI within one voxel and above voxel (beyond 9.95 and 19.95, none of the environmental variables should change), needed for LookUp tables
+//! @param absorb_prev leaf area index above the layer (m2 m-2; capped at 19.95)
+//! @param absorb_delta leaf area index of the layer (m2 m-2; capped at 9.95)
 int CalcIntabsorb(float absorb_prev, float absorb_delta)
 {
     absorb_delta = fminf(absorb_delta, 9.95);
@@ -728,6 +748,7 @@ int CalcIntabsorb(float absorb_prev, float absorb_delta)
 }
 // Helper function
 //! - upper bound on LAI within one voxel and above voxel, needed for LookUp tables, for cases where there won't be any absorption within the voxel (absorb_delta = 0.0)
+//! @param absorb_prev leaf area index above the layer (m2 m-2; capped at 19.95)
 int CalcIntabsorb(float absorb_prev)
 {
     absorb_prev = fminf(absorb_prev, 19.95);

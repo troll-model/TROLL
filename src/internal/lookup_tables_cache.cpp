@@ -13,6 +13,7 @@
 //! The tables depend on the input parameters, so the cache file name contains a
 //! hash of the input files and of the compile-time options that change the layout.
 // (A single fixed file name silently reused tables computed for other inputs.)
+//! @param ctx simulation context (input file names)
 static std::string LutCacheFile(const Context &ctx)
 {
     std::uint64_t hash = 1469598103934665603ULL; // FNV-1a
@@ -46,6 +47,7 @@ static const char LUT_CACHE_MAGIC[8] = {'T', 'R', 'O', 'L', 'L', 'L', 'T', '2'};
 // --- Save LUTs to file -------------------------------------------------------
 
 //! Write the lookup tables to the cache file (CACHE_LUT option); false on failure
+//! @param ctx simulation context (all model state)
 bool SaveLookUpTablesToCache(Context &ctx)
 {
 
@@ -118,6 +120,7 @@ bool SaveLookUpTablesToCache(Context &ctx)
 // --- Load LUTs from file -----------------------------------------------------
 
 //! Read the lookup tables from the cache file (CACHE_LUT option); false if missing, outdated or unreadable
+//! @param ctx simulation context (all model state)
 bool LoadLookUpTablesFromCache(Context &ctx)
 {
     std::ifstream in(LutCacheFile(ctx), std::ios::binary);

@@ -173,7 +173,9 @@ public:
     float t_NPPsquared_cum; //!< Squared NPP cumulated over the tracking period (TRACK_INDIVIDUALS)
 #endif
     // Constructor
-    Tree(Context &ctx); //!< Constructor: an empty site (no tree), with per-tree vectors sized for this simulation
+    //! Constructor: an empty site (no tree), with per-tree vectors sized for this simulation
+    //! @param ctx simulation context (all model state)
+    Tree(Context &ctx);
     void Birth(Context &ctx, int, int);
     int BirthFromInventory(Context &ctx, int site, std::vector<std::string> &parameter_names, std::vector<std::string> &parameter_values, int &nb_speciesrandom);
     void Death(Context &ctx);
@@ -216,16 +218,40 @@ public:
     void UpdateHeight(Context &ctx); //!< Height from DBH (Michaelis-Menten allometry, GMD Part 1 Eq. 16)
     void UpdateCR(Context &ctx); //!< Crown radius from DBH (GMD Part 1 Eq. 17)
     void UpdateCD(Context &ctx); //!< Crown depth from height (GMD Part 1 Eq. 18)
-    float DeathRateNDD(Context &ctx, float, float, float); //!< Death rate including negative density dependence (NDD option); arguments: PPFD, DBH, NDD index
+    float DeathRateNDD(Context &ctx, float dbh, float carbon_starv, float ndd); //!< Death rate including negative density dependence (NDD option)
 #ifdef WATER
-    float DeathRate(Context &ctx, float, float, float); //!< Death rate of the tree per timestep; arguments: PPFD, DBH, carbon starvation time
-    leafFluxes FluxesLeaf(Context &ctx, float, float, float, float, float, float, float, float, float);
-    leafFluxes dailyFluxesLeaf(Context &ctx, float, float, float, float, float, float, float &);
-    leafFluxes Photosyn(Context &ctx, float, float, float, float); //!< Leaf photosynthesis and stomatal conductance (see the definition for parameters)
+    float DeathRate(Context &ctx, float dbh, float carbon_starv, float phi_root); //!< Death rate of the tree per timestep (WATER version)
+    //! Leaf energy balance coupled with photosynthesis and stomatal conductance, for one leaf
+    //! layer and one half-hourly step: iterates leaf temperature to convergence (GMD Part 1, Sect. 2.5).
+    //! @param ctx        simulation context (parameters, lookup tables)
+    //! @param PPFD       photosynthetic photon flux density on the leaves of the layer (umol photons m-2 s-1)
+    //! @param VPDa       air vapour pressure deficit at the layer (kPa)
+    //! @param Ta         air temperature at the layer (degC)
+    //! @param WIND       wind speed at the layer (m s-1)
+    //! @param ExtinctLW  extinction factor of net longwave radiation at the layer (LookUp_ExtinctLW, dimensionless)
+    //! @param PPFDtop    PPFD at the top of the canopy (umol photons m-2 s-1)
+    //! @param PPFDinc    PPFD incident on the layer, i.e. above it (umol photons m-2 s-1)
+    //! @param Tatop      air temperature at the top of the canopy (degC), for the net longwave lookup
+    //! @param VPDatop    vapour pressure deficit at the top of the canopy (kPa), for the net longwave lookup
+    //! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: transpiration (umol H2O m-2 s-1)
+    leafFluxes FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop);
+    //! Daily mean leaf fluxes of one crown layer: FluxesLeaf over the daytime half-hourly steps.
+    //! The climate arguments are relative to the canopy-top half-hourly series, not absolute values.
+    //! @param ctx        simulation context (climate series)
+    //! @param PPFD       light at the layer relative to the canopy top (fraction; multiplied by the half-hourly irradiance and SWtoPPFD)
+    //! @param VPD        VPD at the layer relative to the canopy top (factor)
+    //! @param T          decrease in air temperature from the canopy top to the layer (degC)
+    //! @param W          wind speed at the layer relative to the canopy top (factor)
+    //! @param ExtinctLW  extinction factor of net longwave radiation at the layer (dimensionless)
+    //! @param PPFDinc    light incident on the layer relative to the canopy top (fraction)
+    //! @param wf_1016    [out] transpiration of the layer for the 10-16 cm DBH diagnostic (transpiration1016 output)
+    //! @return carbon_flux and water_flux averaged over the daytime steps (units as FluxesLeaf)
+    leafFluxes dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, float W, float ExtinctLW, float PPFDinc, float &wf_1016);
+    leafFluxes Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS); //!< Leaf photosynthesis and stomatal conductance (see the definition for parameters)
     void OutputTreeStandard(Context &ctx, std::fstream &output); //!< Write the tree's state to a snapshot or site output stream
     void OutputTreeStandard(Context &ctx); //!< Write the tree's state to standard output
 #else
-    float DeathRate(Context &ctx, float, float);
+    float DeathRate(Context &ctx, float dbh, float carbon_starv); //!< Death rate of the tree per timestep (version without water)
     float GPPleaf(Context &ctx, float, float, float);
     float dailyGPPleaf(Context &ctx, float, float, float);
     float dailyGPPcrown(Context &ctx, float, float, float, float);
