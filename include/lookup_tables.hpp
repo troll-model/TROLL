@@ -6,6 +6,5 @@
 //
 // The initializer itself (defined in troll.cpp)
 //
-void InitialiseLookUpTables();
 
 #endif // LOOKUP_TABLES_HPP

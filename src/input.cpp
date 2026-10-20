@@ -10,6 +10,7 @@
 // ============================================================================
 static std::unordered_map<std::string, std::function<void(Species &, std::string, std::string)>> species_param_registry;
 
+//! Register the species-file columns (name, type, allowed range) used to read species parameters
 static void BuildSpeciesRegistry()
 {
     species_param_registry["s_name"] = [](Species &S, std::string n, std::string v) {
