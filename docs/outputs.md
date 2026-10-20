@@ -117,7 +117,7 @@ Soil cells (`dcell`) are squares of `length_dcell` metres (global parameters); c
 One row per living tree at the end (or start) of the run. Readable as an initial forest with
 option `-f`. Columns: position (`col`, `row`, `site`), `sp_lab` (species index), `from_Data`
 (1 if the tree came from an input inventory), and the tree's traits and state, in the units
-of the species file and of the model: `LMA` (g m⁻²), `Nmass` and `Pmass` (mg g⁻¹), `wsg`
+of the species file and of the model: `LMA` (g m⁻²), `Nmass` and `Pmass` (g g⁻¹, as in the species file; corrected in 4.1.4), `wsg`
 (g cm⁻³), `leafarea` (cm²), `tlp` (MPa), `Rdark`, `Vcmax`, `Jmax` (µmol m⁻² s⁻¹),
 `dbhmax`, `hmax` (m), `LAImax` (m² m⁻²), DBH and height (m) and further state variables.
 

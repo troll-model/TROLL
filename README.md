@@ -65,7 +65,10 @@ The leaf kernel (`FluxesLeaf`, `Photosyn`, `QUAD`) is single precision and compi
 ### Documentation
 
 - [docs/outputs.md](docs/outputs.md): every output file, its columns and units.
-- API documentation: `make docs` generates it in `build/docs/html` (requires Doxygen); `make docs-check` also reports coverage and fails on documentation errors.
+- [docs/inputs.md](docs/inputs.md): input files, columns and units.
+- [docs/equations.md](docs/equations.md): where each equation of the model description (GMD Part 1) is implemented, with the constants checked.
+- [docs/open-questions.md](docs/open-questions.md): discrepancies between code, papers and files, for the authors.
+- API documentation: install Doxygen *before* configuring, then from the `build/` folder run `cmake ..` and `make docs` (HTML in `build/docs/html`); `make docs-check` also reports coverage and fails on documentation errors. Running `make` in the top-level folder does not work: the Makefile is generated in `build/`.
 
 ## Get started
 

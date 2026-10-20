@@ -15,7 +15,7 @@ phi	0.10625	/*  quantum yield (in micromol C/micromol photon) */
 absorptance_leaves	0.83	/* absorptance of individual leaves */
 theta	0.7	/* parameter of the Farquhar model */
 g1	3.77	/* parameter g1 of Medlyn et al ’s stomatal conductance model */
-g0	5.0	/* minimum leaf conductance (mol m-2 s-1) */
+g0	5.0	/* minimum leaf conductance (mmol H2O m-2 s-1) */
 pheno_a0	0.2	/* threshold for change in old leaf shedding rate, in proportion of TLP */
 pheno_b0	0.02	/* threshold for change in old leaf shedding rate, in proportion of tree height */
 pheno_delta	0.2	/* amplitude of change in old leaf shedding rate */
