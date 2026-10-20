@@ -19,3 +19,7 @@ marked **results** would change model outputs if resolved in favour of the paper
 | 10 | Units not established from the code | outputs `state_*`, `site*` | tree `transpiration`, `root_biomass_<l>` | outputs |
 | 11 | Unused or broken code | `PROB_S`, `deltaR`; options `TROLL_NO_WATER`, `TROLL_NO_CROWN_UMBRELLA`, `TROLL_NO_FULL_CLIMATE`, `Output_ABC`, `TRACK_INDIVIDUALS` (uses `t_timeofyear_born`, declared `t_month_born`) | remove or repair? | maintenance |
 | 12 | Open notes in the code | 47 comments such as "should be", "to discuss" | to be triaged into issues | maintenance |
+| 13 | Leaf dark respiration (Eq. 32) | `CalcRdark` (`crown.cpp`) | the paper gives Atkin et al. (2015)'s mass-based model; the code uses an area-based variant (1.3893 + 0.0728 N_area + 0.0015 P_area + 0.0095 Vcmax − 0.0358 × 26.2); which one is intended? | **results** |
+| 14 | Sapwood area (Eq. 55) | `Tree::UpdateSapwoodArea` | δ₁ = −0.018 in the paper, −0.18 in the code: about 12% more sapwood for a 30 m tree with wsg 0.6, hence more stem respiration | **results** |
+| 15 | Leaf lifespan (Eq. 57) | `Tree::CalcLeafLifespan` | the coefficient −0.565 multiplies N in g g⁻¹ (≈ 0.02), so nitrogen has almost no effect; with N in % (≈ 2) it would shorten lifespans by a factor of about 3; which unit did the fit use? | **results** |
+| 16 | Errata in Part 1 | Eqs. 12, 26–27, 52 | Eqs. 26–27 are printed without log₁₀ (the code uses the original log–log form) and with LMA in g cm⁻²; Eq. 12 gives M_w = 18 kg mol⁻¹ (0.018); Eq. 52's text refers to Eq. 19 for A_n (Eq. 24) | documentation |

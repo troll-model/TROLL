@@ -77,7 +77,7 @@ public:
     float t_WSF_A;                     //!< Tree water stress factor for photosynthetic capacities, unitless, between 0 and 1
     float t_transpiration;             //!< Amount of water taken up from the soil and transpired at each timestep
     float t_g1_0;                      //!< Medlyn stomatal slope g1 of the tree from wood specific gravity, g1 = 6.53 - 3.97 wsg (Lin et al. 2015) (kPa^0.5)
-    float t_g1;                        //!< Medlyn g1 used for stomatal conductance (kPa^0.5); currently equal to t_g1_0 (the water-stress adjustment is commented out)
+    float t_g1;                        //!< Medlyn g1 used for stomatal conductance (kPa^0.5): t_g1_0 x WSF_s (stomatal water stress factor, set in Water_availability; GMD Part 1 Eq. 36)
 
 #ifdef PHENO_DROUGHT
     int t_Ndays_dry;       //!< Days with root-zone water potential below the species turgor loss point (PHENO_DROUGHT)
