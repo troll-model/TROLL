@@ -1,29 +1,59 @@
 # TROLL output files
 
-Each run with output prefix `PREFIX` (option `-o`) and run index `N` (option `-n`, default 0)
-writes files named `PREFIX_N_<name>.txt`. All files are tab-separated text with a header line,
-except `final_SWC3D.txt`. `iter` is the iteration (timestep) number, starting at 0; with the
-default daily timestep, one iteration is one day.
+Every output file, its columns and their units, checked against the code that writes it
+(TROLL 4.1.3, rechecked 4.1.6). Where the code does not establish a unit unambiguously, the
+entry says so.
 
-Units below were checked against the code that writes each file (TROLL 4.1.3). Where the code
-does not establish a unit unambiguously, the entry says so. Unless stated otherwise, plot-level
-quantities are per hectare and fluxes are **per timestep** (the console summary prints some of
-them annualised).
+## Conventions
 
-Which files are written depends on output options in the global parameter file
-(`_OUTPUT_extended` writes most of the files below; `_OUTPUT_inventory` writes the final
-inventory and soil water content). `info.txt` and `sumstats.txt` are always written.
+| Item | Rule |
+| --- | --- |
+| File names | `PREFIX_N_<name>.txt`, with `PREFIX` from option `-o` and run index `N` from option `-n` (default 0) |
+| Format | tab-separated text with a header line; exceptions: `info.txt` (free text) and `final_SWC3D.txt` (no header) |
+| `iter` | iteration (timestep) number, from 0; with the default daily timestep, one iteration is one day |
+| Plot-level quantities | per hectare, unless stated otherwise |
+| Fluxes | **per timestep**; the console summary prints GPP, NPP and litterfall annualised |
+| Annual values | per-timestep flux × iterations per year (`iterperyear`, 365 by default); e.g. GPP 0.121 MgC ha⁻¹ per day × 365 = 44.2 MgC ha⁻¹ yr⁻¹ |
+| Which files are written | `info.txt` and `sumstats.txt` always; `_OUTPUT_extended` writes most others; `_OUTPUT_inventory` writes the final inventory and soil water content |
+| Column names | kept as written by the code, including historical misspellings (`transpitation`, `yougLA`), so existing scripts keep working |
+
+## Overview
+
+| File | Content | One row per |
+| --- | --- | --- |
+| `info.txt` | run summary (version, seed, grid, timing) | — (free text) |
+| `sumstats.txt` | stand summary: stems, basal area, biomass, carbon fluxes | iteration |
+| `sumstats_species.txt` | same, per species | species and iteration |
+| `death.txt` | mortality and treefall counts | iteration |
+| `LAIdynamics.txt` | mean ground-level LAI | iteration |
+| `LAIyoung.txt`, `LAImature.txt`, `LAIold.txt` | leaf area density by leaf age and height | iteration |
+| `LAIprofile.txt` | vertical leaf area profile | height and iteration |
+| `water_balance.txt` | plot water balance, soil water per layer | iteration |
+| `phi_root.txt` | mean root-zone water potential | iteration |
+| `ppfd0.txt` | light diagnostics at ground level | iteration |
+| `litterfall.txt` | litterfall diagnostics | iteration (when enabled) |
+| `SWC_*`, `SWP_*`, `waterfluxes_*`, `soilproperties.txt`, `final_SWC3D.txt` | soil per layer and soil cell | soil layer or soil cell |
+| `final_pattern.txt`, `initial_pattern.txt` | tree inventories (readable with `-f`) | tree |
+| `state_begin/mid/end.txt` | tree snapshots | tree |
+| `site1.txt` ... `site6.txt` | time series of six fixed sites | iteration |
+| `death_snapshots.txt`, `deathrate.txt` | dead trees and death-rate diagnostics | dead tree |
+| `CHM.txt`, `LAI.txt`, `vertd.txt`, `sdd.txt` | spatial fields and distributions | site, voxel or class |
 
 ## Run information
 
 ### `info.txt`
-Free-text summary of the run: TROLL version, random seed and its source (`command line`,
-`_NONRANDOM` or `time-based`), grid, timing and the "Average computation time" (wall-clock
-seconds spent in the simulation loop). Not tab-separated.
 
-## Stand-level time series (one row per iteration)
+| Item | Meaning | Unit |
+| --- | --- | --- |
+| TROLL version | version that produced the run | — |
+| Random seed | seed and its source (`command line`, `_NONRANDOM` or `time-based`) | — |
+| Grid and options | plot dimensions and settings of the run | as in the global parameters |
+| Average computation time | wall-clock time spent in the simulation loop | s |
+
+## Stand-level time series
 
 ### `sumstats.txt` — stand summary
+
 | Column | Meaning | Unit |
 | --- | --- | --- |
 | `iter` | iteration | — |
@@ -40,15 +70,16 @@ seconds spent in the simulation loop). Not tab-separated.
 | `rstem` | stem respiration | MgC ha⁻¹ per timestep |
 | `litterfall` | leaf litter | Mg (dry mass) ha⁻¹ per timestep |
 
-Annual values: multiply the per-timestep fluxes by the number of iterations per year
-(`iterperyear` in the global parameters, 365 by default). Example: GPP 0.121 MgC ha⁻¹ per day
-× 365 = 44.2 MgC ha⁻¹ yr⁻¹.
-
 ### `sumstats_species.txt` — summary per species
-Same columns as `sumstats.txt`, with `species` (species name) after `iter`; one row per species
-and iteration.
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `iter` | iteration | — |
+| `species` | species name | — |
+| `sum1` ... `litterfall` | as in `sumstats.txt`, for the species | as in `sumstats.txt` |
 
 ### `death.txt` — mortality
+
 | Column | Meaning | Unit |
 | --- | --- | --- |
 | `nbdead_n1` | trees that died in the timestep, all sizes | number per timestep (per-hectare scaling not verified) |
@@ -57,16 +88,29 @@ and iteration.
 | `nbTreefall10` | same, DBH ≥ 10 cm | idem |
 
 ### `LAIdynamics.txt`
-Mean leaf area index over soil cells, at ground level (`LAI`, m² m⁻²), per iteration.
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `iter` | iteration | — |
+| `LAI` | leaf area index at ground level, mean over soil cells | m² m⁻² |
 
 ### `LAIyoung.txt`, `LAImature.txt`, `LAIold.txt`
-Leaf area density of young, mature and old leaves by height layer: one column per 1 m layer
-(`h_0` = ground to 1 m ...), plot mean (m² m⁻² per layer).
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `iter` | iteration | — |
+| `h_0`, `h_1`, ... | leaf area density of young / mature / old leaves in each 1 m layer (`h_0` = ground to 1 m), plot mean | m² m⁻² per layer |
 
 ### `LAIprofile.txt`
-Vertical leaf area profile: `height` (m) and `LAI` (m² m⁻²), several rows per iteration.
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `iter` | iteration | — |
+| `height` | height | m |
+| `LAI` | leaf area index at that height | m² m⁻² |
 
 ### `water_balance.txt` — plot water balance
+
 | Column | Meaning | Unit |
 | --- | --- | --- |
 | `precipitation` | rainfall of the day (from the daily climate file) | mm per timestep |
@@ -80,28 +124,41 @@ Vertical leaf area profile: `height` (m) and `LAI` (m² m⁻²), several rows pe
 | `SWC_<l>` | soil water content of layer *l*, plot mean | m³ m⁻³ |
 | `SWP_<l>` | soil water potential of layer *l*, plot mean | MPa |
 
-**Known issue (under review, unchanged in 4.1.3):** `interception` is computed as the sum over
-soil cells of interception in mm, multiplied by 0.001 and divided by the number of *sites*,
-not of soil cells. It is therefore smaller than the plot-mean interception (in m) by a factor
-of (number of soil cells) / (number of sites), e.g. 16 / 10,000 for the 1 ha example.
-`throughfall` is computed in mm per soil cell in `simulation.cpp` but commented as m³ in
-`output.cpp`; its unit in this file needs checking before use.
+Known issues (under review, unchanged since 4.1.3; see [open-questions.md](open-questions.md)):
+
+| Column | Issue |
+| --- | --- |
+| `interception` | computed as the sum over soil cells of interception in mm, × 0.001, divided by the number of *sites* rather than of soil cells: smaller than the plot-mean interception (m) by (soil cells)/(sites), e.g. 16 / 10,000 for the 1 ha example |
+| `throughfall` | computed in mm per soil cell in `simulation.cpp` but commented as m³ in `output.cpp`; check its unit before use |
 
 ### `phi_root.txt`
-Water potential in the root zone (MPa), averaged over trees: weighted by abundance
-(`abundance_weighted_phi_root`), by abundance of trees ≥ 10 cm DBH (`..._n10`) and by
-aboveground biomass (`agb_weighted_phi_root`).
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `iter` | iteration | — |
+| `abundance_weighted_phi_root` | root-zone water potential, mean over trees | MPa |
+| `abundance_weighted_phi_root_n10` | same, trees with DBH ≥ 10 cm | MPa |
+| `agb_weighted_phi_root` | same, weighted by aboveground biomass | MPa |
 
 ### `ppfd0.txt`
-Diagnostics of light at ground level (`variable`, `value`, `residual`), per iteration.
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `iter` | iteration | — |
+| `variable` | name of the light diagnostic | — |
+| `value` | value of the diagnostic | depends on `variable` |
+| `residual` | residual of the diagnostic | depends on `variable` |
 
 ### `litterfall.txt`
-Litterfall diagnostics; empty unless the corresponding diagnostic output is enabled.
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| — | litterfall diagnostics; the file is empty unless the corresponding diagnostic output is enabled | — |
 
 ## Soil (per layer and soil cell)
 
-Soil cells (`dcell`) are squares of `length_dcell` metres (global parameters); columns
-`dcell_0 ... dcell_K` are the cells, rows the soil layers.
+Soil cells (`dcell`) are squares of `length_dcell` metres (global parameters); in the per-cell
+files, columns `dcell_0 ... dcell_K` are the cells and rows the soil layers.
 
 | File | Content | Unit |
 | --- | --- | --- |
@@ -114,15 +171,29 @@ Soil cells (`dcell`) are squares of `length_dcell` metres (global parameters); c
 ## Individual trees
 
 ### `final_pattern.txt`, `initial_pattern.txt` — inventories
-One row per living tree at the end (or start) of the run. Readable as an initial forest with
-option `-f`. Columns: position (`col`, `row`, `site`), `sp_lab` (species index), `from_Data`
-(1 if the tree came from an input inventory), and the tree's traits and state, in the units
-of the species file and of the model: `LMA` (g m⁻²), `Nmass` and `Pmass` (g g⁻¹, as in the species file; corrected in 4.1.4), `wsg`
-(g cm⁻³), `leafarea` (cm²), `tlp` (MPa), `Rdark`, `Vcmax`, `Jmax` (µmol m⁻² s⁻¹),
-`dbhmax`, `hmax` (m), `LAImax` (m² m⁻²), DBH and height (m) and further state variables.
+
+One row per living tree at the end (or start) of the run; readable as an initial forest with
+option `-f`.
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `col`, `row`, `site` | position of the tree | — |
+| `sp_lab` | species index | — |
+| `from_Data` | 1 if the tree came from an input inventory | — |
+| `LMA` | leaf mass per area | g m⁻² |
+| `Nmass`, `Pmass` | leaf nitrogen and phosphorus per dry mass (as in the species file; corrected in 4.1.4) | g g⁻¹ |
+| `wsg` | wood specific gravity | g cm⁻³ |
+| `leafarea` | leaf area | cm² |
+| `tlp` | turgor loss point | MPa |
+| `Rdark`, `Vcmax`, `Jmax` | dark respiration, maximum carboxylation and electron transport rates | µmol m⁻² s⁻¹ |
+| `dbhmax`, `hmax` | DBH threshold and asymptotic height | m |
+| `LAImax` | maximum leaf area index | m² m⁻² |
+| DBH, height | tree size | m |
+| other columns | further state variables of the tree | as in `state_*` |
 
 ### `state_begin/mid/end.txt` — snapshots
-One row per living tree at the beginning, middle and end of the run:
+
+One row per living tree at the beginning, middle and end of the run.
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -142,12 +213,23 @@ One row per living tree at the beginning, middle and end of the run:
 | `root_biomass_<l>` | root biomass in soil layer *l* | unit not established from the code |
 
 ### `site1.txt` ... `site6.txt`
-Time series of the same variables as the snapshots, for six fixed sites (one row per
-iteration while a tree occupies the site).
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `iter` | iteration (one row per iteration while a tree occupies the site) | — |
+| other columns | as in `state_begin/mid/end.txt`, for the tree at one of six fixed sites | as in `state_*` |
 
 ### `death_snapshots.txt`, `deathrate.txt`
-Trees that died (`species`, `age` in years, `dbh` and `height` in m), and death-rate
-diagnostics (`wsg`, `dbh`, `basal`, `dr`).
+
+| File | Column | Meaning | Unit |
+| --- | --- | --- | --- |
+| `death_snapshots.txt` | `species` | species of the dead tree | — |
+| `death_snapshots.txt` | `age` | age at death | years |
+| `death_snapshots.txt` | `dbh`, `height` | size at death | m |
+| `deathrate.txt` | `wsg` | wood specific gravity | g cm⁻³ |
+| `deathrate.txt` | `dbh` | diameter at breast height | m |
+| `deathrate.txt` | `basal` | basal death rate (as named in the code) | unit not established |
+| `deathrate.txt` | `dr` | death rate (as named in the code) | unit not established |
 
 ## Spatial fields
 
@@ -158,10 +240,9 @@ diagnostics (`wsg`, `dbh`, `basal`, `dr`).
 | `vertd.txt` | vertical distribution of leaf area (`h`, `freq`) | — |
 | `sdd.txt` | seed dispersal distances (`d` in m, `freq`) | — |
 
-## Notes
+## Open points
 
-- Fluxes in `sumstats` are per timestep; the console prints GPP, NPP and litterfall annualised.
-- Column names are kept as written by the code, including historical misspellings
-  (`transpitation`, `yougLA`), so that existing scripts keep working.
-- Entries marked "unit not established" or "known issue" are open questions for the TROLL
-  authors; please report findings on the issue tracker.
+| Entry | Meaning |
+| --- | --- |
+| "unit not established" | the code does not determine the unit unambiguously; check before use |
+| "known issue" | listed in [open-questions.md](open-questions.md) for the TROLL authors; please report findings on the issue tracker |

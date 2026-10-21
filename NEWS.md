@@ -1,3 +1,6 @@
+-   TROLL 4.1.6: documentation presentation, no change in behaviour (October 2026)
+    -   `docs/equations.md`: the rows for Eqs. 26-68 were separated from the table by a blank line and rendered as plain text; the map is now one table per model section (Sects. 2.2-2.7) with a summary table, the same five columns throughout, the file of every implementing symbol, and one status vocabulary (matches / mapped / differs).
+    -   `docs/outputs.md`: every file described in the same table format (Column / Meaning / Unit), with tables for conventions, an overview of all files, known issues and open points; content unchanged except that `basal` and `dr` in `deathrate.txt` are marked as not documented in the code.
 -   TROLL 4.1.5: documentation release, no change in behaviour (October 2026)
     -   Every function documents its parameters (`@param`, with units where established): 127 functions in `src/` plus the header-only templates and the parameter registry. Header declarations name their parameters so Doxygen matches them to the definitions. Doxygen: 649/649 entities documented, no undocumented parameters, 0 errors.
     -   `docs/equations.md` covers the whole model description (GMD Part 1, Eqs. 1-68), with constants checked against the code.
