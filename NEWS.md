@@ -1,3 +1,8 @@
+-   TROLL 4.1.7: macOS build fix, no change in behaviour (October 2026)
+    -   The build failed on macOS with `-DTROLL_WARNINGS_AS_ERRORS=ON`: Apple's SDK marks `sprintf` deprecated. All 75 `sprintf` calls replaced by `snprintf(dest, sizeof(dest), ...)` (same text, and bounded: a path longer than its buffer is now truncated instead of overflowing it).
+    -   clang's `-Wunused-but-set-variable` on an unused counter (`nb_parameters_fromfile`, input.cpp and memory.cpp) silenced with `[[maybe_unused]]`.
+    -   CI: new clang build with `-Werror` on Linux; the macOS job no longer stops the other platforms when it fails (`fail-fast: false`).
+    -   Outputs bit-identical to 4.1.6 with GCC 13 and with clang 18 (stored references, zero tolerance).
 -   TROLL 4.1.6: documentation presentation, no change in behaviour (October 2026)
     -   `docs/equations.md`: the rows for Eqs. 26-68 were separated from the table by a blank line and rendered as plain text; the map is now one table per model section (Sects. 2.2-2.7) with a summary table, the same five columns throughout, the file of every implementing symbol, and one status vocabulary (matches / mapped / differs).
     -   `docs/outputs.md`: every file described in the same table format (Column / Meaning / Unit), with tables for conventions, an overview of all files, known issues and open points; content unchanged except that `basal` and `dr` in `deathrate.txt` are marked as not documented in the code.

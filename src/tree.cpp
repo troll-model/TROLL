@@ -739,7 +739,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
             char par_name[30];
-            sprintf(par_name, "root_biomass%d", l);
+            snprintf(par_name, sizeof(par_name), "root_biomass%d", l);
             string par_name_s = par_name;
             parameter_name = par_name_s;
             parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
@@ -749,7 +749,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
             char par_name[30];
-            sprintf(par_name, "soil_layer_weight%d", l); //
+            snprintf(par_name, sizeof(par_name), "soil_layer_weight%d", l); //
             string par_name_s = par_name;
             parameter_name = par_name_s;
             parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);

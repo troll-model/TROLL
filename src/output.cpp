@@ -940,7 +940,7 @@ void GenerateVoxelreturnsALS(Context &ctx, vector<int> &beams, vector<float> &be
     ctx.out.output_pointcloud.write(reinterpret_cast<const char *>(&version_minor), sizeof(version_minor));
 
     char system_identifier[33];
-    sprintf(system_identifier,"ALS simulator");
+    snprintf(system_identifier, sizeof(system_identifier),"ALS simulator");
     ctx.out.output_pointcloud.write(system_identifier, sizeof(system_identifier) - 1); // remove terminating NULL in char
 
     char generating_software[33] = "TROLL v.3.1.6+ forest simulator";

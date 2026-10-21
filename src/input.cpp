@@ -246,7 +246,7 @@ void ReadInputSpecies(Context &ctx)
         istringstream firstlinestream(line);
         string parameter_name;
         vector<int> parameter_index;
-        int nb_parameters_fromfile = 0;
+        [[maybe_unused]] int nb_parameters_fromfile = 0; // counted but not used (flagged by clang -Wunused-but-set-variable)
 
         while (firstlinestream >> parameter_name)
         {

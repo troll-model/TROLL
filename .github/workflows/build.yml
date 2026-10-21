@@ -11,6 +11,7 @@ jobs:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
@@ -29,6 +30,20 @@ jobs:
 
       - name: Build
         run: cmake --build build --config Release
+
+  # Clang on Linux with -Werror: catches clang-only warnings (e.g. -Wunused-but-set-variable)
+  # before they break the macOS build.
+  clang:
+    name: Build with clang (-Werror)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake libgsl-dev clang
+      - name: Configure
+        run: CC=clang CXX=clang++ cmake -B build -DCMAKE_BUILD_TYPE=Release -DTROLL_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build
 
   # Every compile-time option in include/troll_defines.hpp, one at a time.
   # Configurations marked "known_broken" did not compile before this workflow

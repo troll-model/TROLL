@@ -11,27 +11,27 @@ void InitialiseOutputStreams(Context &ctx)
 {
     char nnn[200];
     {
-        sprintf(nnn, "%s_%i_sumstats.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_sumstats.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_basic[0].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_initial_pattern.txt", ctx.buffers.buf, ctx.buffers.run_index); // previously "state" output, but not used anymore, overwritten for initial pattern
+        snprintf(nnn, sizeof(nnn), "%s_%i_initial_pattern.txt", ctx.buffers.buf, ctx.buffers.run_index); // previously "state" output, but not used anymore, overwritten for initial pattern
         ctx.out.output_basic[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_final_pattern.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_final_pattern.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_basic[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_final_SWC3D.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_final_SWC3D.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_basic[3].open(nnn, ios::out);
 
         // write headers for files
         ctx.out.output_basic[0] << "iter\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
         // headers for initial and final patterns are written automatically
 
-        sprintf(nnn, "%s_%i_sumstats_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_sumstats_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_extended[0].open(nnn, ios::out);
         ctx.out.output_extended[0] << "iter\tspecies\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
 
 #ifdef MIP_Lichstein
-        sprintf(nnn, "%s_%i_MIP_eco.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_MIP_eco.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_MIP_eco.open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_MIP_ind.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_MIP_ind.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_MIP_ind.open(nnn, ios::out);
 
         ctx.out.output_MIP_eco << "YEAR\tMONTH\tDAY\tGPP\tNPP\tET\tLAI\tLFLIT\tSW1\tSW2\tSW3\tSW4" << endl;
@@ -40,23 +40,23 @@ void InitialiseOutputStreams(Context &ctx)
 
         if (ctx.opt._OUTPUT_extended)
         {
-            sprintf(nnn, "%s_%i_sumstats_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_sumstats_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[0].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_ppfd0.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_ppfd0.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[1].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_death.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_death.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[2].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_death_snapshots.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_death_snapshots.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[3].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_deathrate.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_deathrate.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[4].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_sdd.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_sdd.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[5].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_vertd.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_vertd.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[6].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_LAI.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_LAI.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[7].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_CHM.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_CHM.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_extended[8].open(nnn, ios::out);
 
             // write headers
@@ -73,7 +73,7 @@ void InitialiseOutputStreams(Context &ctx)
 
             if (ctx.crown.extent_visual > 0)
             {
-                sprintf(nnn, "%s_%i_visual_field.txt", ctx.buffers.buf, ctx.buffers.run_index);
+                snprintf(nnn, sizeof(nnn), "%s_%i_visual_field.txt", ctx.buffers.buf, ctx.buffers.run_index);
                 ctx.out.output_visual[0].open(nnn, ios::out);
 #ifdef CHM_SPIKEFREE
                 ctx.out.output_visual[0] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "height_spikefree" << "\t" << "LAI" << endl; // header
@@ -81,7 +81,7 @@ void InitialiseOutputStreams(Context &ctx)
                 ctx.out.output_visual[0] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "LAI" << endl; // header
 #endif
 
-                sprintf(nnn, "%s_%i_visual_slice.txt", ctx.buffers.buf, ctx.buffers.run_index);
+                snprintf(nnn, sizeof(nnn), "%s_%i_visual_slice.txt", ctx.buffers.buf, ctx.buffers.run_index);
                 ctx.out.output_visual[1].open(nnn, ios::out);
                 ctx.out.output_visual[1] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "sp_lab" << "\t" << "ratio_height_Ct" << "\t" << "ratio_NPP_GPP" << endl; // header
             }
@@ -90,93 +90,93 @@ void InitialiseOutputStreams(Context &ctx)
         // v.3.1.6 output for point cloud
         if (ctx.opt._OUTPUT_pointcloud)
         {
-            sprintf(nnn, "%s_%i.las", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i.las", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_pointcloud.open(nnn, ios::out | ios::binary);
             ctx.out.output_pointcloud.imbue(locale::classic()); // justification here: https://stackoverflow.com/questions/14750496/sending-integer-to-fstream-as-little-endian; locale regulates how streams print and read values (i.e. commas vs. points for decimals, etc.); setting it to classic to ensure portability, but not entirely sure how important this is in practice for binary files
         }
 
 #ifdef Output_ABC
-        sprintf(nnn, "%s_%i_abc_traitconservation.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_traitconservation.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[0].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_ground.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_ground.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_chm.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_chm.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_chmALS.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_chmALS.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[3].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_transmittance.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_transmittance.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[4].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_transmittanceALS.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_transmittanceALS.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[5].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[6].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_species10.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_species10.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[7].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_traits.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_traits.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[8].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_traits10.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_traits10.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[9].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_biomass.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_abc_biomass.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output_abc[10].open(nnn, ios::out);
 #endif
 
 #ifdef WATER
-        // sprintf(nnn,"%s_%i_water_balance.txt",ctx.buffers.buf, ctx.buffers.run_index);
+        // snprintf(nnn, sizeof(nnn),"%s_%i_water_balance.txt",ctx.buffers.buf, ctx.buffers.run_index);
         // output_water[0].open(nnn, ios::out);
 
-        sprintf(nnn, "%s_%i_water_balance.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_water_balance.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[11].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site1.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_site1.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[12].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site2.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_site2.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[13].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site3.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_site3.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[14].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site4.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_site4.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[15].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site5.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_site5.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[16].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site6.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_site6.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[17].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_state_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[28].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_state_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[29].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_state_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[30].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_SWC_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_SWC_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_SWC_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[3].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_SWP_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[4].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_SWP_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[5].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_SWP_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[6].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_litterfall.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_litterfall.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[7].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_waterfluxes_begin.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[18].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_waterfluxes_mid.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[19].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_waterfluxes_end.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[20].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIdynamics.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_LAIdynamics.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[21].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIyoung.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_LAIyoung.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[22].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAImature.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_LAImature.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[23].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIold.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_LAIold.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[24].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_phi_root.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_phi_root.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[31].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIprofile.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_LAIprofile.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[32].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_soilproperties.txt", ctx.buffers.buf, ctx.buffers.run_index);
+        snprintf(nnn, sizeof(nnn), "%s_%i_soilproperties.txt", ctx.buffers.buf, ctx.buffers.run_index);
         ctx.out.output[33].open(nnn, ios::out);
 
         // write headers
@@ -306,18 +306,18 @@ void InitialiseOutputStreams(Context &ctx)
         if (ctx.opt._OUTPUT_extended)
         {
             // these are the "cases" of trees that are followed
-            sprintf(nnn, "%s_%i_trees_fortracking.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_trees_fortracking.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_track[0].open(nnn, ios::out);
             ctx.out.output_track[0] << "site" << "\t" << "timeofyear_born" << "\t" << "col" << "\t" << "row" << "\t" << "species" << "\t" << "dbh" << "\t" << "cr" << "\t" << "height" << "\t" << "agb" << "\t" << "multiplier_cr" << "\t" << "multiplier_height" << "\t" << "wsg" << "\t" << "Nmass" << "\t" << "Pmass" << "\t" << "LMA" << "\t" << "deviation_wsg" << "\t" << "multiplier_Nmass" << "\t" << "multiplier_Pmass" << "\t" << "multiplier_lma" << "\t" << "Vcmax" << "\t" << "Jmax" << "\t" << "Rdark" << "\t" << "LAImax" << "\t" << "leaflifespan" << endl;
 
             // these are the "activities" that are recorded for each tree
-            sprintf(nnn, "%s_%i_trees_tracked.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_trees_tracked.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_track[1].open(nnn, ios::out);
 
             ctx.out.output_track[1] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seeds" << "\t" << "seedstotal" << "\t" << "carbstarv" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "dbhgrowth" << "\t" << "height" << "\t" << "heightgrowth" << "\t" << "cr" << "\t" << "crgrowth" << "\t" << "agb" << "\t" << "agbgrowth" << "\t" << "GPP" << "\t" << "GPPsq" << "\t" << "NPP" << "\t" << "NPPsq" << "\t" << "Rday" << "\t" << "Rnight" << "\t" << "Rstem" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "carbstore_avg" << endl;
 
             // this is to get information on the dead trees > 10cm
-            sprintf(nnn, "%s_%i_trees_aftertracking.txt", ctx.buffers.buf, ctx.buffers.run_index);
+            snprintf(nnn, sizeof(nnn), "%s_%i_trees_aftertracking.txt", ctx.buffers.buf, ctx.buffers.run_index);
             ctx.out.output_track[2].open(nnn, ios::out);
 
             ctx.out.output_track[2] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seedstotal" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "height" << "\t" << "cr" << "\t" << "agb" << "\t" << "GPP" << "\t" << "NPP" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "GPPsquared" << "\t" << "NPPsquared" << "\t" << "LAIabovesquared_avg" << "\t" << "LAIabovesquared_effavg" << endl;
@@ -562,14 +562,14 @@ void ReadInputInventory(Context &ctx)
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
             char par_name[30];
-            sprintf(par_name, "root_biomass%d", l);
+            snprintf(par_name, sizeof(par_name), "root_biomass%d", l);
             parameter_names.push_back(par_name);
         }
         nb_parameters += ctx.soil.nblayers_soil;
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
             char par_name[30];
-            sprintf(par_name, "soil_layer_weight%d", l);
+            snprintf(par_name, sizeof(par_name), "soil_layer_weight%d", l);
             parameter_names.push_back(par_name);
         }
         nb_parameters += ctx.soil.nblayers_soil;
@@ -590,7 +590,7 @@ void ReadInputInventory(Context &ctx)
 
         string parameter_name;
         vector<int> parameter_index;
-        int nb_parameters_fromfile = 0;
+        [[maybe_unused]] int nb_parameters_fromfile = 0; // counted but not used (flagged by clang -Wunused-but-set-variable)
 
         int flag_col = 1, flag_row = 1, flag_dbh = 1, flag_species = 1;
         while (firstlinestream >> parameter_name)
