@@ -1,8 +1,8 @@
 # TROLL individual based model - Terms of Reference
 
-_Document version 1.1_
+_Document version 1.2_
 
-_Date: 21 October 2026 (version 1.0: 7 July 2026)_
+_Date: 21 October 2026 (version 1.1: 21 October 2026; version 1.0: 7 July 2026)_
 
 ## 1. Description
 
@@ -26,7 +26,7 @@ They may be contacted via the generic email address: dev@troll-model.org.
 Ecologist, forest modelling, plant physiology.
 Role: project lead, lead of version 4.0 upgrade (including water module)
 
-**Fabian Jörg Fischer** — School of Biological Sciences, University of Bristol, Bristol, BS8 1TQ, United Kingdom
+**Fabian Jörg Fischer** — Technical University of Munich (TUM), Munich, Germany
 Ecologist, forest modelling, statistical modeling, remote sensing.
 Role: lead of spatial data integration (ALS), lead of version 3 upgrade (trait variability)
 

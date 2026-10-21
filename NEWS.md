@@ -1,3 +1,5 @@
+- TROLL 4.1.11: affiliation update (October 2026)
+  - Fabian Jörg Fischer's affiliation is now the Technical University of Munich (TUM), Germany, in the README and the Terms of Reference (version 1.2); 4.1.9 had changed it to the University of Bristol, his affiliation in the 2025 papers.
 - TROLL 4.1.10: API reference as website pages (October 2026)
   - The Doxygen documentation is now part of the website as native pages (`site/doxygen_api.py`, generated from the Doxygen XML at each build): an API overview and one page each for `Tree`, `Species`, `Context` (all 17 parts), functions by source file, constants and options, and small types; every function with its signature, description, parameter table and a link to its source line on GitHub. All 649 documented entities appear; the build fails if one would be left out. The full Doxygen site remains available under `api/` for the source browser.
   - Two Doxygen summaries were cut at an abbreviation (`FluxesLeaf` at "Sect.", `Rdayleaf` at "v." and "i.e."); escaped so that the summaries are complete.

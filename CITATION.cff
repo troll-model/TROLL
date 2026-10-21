@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: If you use TROLL, please cite the model description paper (preferred citation) and, if relevant, the evaluation paper, together with the version of the code you used.
 title: 'TROLL: an individual- and trait-based model of tropical forest dynamics'
-version: 4.1.10
+version: 4.1.11
 date-released: '2026-10-21'
 license: GPL-3.0-only
 repository-code: https://github.com/troll-model/TROLL
