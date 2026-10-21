@@ -1,69 +1,74 @@
--   TROLL 4.1.8: documentation fixes for recent Doxygen versions, no change in behaviour (October 2026)
-    -   `make docs-check` failed with recent Doxygen (reported on macOS; reproduced with Doxygen 1.14.0): `AssignParamFromRegistry`, `SetParameter`, `GetDensityUniform` and `AssignValuePointcloud` were documented both in a header and in the source; `CalcVcmaxm` was declared with lower-case parameter names but documented with the names of its definition. Each function is now documented once, with matching names.
-    -   `IMPLICIT_DIR_DOCS = NO` in the Doxygen configuration: recent Doxygen turns `sanity/README.md` into folder documentation, which broke the README's link to it (Doxygen 1.9.8 ignores the setting with a notice).
-    -   CI: documentation checked with both the Ubuntu Doxygen and Doxygen 1.14.0.
-    -   First measurement on a multicore machine (Apple Silicon, reported by a user): with 4 threads, outputs identical to 1 thread and the 30-day `threads-check` run 1.8x faster in wall time.
--   TROLL 4.1.7: macOS build fix, no change in behaviour (October 2026)
-    -   The build failed on macOS with `-DTROLL_WARNINGS_AS_ERRORS=ON`: Apple's SDK marks `sprintf` deprecated. All 75 `sprintf` calls replaced by `snprintf(dest, sizeof(dest), ...)` (same text, and bounded: a path longer than its buffer is now truncated instead of overflowing it).
-    -   clang's `-Wunused-but-set-variable` on an unused counter (`nb_parameters_fromfile`, input.cpp and memory.cpp) silenced with `[[maybe_unused]]`.
-    -   CI: new clang build with `-Werror` on Linux; the macOS job no longer stops the other platforms when it fails (`fail-fast: false`).
-    -   Outputs bit-identical to 4.1.6 with GCC 13 and with clang 18 (stored references, zero tolerance).
--   TROLL 4.1.6: documentation presentation, no change in behaviour (October 2026)
-    -   `docs/equations.md`: the rows for Eqs. 26-68 were separated from the table by a blank line and rendered as plain text; the map is now one table per model section (Sects. 2.2-2.7) with a summary table, the same five columns throughout, the file of every implementing symbol, and one status vocabulary (matches / mapped / differs).
-    -   `docs/outputs.md`: every file described in the same table format (Column / Meaning / Unit), with tables for conventions, an overview of all files, known issues and open points; content unchanged except that `basal` and `dr` in `deathrate.txt` are marked as not documented in the code.
--   TROLL 4.1.5: documentation release, no change in behaviour (October 2026)
-    -   Every function documents its parameters (`@param`, with units where established): 127 functions in `src/` plus the header-only templates and the parameter registry. Header declarations name their parameters so Doxygen matches them to the definitions. Doxygen: 649/649 entities documented, no undocumented parameters, 0 errors.
-    -   `docs/equations.md` covers the whole model description (GMD Part 1, Eqs. 1-68), with constants checked against the code.
-    -   `docs/open-questions.md`: four new items, three of which would change results if resolved in favour of the paper: leaf dark respiration (Eq. 32: the code uses an area-based variant of the Atkin et al. 2015 model), sapwood area (Eq. 55: delta_1 = -0.18 in the code, -0.018 in the paper), leaf lifespan (Eq. 57: unit of leaf N); and errata in the paper (Eqs. 12, 26-27, 52).
-    -   Corrections to 4.1.4: the `@param` blocks of `FluxesLeaf` and `dailyFluxesLeaf` announced in 4.1.4 were not in the release (lost by the patch script) and are now present; `t_g1` does include the stomatal water stress factor (4.1.4 said it did not); `DeathRate`/`DeathRateNDD` take DBH, carbon-starvation time and NDD index or root water potential (4.1.4 said PPFD).
-    -   Commented-out code is left in place, as requested. Outputs bit-identical to 4.1.4 (stored references, zero tolerance).
--   TROLL 4.1.4: documentation release, no change in behaviour (October 2026)
-    -   API documentation coverage 83% -> 99.7% of entities (all data members, `#define`s and constants; 194 of 195 functions). Leaf kernel (`FluxesLeaf`, `Photosyn`, `dailyFluxesLeaf`, `QUAD`, `ElectronTransportRate`) documented with `@param`, units and GMD equation numbers; the relative (not absolute) climate arguments of `dailyFluxesLeaf` are now explicit.
-    -   `docs/inputs.md`: species, climate and soil columns and all 70 global parameters, with units cross-checked between code, GMD papers and example data.
-    -   `docs/equations.md`: GMD Part 1 Eqs. 1-25 mapped to the code, constants checked automatically.
-    -   `docs/open-questions.md`: 12 discrepancies for the authors, including the aerodynamic resistance of the soil surface (code coefficient 43.17 vs 298 in Part 1 Eq. 15), hard-coded canopy micro-climate parameters (deltaT = 3 degC, LAI_sat = 7, C_VPD0 = 0.25), the leaf-temperature factor 0.25, and unit inconsistencies between the papers.
-    -   Fixes: leaf N and P are in g g-1 in the species file and outputs (`docs/outputs.md` said mg g-1); `g0` is read in mmol H2O m-2 s-1 (the example file said mol m-2 s-1; description corrected); README explains running `make docs` from `build/`; stale `InitialiseLookUpTables()` declaration removed.
-    -   `CITATION.cff` and `CONTRIBUTING.md` added. Outputs bit-identical to 4.1.3 (stored references, zero tolerance).
--   TROLL 4.1.3: documentation release, no change in behaviour (October 2026)
-    -   `Context` documented: 168 member descriptions restored from TROLL 4.0 (the refactoring that moved the global variables into `Context` had dropped them), the remaining members and all 17 sub-structures described, with units. Doxygen coverage of `context.hpp` from 3% to 95%; of all entities from about 42% to 83%.
-    -   Doxygen set up: `docs/Doxyfile.in`, `make docs` (HTML in `build/docs/html`) and `make docs-check` (coverage report; fails on documentation errors), run in CI (`.github/workflows/docs.yml`, HTML published as an artifact). Fixed the documentation errors it found (two main pages; an unresolved link; a member definition Doxygen could not match). Correction to the 4.1.2 documentation review: of the 25 Doxygen warnings counted there as syntax errors, 24 were missing-`@param` warnings and 1 was an error.
-    -   `docs/outputs.md`: every output file, its columns and units, checked against the code that writes it.
-    -   Known issues found while documenting units (not changed in this release): in `water_balance.txt`, `interception` is too small by a factor of (number of soil cells) / (number of sites), and the unit of `throughfall` is inconsistent between `simulation.cpp` (mm) and `output.cpp` (m3); `Interception`/`Throughfall` are in mm while `Evaporation`/`Leakage` are in m3 within the model. `PROB_S` is allocated but never used.
-    -   Outputs bit-identical to 4.1.2 (stored reference outputs, zero tolerance).
--   TROLL 4.1.2: kernel safeguards, Photosyn fix, accurate electron transport (October 2026)
-    -   **Fixed (changes results):** in the active Photosyn (`G0`), the electron-transport-limited rate divided by the Rubisco-limited intercellular CO2 (`CIC + 2 GammaT`) instead of its own (`CIJ + 2 GammaT`), as the FvCB formula, TROLL's fallback branch and the non-G0 Photosyn do. Light-limited assimilation was overestimated: on the established 1 ha stand 98.7% of Photosyn calls are light-limited, mean net assimilation per call falls 1.0%, and after 60 days GPP falls 1.0% and NPP 1.6%.
-    -   **Accuracy (changes results slightly):** the electron-transport rate J is computed by `ElectronTransportRate()` (include/quad.hpp), a stable form of the smaller root of the non-rectangular hyperbola. The textbook form, in single precision since 4.1.1, lost up to three significant digits at low light (max relative error 1.9e-3; now ~2e-7). Same cost.
-    -   `QUAD` moved to `include/quad.hpp` as an inline function (unchanged results; inlined without LTO).
-    -   Precision safeguards: the leaf kernel is compiled with `-Wdouble-promotion` as an error (`include/kernel_precision.hpp`); building with `-ffast-math` is refused.
-    -   Tests: first process-level unit tests (`tests/test_quad.cpp`, `make unit-tests`, part of `make check` and CI, also under sanitizers). Regression checks compare against reference outputs stored in `sanity/golden/` (bit-identical on Linux/GCC 13; `make golden` regenerates them when results are meant to change); `sanity1000` now runs 1000 days of the established stand.
--   TROLL 4.1.1: single-precision leaf kernel (October 2026)
-    -   Leaf energy balance and photosynthesis (`FluxesLeaf`, both `Photosyn` variants, `QUAD`) computed in single precision throughout. Their variables were float but every constant was a double literal or `#define`, so nearly every expression ran in double and was converted back (59 conversions in each of the compiled `FluxesLeaf` and `Photosyn`, plus a double-precision `pow` per iteration). New float constants in `constants.hpp` (`*_F`); `pow(x, 0.25)` replaced by `sqrtf(sqrtf(x))`.
-    -   Loop-invariant divisions and products hoisted out of the energy-balance iteration (1/latent heat, 1/leaf width, free-convection coefficient, CPAIR x AIRMA).
-    -   Speed: simulation loop 1.68x faster on an established 1 ha stand and 1.66x on the bare-ground example (single thread), on top of the 4.1.0 OpenMP parallelisation.
-    -   **Results change in the last digits.** After 60 days on the established stand, all outputs agree with 4.1.0 within 1e-3 relative and stand totals are unchanged at printed precision; on the bare-ground example, within 1e-2 (values below 1e-6 ignored). Over long runs, individual random draws eventually differ, so trajectories diverge while remaining statistically equivalent; validate long-run statistics (several seeds) before relying on 4.1.1 for published results.
-    -   Regression checks now use tolerances (`TROLL_SANITY_RTOL_*`, `TROLL_SANITY_ATOL`) against the 4.0 reference; new `make threads-check` keeps thread-count independence bit-exact.
-    -   The TROLL version is written to `_info.txt`.
-    -   Not changed, flagged for the authors: in the active `Photosyn` (G0), the electron-transport-limited rate divides by the Rubisco-limited Ci (`CIC`) instead of `CIJ` (src/tree.cpp, `AJ = VJ * (CIJ - GammaT) / (CIC + 2.0f * GammaT)`).
--   TROLL 4.1.0 (development): code-health release, no intended change to model results
-    -   Speed: leaf water and carbon fluxes (about 90% of simulation time) computed for all trees in parallel with OpenMP; LAImax lookup table (10000 variants per species, about 80 us each) computed in parallel, or on first use when single-threaded; link-time optimisation. Outputs are bit-identical to the serial code for any number of threads. Single core: 12% faster on an established stand, 40% on short runs.
-    -   The reported computation time is now wall-clock time in the simulation loop (was CPU time summed over threads).
-    -   Fixed: runs with fewer iterations than `nbout` crashed (modulo by zero in `OutputField`).
-    -   Regression tests: pinned reference commit, established-stand test case (`make sanity-stand`), tolerance-based comparison (`sanity/compare.py`), working `make sanity1000`.
-    -   Build: compiler warnings re-enabled (were silenced by `-w`), zero `-Wall` warnings, CMake options for `-Werror`, sanitizers and model options (`TROLL_DEFINES`); gating cppcheck, sanitizer job and option-matrix build in CI.
-    -   Reproducibility: `-r<seed>` / `--seed=<seed>` option; the seed used is written to `_info.txt`.
-    -   Memory: model arrays in `Context` are `std::vector` (no leaks; sanitizer-clean); all output streams closed at the end of a run; `exit()` replaced by `return`/exceptions.
-    -   Removed the MPI code (unmaintained since v.2.2, did not compile); the run index (`-n`) moved into `Context`.
-    -   Fixed: seed rain was zero for plots < 1 ha and truncated for non-integer hectares (integer division in `UpdateSeeds`); identical results for whole-hectare plots.
-    -   Fixed: `CACHE_LUT` did not compile; once compiled, cached runs differed from computed ones (accuracy scalars not cached, `LookUpLAImax` left empty, `LookUp_INLR[0]` never allocated, cache not keyed on inputs). Cached and computed runs are now bit-identical.
-    -   Fixed: `CHECK_CARBON` and `PHENO_DROUGHT`-off builds; multiple definitions of header globals (`Output_ABC`, `CHECK_CARBON`).
-    -   Console summary prints 0 instead of `-nan` for empty size classes.
--   TROLL 4.0.0: water cycle version, Isabelle Maréchaux (Feb 2023)
--   TROLL 3.1.0: Isabelle Maréchaux (May-June 2021)
--   TROLL 3.0.0: Fabian Fischer, Isabelle Marechaux, Jerome Chave (Jan 2021)
--   TROLL 2.5.0: Fabian Fischer (Feb 2018 to May 2020)
--   TROLL 2.4.0: Fabian Fischer (Feb 2018 to May 2020)
--   TROLL 2.3.0: Isabelle Marechaux, Fabian Fischer, Jerome Chave (Oct 2016 to March 2017; Marechaux & Chave 2017)
--   TROLL 2.2.0: Isabelle Marechaux & Jerome Chave (Oct 2013 to May 2016)
--   TROLL 2.1.0: Isabelle Marechaux & Jerome Chave (Oct 2013 to May 2016)
--   TROLL 2.0.0: Jerome Chave (March 2011)
--   TROLL 1.0.0: Jerome Chave (Sept 1997 to Sept 2001; Chave 1999, 2001)
+- TROLL 4.1.9: README, Terms of Reference, citation and website (October 2026)
+  - README rewritten for the 4.1.x code: version, installation table (including Apple Silicon and OpenMP with Homebrew), running, tests, documentation, citation with the full author lists of both GMD papers, core development team as in the Terms of Reference.
+  - Terms of Reference (version 1.1): Jérôme Chave in bold like the other members; code description updated (several source files built with CMake since 4.1, about 13,000 lines); licence link to troll-model/TROLL; the truncated sentence of Section 4 completed; the GMD Part 2 evaluation paper added to the references.
+  - References harmonised across README, Terms of Reference and CITATION.cff (same works, authors, years, pages and DOIs); CITATION.cff lists the five members of the core development team as software authors, with verified ORCIDs, and validates against schema 1.2.0.
+  - Website built with pkgdown (as for rcontroll), from the repository documents, with the Doxygen API reference: `site/`, published to GitHub Pages by `.github/workflows/site.yml` (https://troll-model.github.io/TROLL/).
+- TROLL 4.1.8: documentation fixes for recent Doxygen versions, no change in behaviour (October 2026)
+  - `make docs-check` failed with recent Doxygen (reported on macOS; reproduced with Doxygen 1.14.0): `AssignParamFromRegistry`, `SetParameter`, `GetDensityUniform` and `AssignValuePointcloud` were documented both in a header and in the source; `CalcVcmaxm` was declared with lower-case parameter names but documented with the names of its definition. Each function is now documented once, with matching names.
+  - `IMPLICIT_DIR_DOCS = NO` in the Doxygen configuration: recent Doxygen turns `sanity/README.md` into folder documentation, which broke the README's link to it (Doxygen 1.9.8 ignores the setting with a notice).
+  - CI: documentation checked with both the Ubuntu Doxygen and Doxygen 1.14.0.
+  - First measurement on a multicore machine (Apple Silicon, reported by a user): with 4 threads, outputs identical to 1 thread and the 30-day `threads-check` run 1.8x faster in wall time.
+- TROLL 4.1.7: macOS build fix, no change in behaviour (October 2026)
+  - The build failed on macOS with `-DTROLL_WARNINGS_AS_ERRORS=ON`: Apple's SDK marks `sprintf` deprecated. All 75 `sprintf` calls replaced by `snprintf(dest, sizeof(dest), ...)` (same text, and bounded: a path longer than its buffer is now truncated instead of overflowing it).
+  - clang's `-Wunused-but-set-variable` on an unused counter (`nb_parameters_fromfile`, input.cpp and memory.cpp) silenced with `[[maybe_unused]]`.
+  - CI: new clang build with `-Werror` on Linux; the macOS job no longer stops the other platforms when it fails (`fail-fast: false`).
+  - Outputs bit-identical to 4.1.6 with GCC 13 and with clang 18 (stored references, zero tolerance).
+- TROLL 4.1.6: documentation presentation, no change in behaviour (October 2026)
+  - `docs/equations.md`: the rows for Eqs. 26-68 were separated from the table by a blank line and rendered as plain text; the map is now one table per model section (Sects. 2.2-2.7) with a summary table, the same five columns throughout, the file of every implementing symbol, and one status vocabulary (matches / mapped / differs).
+  - `docs/outputs.md`: every file described in the same table format (Column / Meaning / Unit), with tables for conventions, an overview of all files, known issues and open points; content unchanged except that `basal` and `dr` in `deathrate.txt` are marked as not documented in the code.
+- TROLL 4.1.5: documentation release, no change in behaviour (October 2026)
+  - Every function documents its parameters (`@param`, with units where established): 127 functions in `src/` plus the header-only templates and the parameter registry. Header declarations name their parameters so Doxygen matches them to the definitions. Doxygen: 649/649 entities documented, no undocumented parameters, 0 errors.
+  - `docs/equations.md` covers the whole model description (GMD Part 1, Eqs. 1-68), with constants checked against the code.
+  - `docs/open-questions.md`: four new items, three of which would change results if resolved in favour of the paper: leaf dark respiration (Eq. 32: the code uses an area-based variant of the Atkin et al. 2015 model), sapwood area (Eq. 55: delta_1 = -0.18 in the code, -0.018 in the paper), leaf lifespan (Eq. 57: unit of leaf N); and errata in the paper (Eqs. 12, 26-27, 52).
+  - Corrections to 4.1.4: the `@param` blocks of `FluxesLeaf` and `dailyFluxesLeaf` announced in 4.1.4 were not in the release (lost by the patch script) and are now present; `t_g1` does include the stomatal water stress factor (4.1.4 said it did not); `DeathRate`/`DeathRateNDD` take DBH, carbon-starvation time and NDD index or root water potential (4.1.4 said PPFD).
+  - Commented-out code is left in place, as requested. Outputs bit-identical to 4.1.4 (stored references, zero tolerance).
+- TROLL 4.1.4: documentation release, no change in behaviour (October 2026)
+  - API documentation coverage 83% -> 99.7% of entities (all data members, `#define`s and constants; 194 of 195 functions). Leaf kernel (`FluxesLeaf`, `Photosyn`, `dailyFluxesLeaf`, `QUAD`, `ElectronTransportRate`) documented with `@param`, units and GMD equation numbers; the relative (not absolute) climate arguments of `dailyFluxesLeaf` are now explicit.
+  - `docs/inputs.md`: species, climate and soil columns and all 70 global parameters, with units cross-checked between code, GMD papers and example data.
+  - `docs/equations.md`: GMD Part 1 Eqs. 1-25 mapped to the code, constants checked automatically.
+  - `docs/open-questions.md`: 12 discrepancies for the authors, including the aerodynamic resistance of the soil surface (code coefficient 43.17 vs 298 in Part 1 Eq. 15), hard-coded canopy micro-climate parameters (deltaT = 3 degC, LAI_sat = 7, C_VPD0 = 0.25), the leaf-temperature factor 0.25, and unit inconsistencies between the papers.
+  - Fixes: leaf N and P are in g g-1 in the species file and outputs (`docs/outputs.md` said mg g-1); `g0` is read in mmol H2O m-2 s-1 (the example file said mol m-2 s-1; description corrected); README explains running `make docs` from `build/`; stale `InitialiseLookUpTables()` declaration removed.
+  - `CITATION.cff` and `CONTRIBUTING.md` added. Outputs bit-identical to 4.1.3 (stored references, zero tolerance).
+- TROLL 4.1.3: documentation release, no change in behaviour (October 2026)
+  - `Context` documented: 168 member descriptions restored from TROLL 4.0 (the refactoring that moved the global variables into `Context` had dropped them), the remaining members and all 17 sub-structures described, with units. Doxygen coverage of `context.hpp` from 3% to 95%; of all entities from about 42% to 83%.
+  - Doxygen set up: `docs/Doxyfile.in`, `make docs` (HTML in `build/docs/html`) and `make docs-check` (coverage report; fails on documentation errors), run in CI (`.github/workflows/docs.yml`, HTML published as an artifact). Fixed the documentation errors it found (two main pages; an unresolved link; a member definition Doxygen could not match). Correction to the 4.1.2 documentation review: of the 25 Doxygen warnings counted there as syntax errors, 24 were missing-`@param` warnings and 1 was an error.
+  - `docs/outputs.md`: every output file, its columns and units, checked against the code that writes it.
+  - Known issues found while documenting units (not changed in this release): in `water_balance.txt`, `interception` is too small by a factor of (number of soil cells) / (number of sites), and the unit of `throughfall` is inconsistent between `simulation.cpp` (mm) and `output.cpp` (m3); `Interception`/`Throughfall` are in mm while `Evaporation`/`Leakage` are in m3 within the model. `PROB_S` is allocated but never used.
+  - Outputs bit-identical to 4.1.2 (stored reference outputs, zero tolerance).
+- TROLL 4.1.2: kernel safeguards, Photosyn fix, accurate electron transport (October 2026)
+  - **Fixed (changes results):** in the active Photosyn (`G0`), the electron-transport-limited rate divided by the Rubisco-limited intercellular CO2 (`CIC + 2 GammaT`) instead of its own (`CIJ + 2 GammaT`), as the FvCB formula, TROLL's fallback branch and the non-G0 Photosyn do. Light-limited assimilation was overestimated: on the established 1 ha stand 98.7% of Photosyn calls are light-limited, mean net assimilation per call falls 1.0%, and after 60 days GPP falls 1.0% and NPP 1.6%.
+  - **Accuracy (changes results slightly):** the electron-transport rate J is computed by `ElectronTransportRate()` (include/quad.hpp), a stable form of the smaller root of the non-rectangular hyperbola. The textbook form, in single precision since 4.1.1, lost up to three significant digits at low light (max relative error 1.9e-3; now ~2e-7). Same cost.
+  - `QUAD` moved to `include/quad.hpp` as an inline function (unchanged results; inlined without LTO).
+  - Precision safeguards: the leaf kernel is compiled with `-Wdouble-promotion` as an error (`include/kernel_precision.hpp`); building with `-ffast-math` is refused.
+  - Tests: first process-level unit tests (`tests/test_quad.cpp`, `make unit-tests`, part of `make check` and CI, also under sanitizers). Regression checks compare against reference outputs stored in `sanity/golden/` (bit-identical on Linux/GCC 13; `make golden` regenerates them when results are meant to change); `sanity1000` now runs 1000 days of the established stand.
+- TROLL 4.1.1: single-precision leaf kernel (October 2026)
+  - Leaf energy balance and photosynthesis (`FluxesLeaf`, both `Photosyn` variants, `QUAD`) computed in single precision throughout. Their variables were float but every constant was a double literal or `#define`, so nearly every expression ran in double and was converted back (59 conversions in each of the compiled `FluxesLeaf` and `Photosyn`, plus a double-precision `pow` per iteration). New float constants in `constants.hpp` (`*_F`); `pow(x, 0.25)` replaced by `sqrtf(sqrtf(x))`.
+  - Loop-invariant divisions and products hoisted out of the energy-balance iteration (1/latent heat, 1/leaf width, free-convection coefficient, CPAIR x AIRMA).
+  - Speed: simulation loop 1.68x faster on an established 1 ha stand and 1.66x on the bare-ground example (single thread), on top of the 4.1.0 OpenMP parallelisation.
+  - **Results change in the last digits.** After 60 days on the established stand, all outputs agree with 4.1.0 within 1e-3 relative and stand totals are unchanged at printed precision; on the bare-ground example, within 1e-2 (values below 1e-6 ignored). Over long runs, individual random draws eventually differ, so trajectories diverge while remaining statistically equivalent; validate long-run statistics (several seeds) before relying on 4.1.1 for published results.
+  - Regression checks now use tolerances (`TROLL_SANITY_RTOL_*`, `TROLL_SANITY_ATOL`) against the 4.0 reference; new `make threads-check` keeps thread-count independence bit-exact.
+  - The TROLL version is written to `_info.txt`.
+  - Not changed, flagged for the authors: in the active `Photosyn` (G0), the electron-transport-limited rate divides by the Rubisco-limited Ci (`CIC`) instead of `CIJ` (src/tree.cpp, `AJ = VJ * (CIJ - GammaT) / (CIC + 2.0f * GammaT)`).
+- TROLL 4.1.0 (development): code-health release, no intended change to model results
+  - Speed: leaf water and carbon fluxes (about 90% of simulation time) computed for all trees in parallel with OpenMP; LAImax lookup table (10000 variants per species, about 80 us each) computed in parallel, or on first use when single-threaded; link-time optimisation. Outputs are bit-identical to the serial code for any number of threads. Single core: 12% faster on an established stand, 40% on short runs.
+  - The reported computation time is now wall-clock time in the simulation loop (was CPU time summed over threads).
+  - Fixed: runs with fewer iterations than `nbout` crashed (modulo by zero in `OutputField`).
+  - Regression tests: pinned reference commit, established-stand test case (`make sanity-stand`), tolerance-based comparison (`sanity/compare.py`), working `make sanity1000`.
+  - Build: compiler warnings re-enabled (were silenced by `-w`), zero `-Wall` warnings, CMake options for `-Werror`, sanitizers and model options (`TROLL_DEFINES`); gating cppcheck, sanitizer job and option-matrix build in CI.
+  - Reproducibility: `-r<seed>` / `--seed=<seed>` option; the seed used is written to `_info.txt`.
+  - Memory: model arrays in `Context` are `std::vector` (no leaks; sanitizer-clean); all output streams closed at the end of a run; `exit()` replaced by `return`/exceptions.
+  - Removed the MPI code (unmaintained since v.2.2, did not compile); the run index (`-n`) moved into `Context`.
+  - Fixed: seed rain was zero for plots < 1 ha and truncated for non-integer hectares (integer division in `UpdateSeeds`); identical results for whole-hectare plots.
+  - Fixed: `CACHE_LUT` did not compile; once compiled, cached runs differed from computed ones (accuracy scalars not cached, `LookUpLAImax` left empty, `LookUp_INLR[0]` never allocated, cache not keyed on inputs). Cached and computed runs are now bit-identical.
+  - Fixed: `CHECK_CARBON` and `PHENO_DROUGHT`-off builds; multiple definitions of header globals (`Output_ABC`, `CHECK_CARBON`).
+  - Console summary prints 0 instead of `-nan` for empty size classes.
+- TROLL 4.0.0: water cycle version, Isabelle Maréchaux (Feb 2023)
+- TROLL 3.1.0: Isabelle Maréchaux (May-June 2021)
+- TROLL 3.0.0: Fabian Fischer, Isabelle Marechaux, Jerome Chave (Jan 2021)
+- TROLL 2.5.0: Fabian Fischer (Feb 2018 to May 2020)
+- TROLL 2.4.0: Fabian Fischer (Feb 2018 to May 2020)
+- TROLL 2.3.0: Isabelle Marechaux, Fabian Fischer, Jerome Chave (Oct 2016 to March 2017; Marechaux & Chave 2017)
+- TROLL 2.2.0: Isabelle Marechaux & Jerome Chave (Oct 2013 to May 2016)
+- TROLL 2.1.0: Isabelle Marechaux & Jerome Chave (Oct 2013 to May 2016)
+- TROLL 2.0.0: Jerome Chave (March 2011)
+- TROLL 1.0.0: Jerome Chave (Sept 1997 to Sept 2001; Chave 1999, 2001)

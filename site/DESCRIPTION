@@ -1,0 +1,18 @@
+Package: TROLL
+Title: Individual- and Trait-Based Model of Tropical Forest Dynamics
+Version: 4.1.9
+Authors@R: c(
+    person("Isabelle", "Maréchaux", role = c("aut", "cre"), email = "dev@troll-model.org",
+           comment = c(ORCID = "0000-0002-5401-0197")),
+    person("Fabian Jörg", "Fischer", role = "aut"),
+    person("Sylvain", "Schmitt", role = "aut", comment = c(ORCID = "0000-0001-7759-7106")),
+    person("Philippe", "Verley", role = "aut"),
+    person("Jérôme", "Chave", role = "aut"))
+Description: TROLL simulates every tree of a tropical forest stand on a 1 m
+    resolution 3D grid and jointly tracks forest structure, carbon and water
+    fluxes and species-level biodiversity. This file only configures the
+    website, built with pkgdown: TROLL itself is a C++ program.
+License: GPL-3
+URL: https://troll-model.github.io/TROLL/, https://github.com/troll-model/TROLL
+BugReports: https://github.com/troll-model/TROLL/issues
+Encoding: UTF-8

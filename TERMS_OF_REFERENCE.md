@@ -1,14 +1,14 @@
 # TROLL individual based model - Terms of Reference
 
-_Document version 1.0_
+_Document version 1.1_
 
-_Date: 7 July 2026_
+_Date: 21 October 2026 (version 1.0: 7 July 2026)_
 
 ## 1. Description
 
 TROLL is a computer simulator written in C++ language. TROLL represents an idealized forest stand with a typical size of 1 to 100 ha within an explicit 3D grid of 1 m³ voxels aboveground, with at most one tree established per 1×1 m ground pixel. Climatic drivers include air temperature, vapour pressure deficit, wind speed, and light intensity above the canopy, as well as precipitation. Depending on the process, TROLL operates at half-hourly temporal resolution or at daily resolution. Forest trees are modelled individually and they are generated as instances of a species, with a set of plant functional traits controlling plant physiology, and especially the carbon and water uptake, as well as demographic processes. This trait-based parameterization, together with the spatial architecture are what lets TROLL jointly track detailed forest structure, carbon fluxes, and species-level biodiversity dynamics within the same simulation.
 
-This code was initiated in 1999 as a research-oriented tropical forest simulator ([Chave 1999](https://doi.org/10.1016/S0304-3800(99)00171-4)), with major subsequent upgrades ([Maréchaux & Chave 2017](https://doi.org/10.1002/ecm.1271), [Maréchaux et al. 2025](https://doi.org/10.5194/gmd-18-5143-2025)). The current computer code is about 10,000 lines stored on https://github.com/troll-model/TROLL. The current version is 4.0, which is delivered in the form of a single file (mainTROLL4.0.cpp). 
+This code was initiated in 1999 as a research-oriented tropical forest simulator ([Chave 1999](https://doi.org/10.1016/S0304-3800(99)00171-4)), with major subsequent upgrades ([Maréchaux & Chave 2017](https://doi.org/10.1002/ecm.1271), [Maréchaux et al. 2025](https://doi.org/10.5194/gmd-18-5143-2025)). The current computer code is about 13,000 lines of C++ stored on https://github.com/troll-model/TROLL. Version 4.0 of the model ([Maréchaux et al. 2025](https://doi.org/10.5194/gmd-18-5143-2025), evaluated in [Schmitt et al. 2025](https://doi.org/10.5194/gmd-18-5205-2025)) was delivered as a single file (mainTROLL4.0.cpp); since version 4.1 the code is organised in several source files, built with CMake and tested automatically (see NEWS.md for the changes in each version). 
 
 Since 2023, a wrapper written in the R language, rcontroll, has been developed to manage the data inputs, run a version of TROLL called by R through the Rcpp language, and manage the data outputs ([Schmitt et al. 2023](https://doi.org/10.1111/2041-210X.14215)). The rcontroll code is available https://github.com/sylvainschmitt/rcontroll. 
 
@@ -38,7 +38,7 @@ Role: lead of rcontroll wrapper.
 Computer scientist 
 Role: lead for code factorization and code acceleration; website management
 
-Jérôme Chave, CNRS —  CRBE, Université de Toulouse, CNRS, IRD, Toulouse INP, 118 route de Narbonne, 31062 Toulouse, France
+**Jérôme Chave**, CNRS — CRBE, Université de Toulouse, CNRS, IRD, Toulouse INP, 118 route de Narbonne, 31062 Toulouse, France
 Ecologist, forest modelling, statistical modeling.
 Role: lead of versions 1.0 and 2.0
 
@@ -47,7 +47,7 @@ The core development team agrees to meet twice a year to explore code updates, i
 ## 3. Licence and intellectual property
 
 TROLL version 4.0 and further developments are publicly available on GitHub as a
-standalone code. TROLL is licensed under the GNU General Public License v3.0 ([GPL3.0](https://github.com/sylvainschmitt/TROLL/blob/main/LICENSE)). “Permissions of this strong copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights”.
+standalone code. TROLL is licensed under the GNU General Public License v3.0 ([GPL3.0](https://github.com/troll-model/TROLL/blob/main/LICENSE)). “Permissions of this strong copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights”.
 
 By inheritance, rcontroll is licensed under the GNU General Public License v3.0 (GPL3.0). 
 
@@ -59,7 +59,7 @@ Invitations to the core development team to collaborate on research projects are
 
 Users of the TROLL code are encouraged to contact the core development team about any questions and/or feedback (for this, users are encouraged to make use of the “issues” option on github). 
 
-In any case, users are encouraged to acknowledge the contribution 
+In any case, users are encouraged to acknowledge the contribution of the TROLL developers by citing the references in Section 5 that are relevant to their work, together with the version of the code they used (see CITATION.cff in the repository).
 
 ## 5. References
 
@@ -67,7 +67,9 @@ Chave, J. (1999). Study of structural, successional and spatial patterns in trop
 
 Maréchaux, I., & Chave, J. (2017). An individual‐based forest model to jointly simulate carbon and tree diversity in Amazonia: description and applications. *Ecological Monographs*, 87(4), 632-664.  https://doi.org/10.1002/ecm.1271
 
-Maréchaux, I., Fischer, F. J., Schmitt, S., & Chave, J. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model–Part 1: Model description. *Geoscientific Model Development*, 18(16), 5143-5204. https://doi.org/10.5194/gmd-18-5143-2025
+Maréchaux, I., Fischer, F. J., Schmitt, S., & Chave, J. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description. *Geoscientific Model Development*, 18(16), 5143-5204. https://doi.org/10.5194/gmd-18-5143-2025
+
+Schmitt, S., Fischer, F. J., Ball, J. G. C., Barbier, N., Boisseaux, M., Bonal, D., Burban, B., Chen, X., Derroire, G., Lichstein, J. W., Nemetschek, D., Restrepo-Coupe, N., Saleska, S., Sellan, G., Verley, P., Vincent, G., Ziegler, C., Chave, J., & Maréchaux, I. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 2: Model evaluation for two Amazonian sites. *Geoscientific Model Development*, 18(16), 5205-5243. https://doi.org/10.5194/gmd-18-5205-2025
 
 Schmitt, S., Salzet, G., Fischer, F. J., Maréchaux, I., & Chave, J. (2023). rcontroll: An R interface for the individual‐based forest dynamics simulator TROLL. *Methods in Ecology and Evolution*, 14(11), 2749-2757. https://doi.org/10.1111/2041-210X.14215
 

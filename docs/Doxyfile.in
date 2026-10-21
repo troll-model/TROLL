@@ -9,6 +9,8 @@ INPUT                  = "@CMAKE_SOURCE_DIR@/README.md" \
                          "@CMAKE_SOURCE_DIR@/docs/equations.md" \
                          "@CMAKE_SOURCE_DIR@/docs/open-questions.md" \
                          "@CMAKE_SOURCE_DIR@/CONTRIBUTING.md" \
+                         "@CMAKE_SOURCE_DIR@/NEWS.md" \
+                         "@CMAKE_SOURCE_DIR@/TERMS_OF_REFERENCE.md" \
                          "@CMAKE_SOURCE_DIR@/sanity/README.md" \
                          "@CMAKE_SOURCE_DIR@/include" \
                          "@CMAKE_SOURCE_DIR@/src"

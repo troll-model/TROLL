@@ -2,34 +2,56 @@
 
 [![DOI](https://zenodo.org/badge/49142579.svg)](https://doi.org/10.5281/zenodo.14013146)
 
-TROLL 4.0 is an individual- and trait-based model of forest dynamics. The model and its evaluation are described in two companion papers in Geoscientific Model Development:
+TROLL is an individual- and trait-based model of tropical forest dynamics. It simulates every
+tree in a forest stand of 1 to 100 ha on a 1 m resolution 3D grid, and tracks forest structure,
+carbon and water fluxes, and species-level biodiversity in the same simulation.
 
-- Maréchaux I., Fischer F.J., Schmitt S., Chave J. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description. *Geosci. Model Dev.*, 18, 5143–5204. https://doi.org/10.5194/gmd-18-5143-2025
-- Schmitt S., Fischer F.J., *et al.* (2025). TROLL 4.0 … – Part 2: Model evaluation for two Amazonian sites. *Geosci. Model Dev.*, 18, 5205–5243. https://doi.org/10.5194/gmd-18-5205-2025
+This repository holds **TROLL 4.1.9**, the current implementation of the **TROLL 4.0 model**
+described in Maréchaux et al. (2025) and evaluated in Schmitt et al. (2025). Versions 4.1.x
+reorganise, test, document and accelerate the code; two of them change simulation results
+slightly (4.1.1: single-precision leaf physiology; 4.1.2: a correction to the light-limited
+photosynthesis rate). See [NEWS.md](NEWS.md) for every change.
+
+Website: <https://troll-model.github.io/TROLL/> · R interface: [rcontroll](https://sylvainschmitt.github.io/rcontroll/)
+
+## How to cite
+
+Please cite the model description, and the evaluation if relevant, together with the version
+of the code you used ([CITATION.cff](CITATION.cff); GitHub shows it under "Cite this repository"):
+
+- Maréchaux, I., Fischer, F. J., Schmitt, S., & Chave, J. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description. *Geoscientific Model Development*, 18(16), 5143–5204. https://doi.org/10.5194/gmd-18-5143-2025
+- Schmitt, S., Fischer, F. J., Ball, J. G. C., Barbier, N., Boisseaux, M., Bonal, D., Burban, B., Chen, X., Derroire, G., Lichstein, J. W., Nemetschek, D., Restrepo-Coupe, N., Saleska, S., Sellan, G., Verley, P., Vincent, G., Ziegler, C., Chave, J., & Maréchaux, I. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 2: Model evaluation for two Amazonian sites. *Geoscientific Model Development*, 18(16), 5205–5243. https://doi.org/10.5194/gmd-18-5205-2025
+
+Earlier versions and the R interface are referenced in the [Terms of Reference](TERMS_OF_REFERENCE.md#5-references).
 
 ## Installation
 
-Required:
-- CMake Build System, see https://cmake.org
-  - Ubuntu: `sudo apt install cmake`
-  - macOS: `brew install cmake`
-- GNU Scientific Library (GSL) installation, see https://www.gnu.org/software/gsl/
-  - Ubuntu: `sudo apt install libgsl-dev`
-  - macOS: `brew install gsl`
-- C++ compiler, both [`g++`](https://gcc.gnu.org/) (GNU Compiler Collection) and [`clang++`](https://clang.llvm.org/) (C language family frontend for LLVM) work fine
-  - Ubuntu: 
-    - Default install g++  `sudo apt install g++`
-    - Alternatively install clang++ `sudo apt install clang++`
-  - macOS: 
-    - Default install Xcode Command Line Tools (includes `clang++`): `xcode-select --install`
-    - Alternatively install `g++` via Homebrew `brew install gcc`
+Requirements:
 
-The following command line can be used to compile the code:
+| Tool | Needed for | Ubuntu | macOS (Homebrew) |
+| --- | --- | --- | --- |
+| C++17 compiler | building | `sudo apt install g++` (or `clang`) | Xcode Command Line Tools: `xcode-select --install` |
+| CMake ≥ 3.13 | building | `sudo apt install cmake` | `brew install cmake` |
+| GNU Scientific Library | building | `sudo apt install libgsl-dev` | `brew install gsl` |
+| OpenMP (optional) | multi-core runs | included with g++ | `brew install libomp` |
+| Python 3 | tests | `sudo apt install python3` | included with macOS |
+| Doxygen (optional) | API documentation | `sudo apt install doxygen` | `brew install doxygen` |
+
+Build, from the top-level folder of the repository:
 
 ```bash
-cd build/
-cmake ..
-make
+cmake -S . -B build
+cmake --build build
+```
+
+The executable is `build/TROLL`.
+
+On macOS with Apple Silicon, use the native Homebrew in `/opt/homebrew`; an Intel Homebrew in
+`/usr/local` produces x86_64 builds that fail to link with arm64 libraries. Homebrew's `libomp`
+must be pointed to explicitly:
+
+```bash
+cmake -S . -B build -DOpenMP_ROOT=$(brew --prefix libomp)
 ```
 
 ### Build options
@@ -43,65 +65,85 @@ make
 | `-DTROLL_LTO=OFF` | `ON` | link-time optimisation |
 | `-DTROLL_DEFINES="..."` | empty | compile-time model options, see below |
 
-Model options are listed in `include/troll_defines.hpp`. Options that are on by default are switched off with `TROLL_NO_<OPTION>`; options that are off by default are switched on by naming them, e.g. `cmake -DTROLL_DEFINES="LAI_gradient;CACHE_LUT" ..`. CI builds each option; `TROLL_NO_WATER`, `TROLL_NO_CROWN_UMBRELLA`, `TROLL_NO_FULL_CLIMATE`, `Output_ABC` and `TRACK_INDIVIDUALS` currently do not compile.
+Model options are listed in `include/troll_defines.hpp`. Options that are on by default are
+switched off with `TROLL_NO_<OPTION>`; options that are off by default are switched on by naming
+them, e.g. `cmake -S . -B build -DTROLL_DEFINES="LAI_gradient;CACHE_LUT"`. CI builds each option;
+`TROLL_NO_WATER`, `TROLL_NO_CROWN_UMBRELLA`, `TROLL_NO_FULL_CLIMATE`, `Output_ABC` and
+`TRACK_INDIVIDUALS` currently do not compile.
 
-### Tests
+## Running TROLL
 
-```bash
-cd build/
-make unit-tests    # process-level unit tests (tests/)
-make sanity        # 20 days from bare ground, against stored reference outputs
-make sanity-stand  # 1 year on an established 1 ha stand
-make check         # all three
-make sanity1000    # 1000 days on the established stand (~4 min)
-make threads-check # outputs must be bit-identical with 1 and 4 threads
-make golden        # regenerate the stored reference outputs (only when results are meant to change)
-```
-
-The regression checks compare against reference outputs stored in `sanity/golden/`. On Linux x86-64 with GCC 13, results reproduce them bit for bit; the default tolerances (CMake variables `TROLL_SANITY_RTOL_EXAMPLE`, `TROLL_SANITY_RTOL_LONG`, `TROLL_SANITY_ATOL`, `TROLL_SANITY_FILES_LONG`) allow for other compilers and math libraries. See [sanity/README.md](./sanity/README.md).
-
-The leaf kernel (`FluxesLeaf`, `Photosyn`, `QUAD`) is single precision and compiled with `-Wdouble-promotion` as an error (`include/kernel_precision.hpp`): use the `*_F` constants of `constants.hpp` and `f`-suffixed literals there. Building with `-ffast-math` is refused.
-
-### Documentation
-
-- [docs/outputs.md](docs/outputs.md): every output file, its columns and units.
-- [docs/inputs.md](docs/inputs.md): input files, columns and units.
-- [docs/equations.md](docs/equations.md): where each equation of the model description (GMD Part 1) is implemented, with the constants checked.
-- [docs/open-questions.md](docs/open-questions.md): discrepancies between code, papers and files, for the authors.
-- API documentation: install Doxygen *before* configuring, then from the `build/` folder run `cmake ..` and `make docs` (HTML in `build/docs/html`); `make docs-check` also reports coverage and fails on documentation errors. Running `make` in the top-level folder does not work: the Makefile is generated in `build/`.
-
-## Get started
-
-The code of TROLL 4.0 is written in C++ and requires five input files to run a simulation: (i) global parameters (global_inputs), (ii) species parameters (species), (iii) soil characteristics (soil), and finally, meteorological drivers varying at (iv) half-hour (halfhourly_climate) and (v) daily step (daily_climate).
-
-The following command line can be used to run the code:
+TROLL reads five input files: global parameters, species parameters, soil, and climate at daily
+and half-hourly resolution ([docs/inputs.md](docs/inputs.md)). With the example inputs:
 
 ```bash
-./build/TROLL -i./example/global_inputs.txt -s./example/species.txt -m./example/daily_climate.txt -d./example/halfhourly_climate.txt -p./example/soil.txt -o./TROLLv4_test
+./build/TROLL -i./example/global_inputs.txt -s./example/species.txt -m./example/daily_climate.txt \
+  -d./example/halfhourly_climate.txt -p./example/soil.txt -o./TROLL_test
 ```
 
-Optional arguments: `-f<file>` and `-w<file>` initialise the forest and soil water from an inventory (e.g. the `_final_pattern.txt` and `_final_SWC3D.txt` outputs of a previous run), `-n<index>` sets the run index used in output file names, and `-r<seed>` (or `--seed=<seed>`) sets the random seed. Without `-r`, the seed is 1 if `_NONRANDOM` is 1 in the global inputs and time-based otherwise. The seed actually used is written to the `_info.txt` output so every run can be reproduced.
+Optional arguments: `-f<file>` and `-w<file>` initialise the forest and soil water from an
+inventory (e.g. the `_final_pattern.txt` and `_final_SWC3D.txt` outputs of a previous run),
+`-n<index>` sets the run index used in output file names, and `-r<seed>` (or `--seed=<seed>`)
+sets the random seed. Without `-r`, the seed is 1 if `_NONRANDOM` is 1 in the global inputs and
+time-based otherwise. The TROLL version and the seed are written to the `_info.txt` output so
+every run can be reproduced. The outputs are described in [docs/outputs.md](docs/outputs.md).
 
-TROLL uses all available cores by default; set `OMP_NUM_THREADS` to choose the number of threads (e.g. `OMP_NUM_THREADS=1` when running many simulations side by side). Outputs are bit-identical whatever the number of threads. The reported "computation time" is wall-clock time spent in the simulation loop.
+TROLL uses all available cores by default; set `OMP_NUM_THREADS` to choose the number of threads
+(e.g. `OMP_NUM_THREADS=1` when running many simulations side by side). Outputs are
+bit-identical whatever the number of threads.
 
-## Alternative
+## Tests
 
-TROLL 4.0 can be set-up and run, and its outputs can be analyzed with an updated version of the R package rcontroll (https://github.com/sylvainschmitt/rcontroll/tree/TROLLV4), also available in R through the command:
+```bash
+cmake --build build --target check          # unit tests + regression checks (about 2 minutes)
+cmake --build build --target threads-check  # outputs must be bit-identical with 1 and 4 threads
+cmake --build build --target sanity1000     # 1000 days on an established stand (about 4 minutes)
+```
+
+The regression checks compare against reference outputs stored in `sanity/golden/`. On Linux
+x86-64 with GCC 13, results reproduce them bit for bit; the default tolerances allow for other
+compilers and math libraries. See [sanity/README.md](sanity/README.md).
+
+## Documentation
+
+| Document | Content |
+| --- | --- |
+| [docs/inputs.md](docs/inputs.md) | input files, columns and units |
+| [docs/outputs.md](docs/outputs.md) | output files, columns and units |
+| [docs/equations.md](docs/equations.md) | where each equation of the model description is implemented, with constants checked |
+| [docs/open-questions.md](docs/open-questions.md) | discrepancies between code, papers and files, for the authors |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | build, test and documentation rules for contributors |
+| [NEWS.md](NEWS.md) | changes in each version |
+| API reference | `cmake --build build --target docs` (requires Doxygen; HTML in `build/docs/html`), or on the website |
+
+## R interface
+
+The R package [rcontroll](https://github.com/sylvainschmitt/rcontroll) prepares inputs, runs
+TROLL and analyses its outputs (Schmitt et al. 2023;
+[website](https://sylvainschmitt.github.io/rcontroll/)). rcontroll compiles its own copy of the
+TROLL code; check which TROLL version it embeds before comparing results with this repository.
+The version supporting TROLL 4.0 is installed with:
 
 ```R
-devtools::install_github("sylvainschmitt/rcontroll", ref = "TROLLV4").
+devtools::install_github("sylvainschmitt/rcontroll", ref = "TROLLV4")
 ```
 
-The package also provide examples of input files and outputs.
+## Help and contributions
 
-## Help wanted?
+Please use the GitHub [issues](https://github.com/troll-model/TROLL/issues) for any question
+about TROLL. Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Please use issues for any question regarding TROLL.
+## Core development team
 
-## Core group
+The project is governed by the core development team described in the
+[Terms of Reference](TERMS_OF_REFERENCE.md), who can be contacted at dev@troll-model.org:
 
-* Jérôme Chave, CNRS, jerome.chave@univ-tlse3.fr
-* Isabelle Maréchaux, INRAE, isabelle.marechaux@inrae.fr
-* Fabian Fischer, TUM, f.j.fischer@tum.de
-* Sylvain Schmitt, CIRAD, sylvain.schmitt@cirad.fr
+- **Isabelle Maréchaux**, INRAE, AMAP, Montpellier, France (project lead)
+- **Fabian Jörg Fischer**, University of Bristol, United Kingdom
+- **Sylvain Schmitt**, CIRAD, Montpellier, France
+- **Philippe Verley**, IRD, AMAP, Montpellier, France
+- **Jérôme Chave**, CNRS, CRBE, Toulouse, France
 
+## Licence
+
+TROLL is distributed under the GNU General Public License v3.0 ([LICENSE](LICENSE)).

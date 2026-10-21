@@ -13,6 +13,9 @@ import xml.etree.ElementTree as ET
 
 # Doxygen warnings about *missing* documentation: reported, not errors
 MISSING = re.compile(r"is not documented|are not \(all\) documented|are not documented|return type of member .* is not documented")
+# Doxygen 1.9.x misparses the (valid) nested Markdown lists of NEWS.md; GitHub, pandoc and
+# Doxygen >= 1.14 render them correctly. This parser message is ignored for NEWS.md only.
+KNOWN_PARSER_ISSUES = re.compile(r"NEWS\.md:\d+: warning: Invalid list item found")
 
 
 def text(e):
@@ -71,7 +74,7 @@ def main():
     log = os.path.join(a.docs_dir, "doxygen-warnings.txt")
     if os.path.exists(log):
         for line in open(log, errors="replace"):
-            if "warning:" in line and not MISSING.search(line):
+            if "warning:" in line and not MISSING.search(line) and not KNOWN_PARSER_ISSUES.search(line):
                 errors.append(line.rstrip())
     print(f"Doxygen documentation errors: {len(errors)}")
     for e in errors:

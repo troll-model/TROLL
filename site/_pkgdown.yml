@@ -1,0 +1,60 @@
+url: https://troll-model.github.io/TROLL/
+
+template:
+  bootstrap: 5
+
+home:
+  title: "TROLL: individual- and trait-based model of tropical forest dynamics"
+  links:
+  - text: Model description (GMD, 2025)
+    href: https://doi.org/10.5194/gmd-18-5143-2025
+  - text: Model evaluation (GMD, 2025)
+    href: https://doi.org/10.5194/gmd-18-5205-2025
+  - text: rcontroll, the R interface
+    href: https://sylvainschmitt.github.io/rcontroll/
+
+navbar:
+  structure:
+    left:  [articles, news]
+    right: [search, api, rcontroll, github]
+  components:
+    articles:
+      text: Documentation
+      menu:
+      - text: Using TROLL
+      - text: Input files
+        href: articles/inputs.html
+      - text: Output files
+        href: articles/outputs.html
+      - text: Equations and their implementation
+        href: articles/equations.html
+      - text: -------
+      - text: Development
+      - text: Contributing
+        href: articles/contributing.html
+      - text: Regression tests
+        href: articles/testing.html
+      - text: Open questions for the authors
+        href: articles/open-questions.html
+      - text: -------
+      - text: Project
+      - text: Terms of Reference
+        href: articles/terms-of-reference.html
+    api:
+      text: API reference (C++)
+      href: api/index.html
+    rcontroll:
+      text: rcontroll
+      href: https://sylvainschmitt.github.io/rcontroll/
+    github:
+      icon: fab fa-github
+      href: https://github.com/troll-model/TROLL
+      aria-label: GitHub
+
+articles:
+- title: Using TROLL
+  contents: [inputs, outputs, equations]
+- title: Development
+  contents: [contributing, testing, open-questions]
+- title: Project
+  contents: [terms-of-reference]
