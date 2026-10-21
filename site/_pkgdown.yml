@@ -41,8 +41,26 @@ navbar:
       - text: Terms of Reference
         href: articles/terms-of-reference.html
     api:
-      text: API reference (C++)
-      href: api/index.html
+      text: API reference
+      menu:
+      - text: Overview
+        href: articles/api-index.html
+      - text: -------
+      - text: Tree
+        href: articles/api-tree.html
+      - text: Species
+        href: articles/api-species.html
+      - text: Context (model state)
+        href: articles/api-context.html
+      - text: Functions
+        href: articles/api-functions.html
+      - text: Constants, options and globals
+        href: articles/api-constants.html
+      - text: Small types
+        href: articles/api-types.html
+      - text: -------
+      - text: Full Doxygen documentation
+        href: api/index.html
     rcontroll:
       text: rcontroll
       href: https://sylvainschmitt.github.io/rcontroll/
@@ -58,3 +76,5 @@ articles:
   contents: [contributing, testing, open-questions]
 - title: Project
   contents: [terms-of-reference]
+- title: API reference
+  contents: [api-index, api-tree, api-species, api-context, api-functions, api-constants, api-types]

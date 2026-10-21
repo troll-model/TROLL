@@ -6,7 +6,7 @@ TROLL is an individual- and trait-based model of tropical forest dynamics. It si
 tree in a forest stand of 1 to 100 ha on a 1 m resolution 3D grid, and tracks forest structure,
 carbon and water fluxes, and species-level biodiversity in the same simulation.
 
-This repository holds **TROLL 4.1.9**, the current implementation of the **TROLL 4.0 model**
+This repository holds **TROLL 4.1.10**, the current implementation of the **TROLL 4.0 model**
 described in Maréchaux et al. (2025) and evaluated in Schmitt et al. (2025). Versions 4.1.x
 reorganise, test, document and accelerate the code; two of them change simulation results
 slightly (4.1.1: single-precision leaf physiology; 4.1.2: a correction to the light-limited

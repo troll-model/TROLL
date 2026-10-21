@@ -2047,9 +2047,9 @@ float Tree::dailyGPPcrown(Context &ctx, float PPFD, float VPD, float T, float LA
 
 #endif
 
-//! NEW in v. 2.4.0: Separate function for calculation of Rday
-//! separation necessitates extra function calls, but allows for decoupling of photosynthesis and leaf respiration in special cases (i.e. no photosynthesis at very low ppfd, but still respiration
-//! at low light levels, should leaf respiration not be closer to dark respiration than to respiration in full sunlight, i.e. should we not lose the factor 0.4 then?
+//! NEW in v.\ 2.4.0: Separate function for calculation of Rday
+//! separation necessitates extra function calls, but allows for decoupling of photosynthesis and leaf respiration in special cases (i.e.\ no photosynthesis at very low ppfd, but still respiration
+//! at low light levels, should leaf respiration not be closer to dark respiration than to respiration in full sunlight, i.e.\ should we not lose the factor 0.4 then?
 
 #ifdef WATER
 // Function Rdayleaf has not been modified when WATER is defined: there is no clear consensus on the effect of water shortage on respiration and how to implement such potential effect in models, but I have to further check this and it could be modified. IM 4 dec 2019.

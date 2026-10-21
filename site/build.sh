@@ -3,7 +3,8 @@
 # Build the TROLL website with pkgdown, from the documents of the repository.
 #
 # Usage: site/build.sh [--api DOXYGEN_HTML_DIR]
-#   --api DIR   copy the Doxygen HTML (e.g. build/docs/html) into the site as api/
+#   --api DIR   Doxygen HTML folder (e.g. build/docs/html): copied into the site as api/, and the
+#               XML next to it (build/docs/xml) turned into API reference pages
 #
 # The pages are generated from README.md, docs/*.md, NEWS.md, CONTRIBUTING.md,
 # TERMS_OF_REFERENCE.md and sanity/README.md, so each text exists only once.
@@ -22,6 +23,22 @@ while [[ $# -gt 0 ]]; do
 done
 
 python3 "$SITE/prepare.py" "$ROOT" "$SITE"
+rm -f "$SITE"/vignettes/api-*.Rmd
+if [[ -n "$API" && -f "$(dirname "$API")/xml/index.xml" ]]; then
+    python3 "$SITE/doxygen_api.py" "$(dirname "$API")/xml" "$SITE"      # API pages from the Doxygen XML
+else
+    python3 - "$SITE" <<'PY'
+import os, sys
+site = sys.argv[1]
+os.makedirs(os.path.join(site, "vignettes"), exist_ok=True)
+for name, title in [("api-index", "API reference"), ("api-tree", "API: Tree"), ("api-species", "API: Species"),
+                    ("api-context", "API: Context (model state)"), ("api-functions", "API: functions"),
+                    ("api-constants", "API: constants, options and globals"), ("api-types", "API: small types")]:
+    open(os.path.join(site, "vignettes", name + ".Rmd"), "w").write(
+        f'---\ntitle: "{title}"\n---\n\nThe API pages are generated from the Doxygen XML: build the site with '
+        '`site/build.sh --api build/docs/html` after `cmake --build build --target docs`.\n')
+PY
+fi
 Rscript -e 'options(pkgdown.internet = FALSE); pkgdown::build_site(pkg = commandArgs(TRUE)[1], preview = FALSE, install = FALSE, examples = FALSE, new_process = FALSE)' "$SITE"
 
 if [[ -n "$API" ]]; then

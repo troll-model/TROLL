@@ -10,7 +10,8 @@ metadata pkgdown needs.
 | `DESCRIPTION` | site metadata (title, version, authors) |
 | `_pkgdown.yml` | navigation bar, article list, home page links |
 | `prepare.py` | turns README.md, NEWS.md, docs/*.md, CONTRIBUTING.md, TERMS_OF_REFERENCE.md and sanity/README.md into pkgdown pages, rewriting links between them |
-| `build.sh` | runs `prepare.py` and pkgdown; `--api build/docs/html` adds the Doxygen API reference |
+| `doxygen_api.py` | turns the Doxygen XML (build/docs/xml) into the API reference pages (`articles/api-*.html`): one page each for `Tree`, `Species`, `Context`, functions, constants and small types, with the same look and search as the rest of the site; fails if any documented entity would be left out |
+| `build.sh` | runs `prepare.py`, `doxygen_api.py` and pkgdown; `--api build/docs/html` also copies the full Doxygen site to `api/` |
 
 Edit the source documents, never the generated files (`index.md`, `NEWS.md`, `vignettes/`,
 `docs/`, all ignored by git).

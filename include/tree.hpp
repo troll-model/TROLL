@@ -222,7 +222,7 @@ public:
 #ifdef WATER
     float DeathRate(Context &ctx, float dbh, float carbon_starv, float phi_root); //!< Death rate of the tree per timestep (WATER version)
     //! Leaf energy balance coupled with photosynthesis and stomatal conductance, for one leaf
-    //! layer and one half-hourly step: iterates leaf temperature to convergence (GMD Part 1, Sect. 2.5).
+    //! layer and one half-hourly step: iterates leaf temperature to convergence (GMD Part 1, Sect.\ 2.5).
     //! @param ctx        simulation context (parameters, lookup tables)
     //! @param PPFD       photosynthetic photon flux density on the leaves of the layer (umol photons m-2 s-1)
     //! @param VPDa       air vapour pressure deficit at the layer (kPa)
