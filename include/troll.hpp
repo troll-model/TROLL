@@ -382,7 +382,7 @@ void LoopLayerUpdateCrownStatistic_template(Context &ctx, int row_center, int co
 //!< Global function: Template function to loop across crown layer and update
 #endif
 
-float CalcVcmaxm(float lma, float nmass, float pmass);             //!< Returns Vcmaxm, in micromol C g-1 s-1
+float CalcVcmaxm(float LMA, float Nmass, float Pmass);             //!< Returns Vcmaxm, in micromol C g-1 s-1
 float CalcRdark(float lma, float nmass, float pmass, float vcmax); //!< Returns Rdark, in micromol C m-2 s-1
 #include "quad.hpp" // QUAD() and ElectronTransportRate(), used by both Photosyn variants (inline)
 
@@ -451,7 +451,7 @@ void SetParameter(string &parameter_name, string &parameter_value, N &parameter,
 //! @param parameter_name parameter name
 //! @param parameter_value value read from the file (text)
 //! @param parameter [out] variable receiving the value
-//! @param parameter_default default value used when the value is invalid
+//! @param parameter_default default value used when the value is empty
 //! @param quiet suppress console messages if true
 void SetParameter(string &parameter_name, string &parameter_value, string &parameter, string parameter_default, bool quiet); //!< See param_registry.hpp: string parameter
 

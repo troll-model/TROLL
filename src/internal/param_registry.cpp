@@ -332,8 +332,6 @@ void RegisterParameters(Context &ctx)
 // ============================================================================
 //   AssignParamFromRegistry()
 // ============================================================================
-//! @param name parameter name
-//! @param value value read from the global parameter file (text)
 void AssignParamFromRegistry(const std::string &name,
                              const std::string &value)
 {

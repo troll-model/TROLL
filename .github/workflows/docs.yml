@@ -4,16 +4,29 @@ on: [push, pull_request]
 
 jobs:
   docs:
-    name: Doxygen documentation and coverage
+    name: Doxygen ${{ matrix.doxygen }} documentation and coverage
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # the Ubuntu package (older) and a current release: newer Doxygen versions check more
+        doxygen: [system, "1.14.0"]
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: sudo apt-get install -y cmake libgsl-dev doxygen
 
+      - name: Install Doxygen ${{ matrix.doxygen }}
+        if: matrix.doxygen != 'system'
+        run: |
+          v=${{ matrix.doxygen }}
+          curl -sfL -o doxygen.tgz "https://github.com/doxygen/doxygen/releases/download/Release_${v//./_}/doxygen-${v}.linux.bin.tar.gz"
+          tar xzf doxygen.tgz
+          echo "DOXYGEN_OPTION=-DDOXYGEN_EXECUTABLE=$PWD/doxygen-${v}/bin/doxygen" >> "$GITHUB_ENV"
+
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release $DOXYGEN_OPTION
 
       # Fails on documentation errors (malformed comments, comments attached to
       # nothing, unknown @param names); reports coverage without failing.
@@ -24,5 +37,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: troll-api-docs
+          name: troll-api-docs-${{ matrix.doxygen }}
           path: build/docs/html

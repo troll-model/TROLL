@@ -97,9 +97,6 @@ void GetDensitiesGradient(float LAI, float CD, float &dens_top, float &dens_belo
 }
 
 // Global function: deduces within-crown density from LAI, assuming uniform leaf distribution
-//! @param LAI leaf area index of the crown (m2 m-2)
-//! @param CD crown depth (m)
-//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer); [out] for GetDensity*
 void GetDensityUniform(float LAI, float CD, float &dens_layer) // RENAMED: ctx.params.dens → dens_layer
 {
 #ifdef CROWN_UMBRELLA
@@ -288,6 +285,11 @@ void GetPPFDabove(Context &ctx, int height, int site, float noinput, float (&ppf
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[6]) // RENAMED: ctx.params.dens → dens_layer
 {
 #else
+//! @param ctx simulation context (all model state)
+//! @param height height layer (m)
+//! @param site site index
+//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer)
+//! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area (and with WATER: incident light, longwave extinction)
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[4]) // RENAMED: ctx.params.dens → dens_layer
 {
 #endif

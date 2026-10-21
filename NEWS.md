@@ -1,3 +1,8 @@
+-   TROLL 4.1.8: documentation fixes for recent Doxygen versions, no change in behaviour (October 2026)
+    -   `make docs-check` failed with recent Doxygen (reported on macOS; reproduced with Doxygen 1.14.0): `AssignParamFromRegistry`, `SetParameter`, `GetDensityUniform` and `AssignValuePointcloud` were documented both in a header and in the source; `CalcVcmaxm` was declared with lower-case parameter names but documented with the names of its definition. Each function is now documented once, with matching names.
+    -   `IMPLICIT_DIR_DOCS = NO` in the Doxygen configuration: recent Doxygen turns `sanity/README.md` into folder documentation, which broke the README's link to it (Doxygen 1.9.8 ignores the setting with a notice).
+    -   CI: documentation checked with both the Ubuntu Doxygen and Doxygen 1.14.0.
+    -   First measurement on a multicore machine (Apple Silicon, reported by a user): with 4 threads, outputs identical to 1 thread and the 30-day `threads-check` run 1.8x faster in wall time.
 -   TROLL 4.1.7: macOS build fix, no change in behaviour (October 2026)
     -   The build failed on macOS with `-DTROLL_WARNINGS_AS_ERRORS=ON`: Apple's SDK marks `sprintf` deprecated. All 75 `sprintf` calls replaced by `snprintf(dest, sizeof(dest), ...)` (same text, and bounded: a path longer than its buffer is now truncated instead of overflowing it).
     -   clang's `-Wunused-but-set-variable` on an unused counter (`nb_parameters_fromfile`, input.cpp and memory.cpp) silenced with `[[maybe_unused]]`.
