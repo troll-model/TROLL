@@ -13,6 +13,9 @@ INPUT                  = "@CMAKE_SOURCE_DIR@/README.md" \
                          "@CMAKE_SOURCE_DIR@/include" \
                          "@CMAKE_SOURCE_DIR@/src"
 USE_MDFILE_AS_MAINPAGE = "@CMAKE_SOURCE_DIR@/README.md"
+# Keep sanity/README.md as a page (recent Doxygen would otherwise use a folder README.md as
+# the folder's documentation, which breaks links to it)
+IMPLICIT_DIR_DOCS      = NO
 FILE_PATTERNS          = *.hpp *.cpp *.md
 RECURSIVE              = YES
 STRIP_FROM_PATH        = "@CMAKE_SOURCE_DIR@"

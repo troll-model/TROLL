@@ -58,7 +58,7 @@ make threads-check # outputs must be bit-identical with 1 and 4 threads
 make golden        # regenerate the stored reference outputs (only when results are meant to change)
 ```
 
-The regression checks compare against reference outputs stored in `sanity/golden/`. On Linux x86-64 with GCC 13, results reproduce them bit for bit; the default tolerances (CMake variables `TROLL_SANITY_RTOL_EXAMPLE`, `TROLL_SANITY_RTOL_LONG`, `TROLL_SANITY_ATOL`, `TROLL_SANITY_FILES_LONG`) allow for other compilers and math libraries. See [sanity/README.md](sanity/README.md).
+The regression checks compare against reference outputs stored in `sanity/golden/`. On Linux x86-64 with GCC 13, results reproduce them bit for bit; the default tolerances (CMake variables `TROLL_SANITY_RTOL_EXAMPLE`, `TROLL_SANITY_RTOL_LONG`, `TROLL_SANITY_ATOL`, `TROLL_SANITY_FILES_LONG`) allow for other compilers and math libraries. See [sanity/README.md](./sanity/README.md).
 
 The leaf kernel (`FluxesLeaf`, `Photosyn`, `QUAD`) is single precision and compiled with `-Wdouble-promotion` as an error (`include/kernel_precision.hpp`): use the `*_F` constants of `constants.hpp` and `f`-suffixed literals there. Building with `-ffast-math` is refused.
 
