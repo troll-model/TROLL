@@ -29,7 +29,7 @@ MARKDOWN_SUPPORT       = YES
 # Model options as in the default build (include/troll_defines.hpp)
 ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
-PREDEFINED             = CROWN_UMBRELLA LCP_alternative G0 PHENO_DROUGHT FULL_CLIMATE FF_todiscuss CHM_SPIKEFREE \
+PREDEFINED             = CROWN_UMBRELLA LCP_alternative G0 FULL_CLIMATE FF_todiscuss CHM_SPIKEFREE \
                          "TROLL_FLOAT_KERNEL_BEGIN=" "TROLL_FLOAT_KERNEL_END="
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO

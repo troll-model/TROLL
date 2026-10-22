@@ -61,7 +61,6 @@ jobs:
           - { defines: "MIP_Lichstein",             known_broken: false }
           - { defines: "CACHE_LUT",                 known_broken: false }
           - { defines: "CHECK_CARBON",              known_broken: false }
-          - { defines: "TROLL_NO_PHENO_DROUGHT",    known_broken: false }
           - { defines: "TROLL_NO_LCP_alternative",  known_broken: false }
           - { defines: "TROLL_NO_G0",               known_broken: false }
           - { defines: "TROLL_NO_FF_todiscuss",     known_broken: false }

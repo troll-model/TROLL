@@ -254,11 +254,9 @@ void RegisterParameters(Context &ctx)
     add_float("g0", ctx.params.g0, 0.0f, 30.0f, 5.0f);
 #endif
 
-#ifdef PHENO_DROUGHT
     add_float("pheno_a0", ctx.params.pheno_a0, 0.0f, 1.0f, 0.5f);
     add_float("pheno_b0", ctx.params.pheno_b0, 0.0f, 1.0f, 0.5f);
     add_float("pheno_delta", ctx.params.pheno_delta, 0.0f, 1.0f, 0.1f);
-#endif
 
     add_float("vC", ctx.params.vC, 0.0f, 1.0f, 0.05f);
     add_float("DBH0", ctx.params.DBH0, 0.0f, 2.5f, 0.005f);

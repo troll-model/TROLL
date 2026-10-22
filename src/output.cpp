@@ -450,9 +450,7 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
         output << "iter\tcol\trow\tfrom_Data\tsp_lab\tsite\tCrownDisplacement\tPmass\tNmass\tLMA\tleafarea\ttlp\twsg\tRdark\tVcmax\tJmax\tleaflifespan\tlambda_young\tlambda_mature\tlambda_old\tdbhmature\tdbhmax\thmax\tah\tCt\tLAImax\tfraction_filled\tmult_height\tmult_CR\tmult_CD\tmult_P\tmult_N\tmult_LMA\tmult_dbhmax\tmult_leafarea\tmult_tlp\tdev_wsg\tage\tdbh\tsapwood_area\theight\tCD\tCR\tGPP\tNPP\tRday\tRnight\tRstem\tLAmax\tLA\tyoungLA\tmatureLA\toldLA\tLAI\tlitter\tcarbon_storage\tcarbon_biometry\tmultiplier_seed\thurt\tNPPneg";
 
         output << "\troot_depth\tphi_root\tWSF\tWSF_A\ttranspiration\tg1_0\tg1";
-#ifdef PHENO_DROUGHT
         output << "\tNdays_dry\tNdays_wet\tpheno_factor";
-#endif
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
             output << "\troot_biomass" << l;
@@ -510,10 +508,8 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
                 output << ctx.time.iter << "\t" << col << "\t" << row << "\t" << ctx.T[site].t_from_Data << "\t" << ctx.T[site].t_sp_lab << "\t" << site << "\t" << ctx.T[site].t_CrownDisplacement << "\t" << ctx.T[site].t_Pmass << "\t" << ctx.T[site].t_Nmass << "\t" << ctx.T[site].t_LMA << "\t" << ctx.T[site].t_leafarea << "\t" << ctx.T[site].t_tlp << "\t" << ctx.T[site].t_wsg << "\t" << ctx.T[site].t_Rdark << "\t" << ctx.T[site].t_Vcmax << "\t" << ctx.T[site].t_Jmax << "\t" << ctx.T[site].t_leaflifespan << "\t" << ctx.T[site].t_lambda_young << "\t" << ctx.T[site].t_lambda_mature << "\t" << ctx.T[site].t_lambda_old << "\t" << ctx.T[site].t_dbhmature << "\t" << ctx.T[site].t_dbhmax << "\t" << ctx.T[site].t_hmax << "\t" << ctx.T[site].t_ah << "\t" << ctx.T[site].t_Ct << "\t" << ctx.T[site].t_LAImax << "\t" << ctx.T[site].t_fraction_filled << "\t" << ctx.T[site].t_mult_height << "\t" << ctx.T[site].t_mult_CR << "\t" << ctx.T[site].t_mult_CD << "\t" << ctx.T[site].t_mult_P << "\t" << ctx.T[site].t_mult_N << "\t" << ctx.T[site].t_mult_LMA << "\t" << ctx.T[site].t_mult_dbhmax << "\t" << ctx.T[site].t_mult_leafarea << "\t" << ctx.T[site].t_mult_tlp << "\t" << ctx.T[site].t_dev_wsg << "\t" << ctx.T[site].t_age << "\t" << ctx.T[site].t_dbh << "\t" << ctx.T[site].t_sapwood_area << "\t" << ctx.T[site].t_height << "\t" << ctx.T[site].t_CD << "\t" << ctx.T[site].t_CR << "\t" << ctx.T[site].t_GPP << "\t" << ctx.T[site].t_NPP << "\t" << ctx.T[site].t_Rday << "\t" << ctx.T[site].t_Rnight << "\t" << ctx.T[site].t_Rstem << "\t" << ctx.T[site].t_LAmax << "\t" << ctx.T[site].t_LA << "\t" << ctx.T[site].t_youngLA << "\t" << ctx.T[site].t_matureLA << "\t" << ctx.T[site].t_oldLA << "\t" << ctx.T[site].t_LAI << "\t" << ctx.T[site].t_litter << "\t" << ctx.T[site].t_carbon_storage << "\t" << ctx.T[site].t_carbon_biometry << "\t" << ctx.T[site].t_multiplier_seed << "\t" << ctx.T[site].t_hurt << "\t" << ctx.T[site].t_NPPneg;
 
                 output << "\t" << ctx.T[site].t_root_depth << "\t" << ctx.T[site].t_phi_root << "\t" << ctx.T[site].t_WSF << "\t" << ctx.T[site].t_WSF_A << "\t" << ctx.T[site].t_transpiration << "\t" << ctx.T[site].t_g1 << "\t" << ctx.T[site].t_g1_0;
-#ifdef PHENO_DROUGHT
                 output << "\t" << ctx.T[site].t_Ndays_dry << "\t" << ctx.T[site].t_Ndays_wet << "\t" << ctx.T[site].t_pheno_factor;
 
-#endif
                 for (int l = 0; l < ctx.soil.nblayers_soil; l++)
                 {
                     output << "\t" << ctx.T[site].t_root_biomass[l];

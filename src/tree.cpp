@@ -188,11 +188,9 @@ void Tree::Birth(Context &ctx, int nume, int site0)
         CalcLeafLifespan(ctx);
         InitialiseLeafPools(ctx); // new in v.3.1, formerly part of CalcLeafLifespan()
 
-#ifdef PHENO_DROUGHT
         t_Ndays_dry = 0;
         t_Ndays_wet = 0;
         t_pheno_factor = 1.0;
-#endif
 
         // ############
         // # sapwood ##
@@ -750,7 +748,6 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
         SetParameter(parameter_name, parameter_value, t_WSF_A, 0.0f, 1.0f, 1.0f, quiet);
 
-#ifdef PHENO_DROUGHT
         parameter_name = "Ndays_dry";
         parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
         SetParameter(parameter_name, parameter_value, t_Ndays_dry, 0, 1000, 0, quiet);
@@ -762,7 +759,6 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         parameter_name = "pheno_factor";
         parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
         SetParameter(parameter_name, parameter_value, t_pheno_factor, 0.0f, 1.0f, 1.0f, quiet);
-#endif // PHENO_DROUGHT
 
         //*################*/
         //*## for output ##*/
@@ -2553,7 +2549,6 @@ void Tree::UpdateLeafDynamics(Context &ctx)
         float LAIexperienced_eff;
         CalcLAmax(ctx, LAIexperienced_eff, t_LAmax);
 
-#ifdef PHENO_DROUGHT
 
         /* version where the multiplier modifies leafarea_max, similarly to Xu et al. 2016: drawbacks: no possibilities for simultaneous increase of leaf production and old leaves litterfal.
          if (t_phi_root < ctx.S[t_sp_lab].s_tlp) t_Ndays_dry++;
@@ -2585,9 +2580,6 @@ void Tree::UpdateLeafDynamics(Context &ctx)
         lambda_old = fmin(1.0, fmaxf(0.0, lambda_old / t_pheno_factor));
         t_LAmax = fmaxf(0.0, t_LAmax);
 
-#else
-        t_LAmax = fmaxf(0.0, t_LAmax);
-#endif
 
         // carbon intended for tree growth, mobilized as if it was used for flushing leaves (in case it is needed, if not it will be backconverted at the end of the procedure), in leaf area units
         float flush_biometry = 2.0 * fmaxf(t_NPP, 0.0) * ctx.params.fallocwood * 0.6 * SLA; // new in v. 2.4.0: only 60% of woody npp is actually used for construction, the rest is for branch fall repair (cf. Malhi et al. 2011)
@@ -2612,11 +2604,7 @@ void Tree::UpdateLeafDynamics(Context &ctx)
 
             if (new_litter < 0)
             {
-#ifdef PHENO_DROUGHT
                 cout << "Warning in UpdateLeafDynamics, newlitter <0, lambda_old=" << lambda_old << " t_oldLA=" << t_oldLA << " t_pheno_factor=" << t_pheno_factor << endl;
-#else
-                cout << "Warning in UpdateLeafDynamics, newlitter <0, lambda_old=" << lambda_old << " t_oldLA=" << t_oldLA << endl;
-#endif
             }
 
             // first check whether tree can still support more leaves (does not have excess leafarea)
@@ -2687,11 +2675,7 @@ void Tree::UpdateLeafDynamics(Context &ctx)
 
             if (t_litter < 0 || t_oldLA < 0)
             {
-#ifdef PHENO_DROUGHT
                 cout << "Warning in UpdateLeafDynamics, new_litter=" << new_litter << ", lambda_old=" << lambda_old << " t_oldLA=" << t_oldLA << " t_pheno_factor=" << t_pheno_factor << " t_LMA=" << t_LMA << " new_old=" << new_old << " t_Ndays_dry=" << t_Ndays_dry << " t_Ndays_wet=" << t_Ndays_wet << endl;
-#else
-                cout << "Warning in UpdateLeafDynamics, new_litter=" << new_litter << ", lambda_old=" << lambda_old << " t_oldLA=" << t_oldLA << " t_LMA=" << t_LMA << " new_old=" << new_old << endl;
-#endif
             }
 
             t_LA = t_youngLA + t_matureLA + t_oldLA;

@@ -76,11 +76,9 @@ public:
     float t_g1_0;                      //!< Medlyn stomatal slope g1 of the tree from wood specific gravity, g1 = 6.53 - 3.97 wsg (Lin et al. 2015) (kPa^0.5)
     float t_g1;                        //!< Medlyn g1 used for stomatal conductance (kPa^0.5): t_g1_0 x WSF_s (stomatal water stress factor, set in Water_availability; GMD Part 1 Eq. 36)
 
-#ifdef PHENO_DROUGHT
-    int t_Ndays_dry;       //!< Days with root-zone water potential below the species turgor loss point (PHENO_DROUGHT)
-    int t_Ndays_wet;       //!< Counterpart of t_Ndays_dry for days above the turgor loss point (PHENO_DROUGHT)
+    int t_Ndays_dry;       //!< Days with root-zone water potential below the species turgor loss point (drought phenology)
+    int t_Ndays_wet;       //!< Counterpart of t_Ndays_dry for days above the turgor loss point (drought phenology)
     float t_pheno_factor;  //!< Multiplicative factor (<= 1) on the residence time of old leaves under drought; f0 in GMD Part 2, Sect. 2
-#endif
 
 
     // new in v.2.4.0: traits defined at individual level
