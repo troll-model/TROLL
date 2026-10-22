@@ -12,7 +12,7 @@
 # define Pis2 1.570796327 //!< Global constant: Pi/2.0
 # define iPi 0.3183099 //!< Global constant: 1.0/Pi
 
-// Constants used only when WATER is defined
+// Constants of the water model
 #define ABSZERO -273.15    //!< Minimal temperature (in °C)
 #define AIRMA 0.02896279  //!< molelcular mass of air (kg/mol)
 #define CPAIR 1010.0      //!< heat capacity of air (J/kg/K)

@@ -29,11 +29,9 @@ void Average(Context &ctx)
     float inbcells = 1.0 / float(ctx.grid.sites);
     float inbhectares = inbcells * ctx.grid.NH * ctx.grid.NH * 10000.0;
 
-#ifdef WATER
     ctx.soil.abund_phi_root = 0.0;
     ctx.soil.abund10_phi_root = 0.0;
     ctx.soil.agb_phi_root = 0.0;
-#endif
 
     {
         for (spp = 1; spp <= ctx.grid.nbspp; spp++)
@@ -87,12 +85,7 @@ void Average(Context &ctx)
         cout.setf(ios::fixed, ios::floatfield);
         cout.precision(2);
 
-#ifdef WATER
         cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << PercentOrZero(ctx.diag.nbdead_n1 * inbhectares, sum1) << " | " << PercentOrZero(ctx.diag.nbdead_n10 * inbhectares, sum10) << " | " << PercentOrZero(ctx.diag.nbdead_n30 * inbhectares, sum30) << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << " *** ctx.soil.Transpiration (mm): ";
-#else
-
-        cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << PercentOrZero(ctx.diag.nbdead_n1 * inbhectares, sum1) << " | " << PercentOrZero(ctx.diag.nbdead_n10 * inbhectares, sum10) << " | " << PercentOrZero(ctx.diag.nbdead_n30 * inbhectares, sum30) << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << endl;
-#endif
 
         if (ctx.opt._OUTPUT_extended)
         {
@@ -180,7 +173,6 @@ void Average(Context &ctx)
     cout.setf(ios::fixed, ios::floatfield);
     cout.precision(5);
 
-#ifdef WATER
 
     float evapo = 0.0, runoff = 0.0, leak = 0.0, interception = 0.0, throughfall = 0.0, lai = 0.0;
     for (int d = 0; d < ctx.grid.nbdcells; d++)
@@ -400,7 +392,6 @@ void Average(Context &ctx)
 
     ctx.out.output[31] << ctx.time.iter << "\t" << ctx.soil.abund_phi_root << "\t" << ctx.soil.abund10_phi_root << "\t" << ctx.soil.agb_phi_root << endl;
 
-#endif
 
     cout.flush();
 }
@@ -456,7 +447,6 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
     if (header == 1)
     {
 
-#ifdef WATER
         output << "iter\tcol\trow\tfrom_Data\tsp_lab\tsite\tCrownDisplacement\tPmass\tNmass\tLMA\tleafarea\ttlp\twsg\tRdark\tVcmax\tJmax\tleaflifespan\tlambda_young\tlambda_mature\tlambda_old\tdbhmature\tdbhmax\thmax\tah\tCt\tLAImax\tfraction_filled\tmult_height\tmult_CR\tmult_CD\tmult_P\tmult_N\tmult_LMA\tmult_dbhmax\tmult_leafarea\tmult_tlp\tdev_wsg\tage\tdbh\tsapwood_area\theight\tCD\tCR\tGPP\tNPP\tRday\tRnight\tRstem\tLAmax\tLA\tyoungLA\tmatureLA\toldLA\tLAI\tlitter\tcarbon_storage\tcarbon_biometry\tmultiplier_seed\thurt\tNPPneg";
 
         output << "\troot_depth\tphi_root\tWSF\tWSF_A\ttranspiration\tg1_0\tg1";
@@ -472,10 +462,6 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
             output << "\tsoil_layer_weight" << l;
         }
 
-#else // WATER
-        output << "iter\tcol\trow\tfrom_Data\tsp_lab\tsite\tCrownDisplacement\tPmass\tNmass\tLMA\twsg\tRdark\tVcmax\tJmax\tleaflifespan\tlambda_young\tlambda_mature\tlambda_old\tdbhmature\tdbhmax\thmax\tah\tCt\tLAImax\tfraction_filled\tmult_height\tmult_CR\tmult_CD\tmult_P\tmult_N\tmult_LMA\tmult_dbhmax\tdev_wsg\tage\tdbh\tsapwood_area\theight\tCD\tCR\tGPP\tNPP\tRday\tRnight\tRstem\tLAmax\tLA\tyoungLA\tmatureLA\toldLA\tLAI\tlitter\tcarbon_storage\tcarbon_biometry\tmultiplier_seed\thurt\tNPPneg";
-
-#endif
 
         output << "\tAGB\ts_name" << endl;
     }
@@ -521,7 +507,6 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
                 // output all tree variables, this is potentially a very large file
                 // we currently do not output the t_NDDfield vector, as it is too large
 
-#ifdef WATER
                 output << ctx.time.iter << "\t" << col << "\t" << row << "\t" << ctx.T[site].t_from_Data << "\t" << ctx.T[site].t_sp_lab << "\t" << site << "\t" << ctx.T[site].t_CrownDisplacement << "\t" << ctx.T[site].t_Pmass << "\t" << ctx.T[site].t_Nmass << "\t" << ctx.T[site].t_LMA << "\t" << ctx.T[site].t_leafarea << "\t" << ctx.T[site].t_tlp << "\t" << ctx.T[site].t_wsg << "\t" << ctx.T[site].t_Rdark << "\t" << ctx.T[site].t_Vcmax << "\t" << ctx.T[site].t_Jmax << "\t" << ctx.T[site].t_leaflifespan << "\t" << ctx.T[site].t_lambda_young << "\t" << ctx.T[site].t_lambda_mature << "\t" << ctx.T[site].t_lambda_old << "\t" << ctx.T[site].t_dbhmature << "\t" << ctx.T[site].t_dbhmax << "\t" << ctx.T[site].t_hmax << "\t" << ctx.T[site].t_ah << "\t" << ctx.T[site].t_Ct << "\t" << ctx.T[site].t_LAImax << "\t" << ctx.T[site].t_fraction_filled << "\t" << ctx.T[site].t_mult_height << "\t" << ctx.T[site].t_mult_CR << "\t" << ctx.T[site].t_mult_CD << "\t" << ctx.T[site].t_mult_P << "\t" << ctx.T[site].t_mult_N << "\t" << ctx.T[site].t_mult_LMA << "\t" << ctx.T[site].t_mult_dbhmax << "\t" << ctx.T[site].t_mult_leafarea << "\t" << ctx.T[site].t_mult_tlp << "\t" << ctx.T[site].t_dev_wsg << "\t" << ctx.T[site].t_age << "\t" << ctx.T[site].t_dbh << "\t" << ctx.T[site].t_sapwood_area << "\t" << ctx.T[site].t_height << "\t" << ctx.T[site].t_CD << "\t" << ctx.T[site].t_CR << "\t" << ctx.T[site].t_GPP << "\t" << ctx.T[site].t_NPP << "\t" << ctx.T[site].t_Rday << "\t" << ctx.T[site].t_Rnight << "\t" << ctx.T[site].t_Rstem << "\t" << ctx.T[site].t_LAmax << "\t" << ctx.T[site].t_LA << "\t" << ctx.T[site].t_youngLA << "\t" << ctx.T[site].t_matureLA << "\t" << ctx.T[site].t_oldLA << "\t" << ctx.T[site].t_LAI << "\t" << ctx.T[site].t_litter << "\t" << ctx.T[site].t_carbon_storage << "\t" << ctx.T[site].t_carbon_biometry << "\t" << ctx.T[site].t_multiplier_seed << "\t" << ctx.T[site].t_hurt << "\t" << ctx.T[site].t_NPPneg;
 
                 output << "\t" << ctx.T[site].t_root_depth << "\t" << ctx.T[site].t_phi_root << "\t" << ctx.T[site].t_WSF << "\t" << ctx.T[site].t_WSF_A << "\t" << ctx.T[site].t_transpiration << "\t" << ctx.T[site].t_g1 << "\t" << ctx.T[site].t_g1_0;
@@ -538,9 +523,6 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
                     output << "\t" << ctx.T[site].t_soil_layer_weight[l];
                 }
 
-#else
-                output << ctx.time.iter << "\t" << col << "\t" << row << "\t" << ctx.T[site].t_from_Data << "\t" << ctx.T[site].t_sp_lab << "\t" << site << "\t" << ctx.T[site].t_CrownDisplacement << "\t" << ctx.T[site].t_Pmass << "\t" << ctx.T[site].t_Nmass << "\t" << ctx.T[site].t_LMA << "\t" << ctx.T[site].t_wsg << "\t" << ctx.T[site].t_Rdark << "\t" << ctx.T[site].t_Vcmax << "\t" << ctx.T[site].t_Jmax << "\t" << ctx.T[site].t_leaflifespan << "\t" << ctx.T[site].t_lambda_young << "\t" << ctx.T[site].t_lambda_mature << "\t" << ctx.T[site].t_lambda_old << "\t" << ctx.T[site].t_dbhmature << "\t" << ctx.T[site].t_dbhmax << "\t" << ctx.T[site].t_hmax << "\t" << ctx.T[site].t_ah << "\t" << ctx.T[site].t_Ct << "\t" << ctx.T[site].t_LAImax << "\t" << ctx.T[site].t_fraction_filled << "\t" << ctx.T[site].t_mult_height << "\t" << ctx.T[site].t_mult_CR << "\t" << ctx.T[site].t_mult_CD << "\t" << ctx.T[site].t_mult_P << "\t" << ctx.T[site].t_mult_N << "\t" << ctx.T[site].t_mult_LMA << "\t" << ctx.T[site].t_mult_dbhmax << "\t" << ctx.T[site].t_dev_wsg << "\t" << ctx.T[site].t_age << "\t" << ctx.T[site].t_dbh << "\t" << ctx.T[site].t_sapwood_area << "\t" << ctx.T[site].t_height << "\t" << ctx.T[site].t_CD << "\t" << ctx.T[site].t_CR << "\t" << ctx.T[site].t_GPP << "\t" << ctx.T[site].t_NPP << "\t" << ctx.T[site].t_Rday << "\t" << ctx.T[site].t_Rnight << "\t" << ctx.T[site].t_Rstem << "\t" << ctx.T[site].t_LAmax << "\t" << ctx.T[site].t_LA << "\t" << ctx.T[site].t_youngLA << "\t" << ctx.T[site].t_matureLA << "\t" << ctx.T[site].t_oldLA << "\t" << ctx.T[site].t_LAI << "\t" << ctx.T[site].t_litter << "\t" << ctx.T[site].t_carbon_storage << "\t" << ctx.T[site].t_carbon_biometry << "\t" << ctx.T[site].t_multiplier_seed << "\t" << ctx.T[site].t_hurt << "\t" << ctx.T[site].t_NPPneg;
-#endif
 
 
                 // we add a few tree-based variables that are derived or environment-related, but not directly kept track of
@@ -1210,9 +1192,7 @@ void CloseOutputs(Context &ctx)
     CloseStream(ctx.out.output_MIP_eco);
     CloseStream(ctx.out.output_MIP_ind);
 #endif
-#ifdef WATER
     CloseStreams(ctx.out.output);
-#endif
 #ifdef TRACK_INDIVIDUALS
     CloseStreams(ctx.out.output_track);
 #endif

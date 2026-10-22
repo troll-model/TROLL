@@ -96,7 +96,6 @@ void InitialiseOutputStreams(Context &ctx)
         }
 
 
-#ifdef WATER
         // snprintf(nnn, sizeof(nnn),"%s_%i_water_balance.txt",ctx.buffers.buf, ctx.buffers.run_index);
         // output_water[0].open(nnn, ios::out);
 
@@ -254,9 +253,7 @@ void InitialiseOutputStreams(Context &ctx)
         ctx.out.output[29] << endl;
         ctx.out.output[30] << endl;
 
-#endif
 
-#ifdef WATER
 
         if (ctx.opt._WATER_RETENTION_CURVE == 1)
         {
@@ -276,7 +273,6 @@ void InitialiseOutputStreams(Context &ctx)
             }
         }
 
-#endif
 
 #ifdef TRACK_INDIVIDUALS
         if (ctx.opt._OUTPUT_extended)
@@ -324,9 +320,7 @@ void Initialise(Context &ctx)
     ReadInputClimate(ctx);
 #endif
 
-#ifdef WATER
     ReadInputSoil(ctx);
-#endif
 
     //** Initialization of trees **
     //*****************************
@@ -335,7 +329,6 @@ void Initialise(Context &ctx)
     {
         Tree T_site(ctx);
         ctx.T.push_back(T_site);
-#ifdef WATER
         // FF: not sure this check is necessary anymore (it's a check for memory allocation problems, I presume?), but I kept it just in case
         if (&T_site.t_soil_layer_weight[0] == &T_site.t_root_biomass[4])
         {
@@ -343,7 +336,6 @@ void Initialise(Context &ctx)
             cout << "t_soil_layer_weight adresses: " << &T_site.t_soil_layer_weight[0] << "\t" << &T_site.t_soil_layer_weight[1] << "\t" << &T_site.t_soil_layer_weight[2] << "\t" << &T_site.t_soil_layer_weight[3] << "\t" << &T_site.t_soil_layer_weight[4] << endl;
             cout << "t_root biomass adresses: " << &T_site.t_root_biomass[0] << "\t" << &T_site.t_root_biomass[1] << "\t" << &T_site.t_root_biomass[2] << "\t" << &T_site.t_root_biomass[3] << "\t" << &T_site.t_root_biomass[4] << endl;
         }
-#endif
     }
     InitialiseIntraspecific(ctx);
 #ifdef CACHE_LUT
@@ -430,7 +422,6 @@ void ReadInputInventory(Context &ctx)
         //        vector<string> parameter_names{"col","row","s_name","CrownDisplacement","Pmass","Nmass","LMA","wsg","Rdark","Vcmax","Jmax","leaflifespan","lambda_young","lambda_mature","lambda_old","dbhmature","dbhmax","hmax","ah","Ct","LAImax","fraction_filled","mult_height","mult_CR","mult_CD","mult_P","mult_N","mult_LMA","mult_dbhmax","dev_wsg","age","dbh","sapwood_area","height","CD","CR","GPP","NPP","Rday","Rnight","Rstem","LAmax","LA","youngLA","matureLA","oldLA","LAI","litter","carbon_storage","carbon_biometry","multiplier_seed","hurt","NPPneg"};
         //        int nb_parameters = int(parameter_names.size()); // only works from C++11 onwards
 
-#ifdef WATER
         string parameter_names_hardcoded[67] = {"col", "row", "s_name", "CrownDisplacement",
                                                 "Pmass", "Nmass", "LMA", "leafarea", "tlp", "wsg",
                                                 "Rdark", "Vcmax", "Jmax", "leaflifespan",
@@ -448,18 +439,10 @@ void ReadInputInventory(Context &ctx)
 
         int nb_parameters = 67;
 
-#else
-
-        string parameter_names_hardcoded[53] = {"col", "row", "s_name", "CrownDisplacement", "Pmass", "Nmass", "LMA", "wsg", "Rdark", "Vcmax", "Jmax", "leaflifespan", "lambda_young", "lambda_mature", "lambda_old", "dbhmature", "dbhmax", "hmax", "ah", "Ct", "LAImax", "fraction_filled", "mult_height", "mult_CR", "mult_CD", "mult_P", "mult_N", "mult_LMA", "mult_dbhmax", "dev_wsg", "age", "dbh", "sapwood_area", "height", "CD", "CR", "GPP", "NPP", "Rday", "Rnight", "Rstem", "LAmax", "LA", "youngLA", "matureLA", "oldLA", "LAI", "litter", "carbon_storage", "carbon_biometry", "multiplier_seed", "hurt", "NPPneg"};
-
-        int nb_parameters = 53;
-
-#endif
 
         // conversion to vector for future use (e.g. water module needs flexible number of input layers)
         vector<string> parameter_names(parameter_names_hardcoded, parameter_names_hardcoded + nb_parameters);
 
-#ifdef WATER
 
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
@@ -476,7 +459,6 @@ void ReadInputInventory(Context &ctx)
         }
         nb_parameters += ctx.soil.nblayers_soil;
 
-#endif
 
         // define position of col and row in string vector
         int pcol = 0, prow = 0;
@@ -869,7 +851,6 @@ void AllocMem(Context &ctx)
     for (int i = 1; i < 3; i++)
         ctx.field.Thurt[i].assign(ctx.grid.sites, (unsigned short)0);
 
-#ifdef WATER
     ctx.soil.SWC3D.resize(ctx.soil.nblayers_soil);
     ctx.soil.soil_phi3D.resize(ctx.soil.nblayers_soil);
     ctx.soil.Ks.resize(ctx.soil.nblayers_soil);
@@ -944,7 +925,6 @@ void AllocMem(Context &ctx)
         int drow = y / ctx.grid.length_dcell;
         ctx.grid.site_DCELL[site] = dcol + ctx.grid.linear_nb_dcells * drow;
     }
-#endif
 
 }
 

@@ -138,12 +138,10 @@ void ReadInputGeneral(Context &ctx)
         cout << "Lin number of dcells: " << ctx.grid.linear_nb_dcells << endl;
         cout << ctx.opt._WATER_RETENTION_CURVE << " " << ctx.opt._SOIL_LAYER_WEIGHT << " " << ctx.params.Cair << endl;
 
-#ifdef WATER
         ctx.grid.i_sites_per_dcell = 1.0 / float(ctx.grid.sites_per_dcell);
         ctx.params.PPFDtoSW = 1 / ctx.params.SWtoPPFD;
 #ifdef G0
         ctx.params.g0 *= 0.001 * GSVGSC; // ctx.params.g0 is provided in mmolH20 ctx.params.m-2 s-1, but will be used in Photosyn function for stomatal conductance to CO2 in molCO2 ctx.params.m-2 s-1 (and then converted back to flux of H20 in FluxesLeaf)
-#endif
 #endif
         ctx.grid.LV = 1.0 / ctx.grid.NV;
         ctx.grid.LH = 1.0 / ctx.grid.NH;
@@ -197,12 +195,8 @@ void ReadInputGeneral(Context &ctx)
         ctx.params.H0 *= ctx.grid.NV;
         ctx.params.CR_min *= ctx.grid.NH;
         ctx.params.CD0 *= ctx.grid.NV;
-#ifdef WATER
         // ctx.params.alpha = ctx.params.absorptance_leaves*(1-LSQ)*0.5; // apparent quantum yield to electron transport. 0.5 because each photosystem absorbs half of the photons (von Caemmerer 2000, p 35). Note that, ctx.params.alpha was previously computed as 4*the apparent quantum yield for C fixation, ctx.params.phi in molC/mol photons, with ctx.params.phi=0.06 (in Marechaux & Chave 2017) or 0.075 (in FFischer's version), which provided ctx.params.alpha=0.3 and 0.24 respectively. This now gives ctx.params.alpha=0.37. Duursma et al. 2015 used ctx.params.alpha=0.24, while values reported or used by von Caemmerer 2000, Medlyn et al. 2002 are typically 0.3-0.37. Domingues et al. 2014 Plant Ecology & Diversity reported values for ctx.params.phi ranging from 0.041 to 0.098 (ie ctx.params.alpha ranging from 0.164 to 0.392, within a same tropical forest community (Tapajos, Brazil).
         ctx.params.alpha = (1 - LSQ) * 0.5; // no need of ctx.params.absorptance_leaves since PPFD provided in argument to Photosyn is already the absorbed flux
-#else
-        ctx.params.alpha = 4.0 * ctx.params.phi; // apparent quantum yield to electron transport in mol e-/mol photons see Mercado et al 2009 , the conversion of the apparent quantum yield in micromolCO2/micromol quantum into micromol e-/micxromol quantum is done by multipliyng by 4, since four electrons are needed to regenerate RuBP. ctx.params.alpha is fixed at 0.3 mol e-/mol photons in Medlyn et al 2002, but see equ8 and Appendix 1 in Farquahr et al 1980: it seems that ctx.params.alpha should vary with leaf thickness: there is a fraction of incident light which is lost by absorption by other leaf parts than the chloroplast lamellae, and this fraction f may increase with leaf thickness. With the values of the paper: ctx.params.alpha= 0.5*(1-f)=0.5*(1-0.23)=0.385, but this is a theoretical value and observations often report lower values (see ex discussion in medlyn et al 2005 Tree phsyiology, Lore Veeryckt values, Mercado et al 2009 Table 10, Domingues et al. 2014)
-#endif
 
         // new in v.3.1.2: visual extent
         int maxextent_visual = min(ctx.grid.rows, ctx.grid.cols);
@@ -501,12 +495,7 @@ void ReadInputClimate(Context &ctx)
             ctx.time.nbdays++;
         }
 
-#ifdef WATER
         ctx.time.iterperyear = 365;
-#else
-        // if (ctx.time.nbdays%365==0) ctx.time.iterperyear=365; //check if this guarantees ctx.time.iterperyear is correctly infered
-        ctx.time.iterperyear = 12;
-#endif
 
         ctx.time.timestep = 1.0 / float(ctx.time.iterperyear);
         cout << "Read in climate data for " << ctx.time.nbdays << " days, with" << ctx.time.iterperyear << " iterations per year." << endl;
@@ -572,7 +561,6 @@ void ReadInputDailyvar(Context &ctx)
             ctx.time.nbsteps_varday++;
         }
 
-#ifdef WATER
         totday_light = 0.0;
         for (int i = 0; i < ctx.time.nbsteps_varday; i++)
         {
@@ -582,7 +570,6 @@ void ReadInputDailyvar(Context &ctx)
         cout << totday_light << endl;
         totday_light *= 1.0 / float(ctx.time.nbsteps_varday);
         cout << totday_light << endl;
-#endif
         cout << "Read in: " << ctx.time.nbsteps_varday << " timesteps per day, covering " << ctx.time.nbhours_covered << " hours of the day." << endl;
         cout << "Successfully read in daytime variation file" << endl;
         ctx.time.inv_nbsteps_varday = 1.0 / float(ctx.time.nbsteps_varday);
@@ -632,9 +619,7 @@ void ReadInputClimate(Context &ctx)
         cout << "Read in climate data for " << ctx.time.iterperyear << " iterations per year." << endl;
         // choose average conditions
         ctx.climate.WDailyMean_year = ctx.climate.tDailyMean_year = ctx.climate.VPDDailyMean_year = ctx.climate.Tnight_year = 0.0;
-#ifdef WATER
         ctx.climate.windDailyMean_year = 0.0;
-#endif
 
         for (int i = 0; i < ctx.time.iterperyear; i++)
         {
@@ -643,18 +628,14 @@ void ReadInputClimate(Context &ctx)
             ctx.climate.WDailyMean_year += ctx.climate.DailyMeanIrradiance[i] * ctx.params.SWtoPPFD;
             ctx.climate.tDailyMean_year += ctx.climate.DailyMeanTemperature[i];
             ctx.climate.VPDDailyMean_year += ctx.climate.DailyMeanVapourPressureDeficit[i];
-#ifdef WATER
             ctx.climate.windDailyMean_year += ctx.climate.DailyMeanWindSpeed[i];
-#endif
             ctx.climate.Tnight_year += ctx.climate.NightTemperature[i];
         }
 
         ctx.climate.WDailyMean_year *= 1.0 / float(ctx.time.iterperyear);
         ctx.climate.tDailyMean_year *= 1.0 / float(ctx.time.iterperyear);
         ctx.climate.VPDDailyMean_year *= 1.0 / float(ctx.time.iterperyear);
-#ifdef WATER
         ctx.climate.windDailyMean_year *= 1.0 / float(ctx.time.iterperyear);
-#endif
         // cout << "ctx.climate.WDailyMean: " << ctx.climate.WDailyMean_year << endl;
         ctx.climate.Tnight_year *= 1.0 / float(ctx.time.iterperyear);
 
@@ -676,7 +657,6 @@ void ReadInputClimate(Context &ctx)
 
 #endif // FULL_CLIMATE
 
-#ifdef WATER
 //! Global function: This function reads inputs from the soil input file
 //! - in v.3.0, all soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) are computed from soil texture data (%clay, %silt, %sand) provided in input for each ctx.diag.layer. If additional information is available from the field (soil pH, organic content, dry bulk density, cation exchange capacity), this could be also provided in input and used to refine the computation of these soil parameters (see Table 2 in Marthews et al. 2014 Geoscientific Model Development and Hodnett & Tomasella 2002 Geoderma -- for tropical soils). Alternatively, if no local field soil data is available, these soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) should be drawn from global maps and databases --see Marthews et al. 2014, and directly provided in input. ==> ccl: to standardize the input file, the soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) should probably be provided in input, and the computation of those properties from the available local data (here %clay, %silt, %sand) made using a new function of RconTROLL (and not here)
 //! - ctx.soil.Sat_SWC and ctx.soil.Res_SWC are here computed according Tomasella & Hodnett 1998 from soil texture information (see Table 2 in Marthews et al. 2014)
@@ -837,4 +817,3 @@ void ReadInputSoil(Context &ctx)
     }
     cout << endl;
 }
-#endif

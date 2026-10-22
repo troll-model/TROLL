@@ -13,11 +13,9 @@ void InitialiseIntraspecific(Context &ctx)
           max_intraspecific_LMA = 0.0, min_intraspecific_LMA = 1000.0,
           max_intraspecific_wsg = 0.0, min_intraspecific_wsg = 1000.0,
           max_intraspecific_dbhmax = 0.0, min_intraspecific_dbhmax = 1000.0;
-#ifdef WATER
     float max_intraspecific_leafarea = 0.0, min_intraspecific_leafarea = 1000.0,
           max_intraspecific_tlp = 0.0, min_intraspecific_tlp = 1000.0;
     double variation_leafarea = 0.0, variation_tlp = 0.0;
-#endif
 
     double variation_height = 0.0, variation_CR = 0.0, variation_CD = 0.0, variation_P = 0.0, variation_N = 0.0, variation_LMA = 0.0, variation_wsg = 0.0, variation_dbhmax = 0.0;
     for (int i = 0; i < 10000; i++)
@@ -41,10 +39,8 @@ void InitialiseIntraspecific(Context &ctx)
         variation_CD = gsl_ran_gaussian(ctx.rng.gslrand, ctx.intra.sigma_CD);
         variation_wsg = gsl_ran_gaussian(ctx.rng.gslrand, ctx.intra.sigma_wsg);
         variation_dbhmax = gsl_ran_gaussian(ctx.rng.gslrand, ctx.intra.sigma_dbhmax);
-#ifdef WATER
         variation_leafarea = gsl_ran_gaussian(ctx.rng.gslrand, ctx.intra.sigma_leafarea);
         variation_tlp = gsl_ran_gaussian(ctx.rng.gslrand, ctx.intra.sigma_tlp);
-#endif
 
         // limit extent of variation, some coarse biological limits for variation around allometries
         if (variation_N > 0.5)
@@ -71,7 +67,6 @@ void InitialiseIntraspecific(Context &ctx)
             variation_height = 0.5;
         if (variation_height < -0.5)
             variation_height = -0.5;
-#ifdef WATER
         if (variation_leafarea > 0.5)
             variation_leafarea = 0.5;
         if (variation_leafarea < -0.5)
@@ -82,7 +77,6 @@ void InitialiseIntraspecific(Context &ctx)
             variation_tlp = -0.5;
         ctx.intra.d_intraspecific_leafarea[i] = float(exp(variation_leafarea));
         ctx.intra.d_intraspecific_tlp[i] = float(exp(variation_tlp));
-#endif
 
         ctx.intra.d_intraspecific_height[i] = float(exp(variation_height));
         ctx.intra.d_intraspecific_CR[i] = float(exp(variation_CR));
@@ -109,12 +103,10 @@ void InitialiseIntraspecific(Context &ctx)
         min_intraspecific_wsg = fminf(min_intraspecific_wsg, ctx.intra.d_intraspecific_wsg[i]);
         max_intraspecific_dbhmax = fmaxf(max_intraspecific_dbhmax, ctx.intra.d_intraspecific_dbhmax[i]);
         min_intraspecific_dbhmax = fminf(min_intraspecific_dbhmax, ctx.intra.d_intraspecific_dbhmax[i]);
-#ifdef WATER
         max_intraspecific_leafarea = fmaxf(max_intraspecific_leafarea, ctx.intra.d_intraspecific_leafarea[i]);
         min_intraspecific_leafarea = fminf(min_intraspecific_leafarea, ctx.intra.d_intraspecific_leafarea[i]);
         max_intraspecific_tlp = fmaxf(max_intraspecific_tlp, ctx.intra.d_intraspecific_tlp[i]);
         min_intraspecific_tlp = fminf(min_intraspecific_tlp, ctx.intra.d_intraspecific_tlp[i]);
-#endif
     }
     cout << endl
          << "Intraspecific variation initialisation: " << endl;
@@ -144,14 +136,12 @@ static float ComputeLAImaxEntry(Context &ctx, int spp, int dev)
     pseudotree.t_Nmass = ctx.S[spp].s_Nmass * ctx.intra.d_intraspecific_N[dev];
     pseudotree.t_LMA = ctx.S[spp].s_LMA * ctx.intra.d_intraspecific_LMA[dev];
 
-#ifdef WATER
     pseudotree.t_leafarea = ctx.S[spp].s_leafarea * ctx.intra.d_intraspecific_leafarea[dev];
     pseudotree.t_wsg = fmaxf(ctx.S[spp].s_wsg + ctx.intra.d_intraspecific_wsg[dev], 0.05);
     pseudotree.t_wleaf = sqrt(pseudotree.t_leafarea * 0.0001);
     pseudotree.t_WSF = 1;
     pseudotree.t_WSF_A = 1;
     pseudotree.t_g1 = (-3.97 * pseudotree.t_wsg + 6.53); // this is the relationship provided by Lin et al. 2015
-#endif
 
     pseudotree.t_Vcmax = CalcVcmaxm(pseudotree.t_LMA, pseudotree.t_Nmass, pseudotree.t_Pmass) * pseudotree.t_LMA;
     pseudotree.t_Jmax = pseudotree.CalcJmaxm(ctx) * pseudotree.t_LMA;
@@ -253,7 +243,6 @@ void InitialiseLookUpTables(Context &ctx)
     ctx.lookup.LookUp_Rleaf.assign(ctx.lookup.nbTbins, float());
     ctx.lookup.LookUp_Rstem.assign(ctx.lookup.nbTbins, float());
     // if(NULL==(LookUp_Rnight=new float[ctx.lookup.nbTbins])) cerr<<"!!! Mem_Alloc LookUp_Rnight" << endl; //newIM: no redundancy anymore between LookUp_Rday and LookUP_Rnight
-#ifdef WATER
     ctx.lookup.nbVPDbins = 600;
     float VPDaccuracy = 0.01;
     ctx.lookup.iVPDaccuracy = 1.0 / VPDaccuracy;
@@ -267,21 +256,14 @@ void InitialiseLookUpTables(Context &ctx)
     ctx.lookup.LookUp_SLOPE.assign(ctx.lookup.nbTbins, float());
     ctx.lookup.LookUp_GRADN.assign(ctx.lookup.nbTbins, float());
     float ESAT0 = 0.61121;
-#endif
     for (int i = 1; i < ctx.lookup.nbTbins; i++)
-    { // loop over "T" in GPPleaf()
+    { // loop over leaf temperature T (used by Photosyn)
         float temper = float(i) * Taccuracy;
         // !!!UPDATE provide references for these equations
 
-#ifdef WATER
         ctx.lookup.LookUp_KmT[i] = 404.0 * exp(((temper - 25.0) / (298 * 0.00831 * (273 + temper))) * 59.36) *
                         (1 + 210 * 1.0 / 248.0 * exp(-(temper - 25.0) / (298 * 0.00831 * (273 + temper)) * 35.94)); // taken from von Caemmerer 2000, as in Domingues et al. 2010, for consistency
         ctx.lookup.LookUp_GammaT[i] = 37.0 * exp(((temper - 25.0) / (298 * 0.00831 * (273 + temper))) * 23.4);                 // taken from von Caemmerer 2000, as in Domingues et al. 2010, for consistency
-#else
-        ctx.lookup.LookUp_KmT[i] = 404.0 * exp(((temper - 25.0) / (298 * 0.00831 * (273 + temper))) * 59.36) *
-                        (1 + 210 * 1.0 / 248.0 * exp(-(temper - 25.0) / (298 * 0.00831 * (273 + temper)) * 35.94)) * ctx.params.iCair; // taken from von Caemmerer 2000, as in Domingues et al. 2010, for consistency
-        ctx.lookup.LookUp_GammaT[i] = 37.0 * exp(((temper - 25.0) / (298 * 0.00831 * (273 + temper))) * 23.4) * ctx.params.iCair;                 // taken from von Caemmerer 2000, as in Domingues et al. 2010, for consistency
-#endif
         ctx.lookup.LookUp_VcmaxT[i] = exp(26.35 - 65.33 / (0.00831 * (temper + 273.15))); // taken from Bernacchi et al. 2003 PCE, as in Domingues et al. 2010 for consistency
         ctx.lookup.LookUp_JmaxT[i] = exp(17.57 - 43.54 / (0.00831 * (temper + 273.15)));  // taken from Bernacchi et al. 2003 PCE, as in Domingues et al. 2010 for consistency
         // LookUp_Rday[i]=exp((temper-25.0)*0.1*log(3.09-0.0215*(25.0+temper))); //newIM: no redundancy anymore between LookUp_Rday and LookUP_Rnight
@@ -289,7 +271,6 @@ void InitialiseLookUpTables(Context &ctx)
         ctx.lookup.LookUp_Rstem[i] = 39.6 * 378.7 * ctx.time.timestep * exp(((temper - 25.0) / 10.0) * log(2.0));
         // LookUp_Rnight[i]=exp((temper-25.0)*0.1*log(3.09-0.0215*(25.0+temper))); //newIM: no redundancy anymore between LookUp_Rday and LookUP_Rnight
         //  exp((temp-25)/10*log(2)) is the temperature dependency of Rstem, supposing a constant Q10=2, according to Ryan et al 1994 and Meir & Grace 2002 exp((ctx.climate.tnight-25)*0.1*log(3.09-0.0215*(25+ctx.climate.tnight))) is the temperature dependencies used by Atkin 2015 (equ1)
-#ifdef WATER
         // for computation of isothermal net long-range radiation
         float ESAT = 0.61121 * exp((18.678 - temper / 234.5) * temper / (257.14 + temper)); // Saturation partial pressure of water vapour in kPa From Jones 2013, Eq (5.15) page 102 (in agreement with Cochard 2019 equ 2 -- Buck equation)
         // float INLR=SIGMA*EMLEAF*pow(temper-ABSZERO,4.0); // Longwave radiation Jones (2014) Eq. 5.5, p101. // as in Jerome's script, but does not provide sound values (pb with EMLEAF ==> to be checked in Jones)
@@ -312,10 +293,8 @@ void InitialiseLookUpTables(Context &ctx)
 
         ctx.lookup.LookUp_SLOPE[i] = SLOPE;
         ctx.lookup.LookUp_GRADN[i] = GRADN;
-#endif
     }
 
-#ifdef WATER
 
     ctx.lookup.nbHbins = 2000;
     float Haccuracy = 0.01;
@@ -323,7 +302,7 @@ void InitialiseLookUpTables(Context &ctx)
     ctx.lookup.LookUp_Wind.assign(ctx.lookup.nbHbins, float());
 
     for (int i = 1; i < ctx.lookup.nbHbins; i++)
-    { // loop over "T" in GPPleaf()
+    { // loop over leaf temperature T (used by Photosyn)
         float h_ratio = float(i) * Haccuracy;
 
         if (h_ratio >= 1)
@@ -337,7 +316,6 @@ void InitialiseLookUpTables(Context &ctx)
         }
     }
 
-#endif
 
     // look up table for flux averaging/integration
     // division into absorption prior to current voxel (absorb_prev) and absorption in current voxel (absorb_delta)

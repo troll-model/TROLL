@@ -281,18 +281,8 @@ void GetPPFDabove(Context &ctx, int height, int site, float noinput, float (&ppf
 // Global function: calculates the canopy environment
 //! - this function adds to the environmental variables provided in canopy_environment_cumulated
 //! - the PPFD, VPD, Tmp and leafarea_layer retrieval function for Fluxh()
-#ifdef WATER
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[6]) // RENAMED: ctx.params.dens → dens_layer
 {
-#else
-//! @param ctx simulation context (all model state)
-//! @param height height layer (m)
-//! @param site site index
-//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer)
-//! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area (and with WATER: incident light, longwave extinction)
-void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[4]) // RENAMED: ctx.params.dens → dens_layer
-{
-#endif
     // first get voxel field densities
     float absorb_prev = ctx.field.LAI3D[height + 1][site + ctx.grid.SBORD];
     float absorb_curr = ctx.field.LAI3D[height][site + ctx.grid.SBORD];
@@ -300,29 +290,23 @@ void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, 
     if (absorb_delta < 0.0)
         absorb_delta = 0.0; // eliminate rounding errors
     int intabsorb = CalcIntabsorb(absorb_prev, absorb_delta);
-#ifdef WATER
     int intincident = CalcIntabsorb(absorb_prev);
-#endif
 
 #ifdef FULL_CLIMATE
     // Obtain PPFD, VPD and T for the voxel
     float PPFD_voxel = ctx.lookup.LookUp_flux_absorption[intabsorb];
     float VPD_voxel = ctx.lookup.LookUp_VPD[intabsorb];
     float T_voxel = ctx.lookup.LookUp_T[intabsorb];
-#ifdef WATER
     float PPFD_voxel_incident = ctx.lookup.LookUp_flux[intincident];
     float ExtinctLW_voxel = ctx.lookup.LookUp_ExtinctLW[intincident];
-#endif // WATER
 
 #else // FULL_CLIMATE
       // Obtain PPFD, VPD and T for the voxel
     float PPFD_voxel = ctx.climate.WDailyMean * ctx.lookup.LookUp_flux_absorption[intabsorb];
     float VPD_voxel = ctx.climate.VPDDailyMean * ctx.lookup.LookUp_VPD[intabsorb];
     float T_voxel = ctx.climate.tDailyMean - ctx.lookup.LookUp_T[intabsorb];
-#ifdef WATER
     float PPFD_voxel_incident = ctx.climate.WDailyMean * ctx.lookup.LookUp_flux[intincident];
     float ExtinctLW_voxel = ctx.lookup.LookUp_ExtinctLW[intincident];
-#endif // WATER
 
 #endif // FULL_CLIMATE
 
@@ -331,10 +315,8 @@ void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, 
     canopy_environment_cumulated[1] += PPFD_voxel * dens_layer;
     canopy_environment_cumulated[2] += VPD_voxel * dens_layer;
     canopy_environment_cumulated[3] += T_voxel * dens_layer;
-#ifdef WATER
     canopy_environment_cumulated[4] += PPFD_voxel_incident * dens_layer;
     canopy_environment_cumulated[5] += ExtinctLW_voxel * dens_layer;
-#endif
 }
 
 // Global function: calculates packing densities

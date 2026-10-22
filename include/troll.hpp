@@ -189,21 +189,12 @@ inline float carbon_stored_free;       //!< Global variable: --  !!!UPDATE
 //! @param noinput unused (common signature of crown statistics)
 //! @param ppfd_CA [in,out] accumulator: [0] PPFD summed over the crown area, [1] number of sites summed
 void GetPPFDabove(Context &ctx, int height, int site, float noinput, float (&ppfd_CA)[2]); //!< Global function: PPFD retrieval for function leafarea_max()
-#ifdef WATER
 //! @param ctx simulation context (all model state)
 //! @param height tree height or height layer (m)
 //! @param site site index
 //! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer); [out] for GetDensity*
-//! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area (and with WATER: incident light, longwave extinction)
+//! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area incident light, longwave extinction
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[6]); //!< Global function: calculates the canopy environment // RENAMED: dens → dens_layer
-#else
-//! @param ctx simulation context (all model state)
-//! @param height tree height or height layer (m)
-//! @param site site index
-//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer); [out] for GetDensity*
-//! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area (and with WATER: incident light, longwave extinction)
-void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[4]); //!< Global function: calculates the canopy environment // RENAMED: dens → dens_layer
-#endif
 void AddCrownVolumeLayer(Context &ctx, int row_center, int col_center, float height, float CR, float CD, int crownvolume[70]); //!< Global function: calculates packing densities
 //! @param ctx           simulation context
 //! @param height        height layer (m)

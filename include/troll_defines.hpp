@@ -25,11 +25,6 @@
 #define FF_todiscuss
 #endif
 
-//! new in v.3.0: If defined, an explicit water cycle is added, with an explicit belowground space. The horizontal resolution of the soil field is currently set by DCELL
-#ifndef TROLL_NO_WATER
-#define WATER
-#endif
-
 #ifndef TROLL_NO_PHENO_DROUGHT
 #define PHENO_DROUGHT //!< Drought-accelerated shedding of old leaves (default; GMD Part 2, Eq. 1)
 #endif

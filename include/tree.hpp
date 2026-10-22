@@ -9,14 +9,12 @@
 // Forward declaration — full definition in context.hpp
 struct Context;
 
-#ifdef WATER
-//! Global structure: For GPPleaf FUNCTION
+//! Leaf-level fluxes returned by FluxesLeaf and Photosyn
 struct leafFluxes
 {
     float carbon_flux; //!< Net leaf carbon assimilation (umol CO2 m-2 s-1)
     float water_flux;  //!< Leaf water flux: transpiration from FluxesLeaf (umol H2O m-2 s-1); stomatal conductance to CO2 from Photosyn (mol m-2 s-1)
 };
-#endif
 
 //! Daily carbon and water fluxes of one tree, as computed by Tree::ComputeRespGPP().
 //! Computing them reads the tree and shared fields but writes nothing, so it can run
@@ -68,7 +66,6 @@ public:
 
     std::vector<float> t_NDDfield; //!< Tree field useful when option _NDD is activated
 
-#ifdef WATER
     float t_root_depth;                //!< Tree rooting depth (m)
     float t_phi_root;                  //!< Soil water potential in the root zone (MPa)
     std::vector<float> t_root_biomass;      //!< Tree root biomass in each soil layer, in g
@@ -85,20 +82,17 @@ public:
     float t_pheno_factor;  //!< Multiplicative factor (<= 1) on the residence time of old leaves under drought; f0 in GMD Part 2, Sect. 2
 #endif
 
-#endif
 
     // new in v.2.4.0: traits defined at individual level
     float t_Pmass; //!< Leaf phosphorus content, defined at tree scale (g/g)
     float t_Nmass; //!< Leaf nitrogen content, defined at tree scale (g/g))
     float t_LMA;   //!< Leaf mass per area (LMA), defined at tree scale (g/m^2)
-#ifdef WATER
     float t_leafarea;   //!< Leaf area (LA), defined at tree scale
     float t_tlp;        //!< Leaf turgor loss point (TLP), defined at tree scale
     float t_wleaf;      //!< Leaf width (in m)
     float t_phi_lethal; //!< plant water potential at drought-induced death (MPa)
     float t_itlp;       //!< inverse of t_tlp
     float t_b;          //!< parameter used to compute the water stress factor (WSF) for stomatal limitation
-#endif
     float t_wsg;   //!< Wood specific gravity, defined at tree scale (g/cm^3)
     float t_Rdark; //!< Dark respiration rate at PPFD = 0 (micromol C/m^2/s)
     float t_Vcmax; //!< Maximal rate of carboxylation, on an area basis (micromolC/m^2/s)
@@ -116,10 +110,8 @@ public:
     float t_mult_LMA;    //!< Intraspecific multiplier for leaf mass per area; v.2.4.0
     float t_mult_dbhmax; //!< Intraspecific multiplier for dbh maximum; v.2.4.0
     float t_dev_wsg;     //!< Intraspecific absolution deviation for wood specific gravity; v.2.4.0
-#ifdef WATER
     float t_mult_leafarea; //!< Intraspecific multiplier for leaf area
     float t_mult_tlp;      //!< Intraspecific multiplier for turgor loss point
-#endif
 
     float t_LAImax;          //!< Maximal LAI
     float t_LAmax;           //!< Maximal leaf area
@@ -177,22 +169,14 @@ public:
     int BirthFromInventory(Context &ctx, int site, std::vector<std::string> &parameter_names, std::vector<std::string> &parameter_values, int &nb_speciesrandom);
     void Death(Context &ctx);
     void Growth(Context &ctx, const RespGPPResult *precomputed = nullptr);
-#ifdef WATER
     void Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float &leafarea_layer, float &PPFD_incident, float &ExtinctLW);
-#else
-    void Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float &leafarea_layer);
-#endif
 
-#ifdef WATER
     void Water_availability(Context &ctx);
     void Water_uptake(Context &ctx);
-#endif
 
-    void CalcRespGPP(Context &ctx); //!< Carbon and water fluxes of the tree in the timestep: GPP, transpiration, stem and night-time respiration (WATER: ComputeRespGPP then ApplyRespGPP)
-#ifdef WATER
+    void CalcRespGPP(Context &ctx); //!< Carbon and water fluxes of the tree in the timestep: GPP, transpiration, stem and night-time respiration (computed by ComputeRespGPP, stored by ApplyRespGPP)
     RespGPPResult ComputeRespGPP(Context &ctx); //!< Fluxes for this timestep; modifies neither the tree nor ctx
     void ApplyRespGPP(Context &ctx, const RespGPPResult &r); //!< Store fluxes in the tree; add to ctx.soil.transpiration_1016
-#endif
     void CalcNPP(Context &ctx); //!< Net primary production of the timestep, from GPP and respiration
     void UpdateLeafDynamics(Context &ctx);
     void UpdateTreeBiometry(Context &ctx);
@@ -216,8 +200,7 @@ public:
     void UpdateCR(Context &ctx); //!< Crown radius from DBH (GMD Part 1 Eq. 17)
     void UpdateCD(Context &ctx); //!< Crown depth from height (GMD Part 1 Eq. 18)
     float DeathRateNDD(Context &ctx, float dbh, float carbon_starv, float ndd); //!< Death rate including negative density dependence (NDD option)
-#ifdef WATER
-    float DeathRate(Context &ctx, float dbh, float carbon_starv, float phi_root); //!< Death rate of the tree per timestep (WATER version)
+    float DeathRate(Context &ctx, float dbh, float carbon_starv, float phi_root); //!< Death rate of the tree per timestep
     //! Leaf energy balance coupled with photosynthesis and stomatal conductance, for one leaf
     //! layer and one half-hourly step: iterates leaf temperature to convergence (GMD Part 1, Sect.\ 2.5).
     //! @param ctx        simulation context (parameters, lookup tables)
@@ -247,14 +230,6 @@ public:
     leafFluxes Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS); //!< Leaf photosynthesis and stomatal conductance (see the definition for parameters)
     void OutputTreeStandard(Context &ctx, std::fstream &output); //!< Write the tree's state to a snapshot or site output stream
     void OutputTreeStandard(Context &ctx); //!< Write the tree's state to standard output
-#else
-    float DeathRate(Context &ctx, float dbh, float carbon_starv); //!< Death rate of the tree per timestep (version without water)
-    float GPPleaf(Context &ctx, float, float, float);
-    float dailyGPPleaf(Context &ctx, float, float, float);
-    float dailyGPPcrown(Context &ctx, float, float, float, float);
-#endif
-    float Rdayleaf(Context &ctx, float T);
-    float dailyRdayleaf(Context &ctx, float T); //!< Daytime leaf respiration averaged over the half-hourly steps of a day
     void CalcLAImax(Context &ctx);
     void CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax);
     float predLeafLifespanKikuzawa(Context &ctx);

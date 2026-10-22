@@ -44,11 +44,9 @@ void Species::Init(Context &ctx)
 
     s_sum1 = s_sum10 = s_sum30 = s_ba = s_ba10 = s_agb = s_gpp = s_npp = s_rday = s_rnight = s_rstem = s_litterfall = 0.0; // new in v.3.1
 
-#ifdef WATER
     // s_g1=-3.97*s_wsg+6.53;                      // from Lin et al. 2015 Nature Climate Change
     // s_dWSF=1.0/(-0.00395145-0.3626778*s_tlp);         // this is the denominator of WSF= phi_sc - s_tlp, where phi_sc (for 'stomatal closure') corresponds to the onset of water stress, derived from the relationship between leaf ctx.params.phi at 50%loss of stomatal closure (ie. WSF~0.5 considering only stomatal responses to water stress) and turgor loss point (drawn from Bartlett et al. 2016 PNAS), and given the shape of WSF factor here assumed
     // s_phi_lethal= -0.9842 + 3.1795*s_tlp;       // Inferred from data provided in Bartlett et al. 2016 PNAS
     // s_itlp=1/s_tlp;
     // s_b=-2.23*s_itlp; // this results from the following assumption: (i) ctx.params.phi(TLP)=0.97*ctx.params.phi(gs90), from Martin-StPaul et al. 2017 Ecology letters; (ii) WSF=0.1 at ctx.params.phi(gs90)
-#endif
 }

@@ -54,9 +54,7 @@ struct OutputConfig
     std::fstream output_MIP_eco; //!< Ecosystem-level output of the Lichstein model intercomparison (MIP_Lichstein option)
     std::fstream output_MIP_ind; //!< Individual-level output of the Lichstein model intercomparison (MIP_Lichstein option)
 #endif
-#ifdef WATER
     std::fstream output[40]; //!< Output files
-#endif
 #ifdef TRACK_INDIVIDUALS
     std::fstream output_track[3]; //!< Output streams for tracking of trees
 #endif
@@ -428,9 +426,7 @@ struct Context
     SimFields field; //!< Spatial fields: leaf area density and treefall
     std::vector<Species> S; //!< All species
     std::vector<Tree> T;    //!< All tree sites
-#ifdef WATER
     std::vector<RespGPPResult> resp_gpp; //!< Per-site fluxes precomputed in parallel each timestep (see Evolution)
-#endif
     OutputConfig out;   //!< Output file streams (placed last: large objects, accessed rarely)
 };
 

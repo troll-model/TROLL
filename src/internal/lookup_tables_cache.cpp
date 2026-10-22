@@ -34,9 +34,7 @@ static std::string LutCacheFile(const Context &ctx)
         mix(content.data(), content.size());
         mix("|", 1);
     }
-#ifdef WATER
-    mix("WATER", 5);
-#endif
+    mix("WATER", 5); // the water model is always on since 4.2.0; kept so that existing cache files stay valid
     char name[64];
     std::snprintf(name, sizeof(name), "./.troll_cache/lut_%016llx.bin", (unsigned long long)hash);
     return name;
@@ -91,8 +89,7 @@ bool SaveLookUpTablesToCache(Context &ctx)
     out.write((char *)ctx.lookup.LookUp_Rleaf.data(), ctx.lookup.nbTbins * sizeof(float));
     out.write((char *)ctx.lookup.LookUp_Rstem.data(), ctx.lookup.nbTbins * sizeof(float));
 
-#ifdef WATER
-    // 3) WATER-dependent LUTs
+    // 3) LUTs of the water model
     out.write((char *)ctx.lookup.LookUp_SLOPE.data(), ctx.lookup.nbTbins * sizeof(float));
     out.write((char *)ctx.lookup.LookUp_GRADN.data(), ctx.lookup.nbTbins * sizeof(float));
 
@@ -102,7 +99,6 @@ bool SaveLookUpTablesToCache(Context &ctx)
 
     // Wind LUT
     out.write((char *)ctx.lookup.LookUp_Wind.data(), ctx.lookup.nbHbins * sizeof(float));
-#endif
 
     // 4) Flux LUTs: all size 80000
     out.write((char *)ctx.lookup.LookUp_flux_absorption.data(), 80000 * sizeof(float));
@@ -151,7 +147,6 @@ bool LoadLookUpTablesFromCache(Context &ctx)
     ctx.lookup.LookUp_Rleaf.assign(ctx.lookup.nbTbins, float());
     ctx.lookup.LookUp_Rstem.assign(ctx.lookup.nbTbins, float());
 
-#ifdef WATER
     ctx.lookup.LookUp_SLOPE.assign(ctx.lookup.nbTbins, float());
     ctx.lookup.LookUp_GRADN.assign(ctx.lookup.nbTbins, float());
 
@@ -160,7 +155,6 @@ bool LoadLookUpTablesFromCache(Context &ctx)
         ctx.lookup.LookUp_INLR[i].assign(ctx.lookup.nbVPDbins, float());
 
     ctx.lookup.LookUp_Wind.assign(ctx.lookup.nbHbins, float());
-#endif
 
     ctx.lookup.LookUp_flux_absorption.assign(80000, float());
     ctx.lookup.LookUp_flux.assign(80000, float());
@@ -177,7 +171,6 @@ bool LoadLookUpTablesFromCache(Context &ctx)
     in.read((char *)ctx.lookup.LookUp_Rleaf.data(), ctx.lookup.nbTbins * sizeof(float));
     in.read((char *)ctx.lookup.LookUp_Rstem.data(), ctx.lookup.nbTbins * sizeof(float));
 
-#ifdef WATER
     in.read((char *)ctx.lookup.LookUp_SLOPE.data(), ctx.lookup.nbTbins * sizeof(float));
     in.read((char *)ctx.lookup.LookUp_GRADN.data(), ctx.lookup.nbTbins * sizeof(float));
 
@@ -185,7 +178,6 @@ bool LoadLookUpTablesFromCache(Context &ctx)
         in.read((char *)ctx.lookup.LookUp_INLR[i].data(), ctx.lookup.nbVPDbins * sizeof(float));
 
     in.read((char *)ctx.lookup.LookUp_Wind.data(), ctx.lookup.nbHbins * sizeof(float));
-#endif
 
     in.read((char *)ctx.lookup.LookUp_flux_absorption.data(), 80000 * sizeof(float));
     in.read((char *)ctx.lookup.LookUp_flux.data(), 80000 * sizeof(float));

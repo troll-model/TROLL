@@ -17,9 +17,7 @@ void Evolution(Context &ctx)
     }
 #endif
 
-#ifdef WATER
     ctx.soil.transpiration_1016 = 0.0;
-#endif
 
     UpdateField(ctx); // Update light fields and seed banks
     ctx.diag.nbtrees_n10 = ctx.diag.nbtrees_n30 = ctx.diag.nbdead_n1 = ctx.diag.nbdead_n10 = ctx.diag.nbdead_n30 = 0;
@@ -32,7 +30,6 @@ void Evolution(Context &ctx)
         TriggerTreefall(ctx);          // Compute and distribute Treefall events, caused by wind drag
     }
 
-#ifdef WATER
     // Parallel phase: water availability and leaf fluxes of every living tree. These
     // dominate run time, read only fields that are fixed during the tree loop below
     // (updated in UpdateField), write only the tree's own state and ctx.resp_gpp, and draw
@@ -51,16 +48,11 @@ void Evolution(Context &ctx)
             ctx.resp_gpp[site] = tree.ComputeRespGPP(ctx);
         }
     }
-#endif
 
     for (int site = 0; site < ctx.grid.sites; site++)
     {
         //**** Tree evolution: Growth or death ****
-#ifdef WATER
         ctx.T[site].Update(ctx, true);
-#else
-        ctx.T[site].Update(ctx);
-#endif
     }
 
     for (int d = 0; d < ctx.grid.nbdcells; d++)
@@ -235,7 +227,6 @@ void UpdateField(Context &ctx)
         }
     }
 
-#ifdef WATER
     for (int d = 0; d < ctx.grid.nbdcells; d++)
     {
         ctx.soil.Runoff[d] = 0.0;
@@ -320,10 +311,8 @@ void UpdateField(Context &ctx)
         // if (d==225) cout << " d=" << d <<  " canopy_height_DCELL[d]=" << ctx.soil.Canopy_height_DCELL[d] ;
         // cout << endl;
     }
-#endif
 
 
-#ifdef WATER
     //**  Evolution of belowground hydraulic fields: Soil bucket model
 
     // for(int site=0;site<ctx.grid.sites;site++) ctx.T[site].Water_uptake(); // Update of ctx.soil.Transpiration: tree water uptake, each tree will deplete soil water content through its transpiration. Now made ate the end of the evolution loop so that the outputs for water uptake match the others (otherwise lag of one ctx.time.timestep)
@@ -509,7 +498,6 @@ void UpdateField(Context &ctx)
             }
         }
     }
-#endif
 }
 
 // #############################
@@ -567,36 +555,21 @@ void RecruitTree(Context &ctx)
 
 #ifdef LCP_alternative
 
-#ifdef WATER
                 if (ctx.soil.soil_phi3D[0][ctx.grid.site_DCELL[site]] > 0.5 * ctx.S[spp].s_tlp)
                 {
                     ctx.T[site].Birth(ctx, spp, site); // in this version, the light environment is checked within Birth() function
                 }
 
-#else
-                ctx.T[site].Birth(ctx, spp, site); // in this version, the light environment is checked within Birth() function
-
-#endif
 
 #else // LCP_alternative
 
                 float flux = ctx.climate.WDailyMean * exp(-fmaxf(ctx.field.LAI3D[0][site + ctx.grid.SBORD], 0.0) * ctx.params.kpar);
-#ifdef WATER
                 if (flux > (ctx.S[spp].s_LCP) && ctx.soil.soil_phi3D[0][ctx.grid.site_DCELL[site]] > 0.5 * ctx.S[spp].s_tlp)
                 {
                     ctx.T[site].Birth(ctx, spp, site);
                     ctx.species.SPECIES_SEEDS[site][spp] = 0; // newIM nov2021, to adjust to the yearly update of Species_seeds
                 }
                 // in addition to a condition of light availability- hence light demanding species may not be able to grow in deep sahde conditions in understorey -, a condition on water availability is added - hence drought-intolerant species may not be recruited in water-stressd conditions
-#else
-                // If enough light, germination, initialization of NPP (LCP is the species light compensation point
-                // here, light is the sole environmental resources tested as a limiting factor for germination, but we should think about adding nutrients (N,P) and water conditions...
-                if (flux > (ctx.S[spp].s_LCP))
-                {
-                    ctx.T[site].Birth(ctx, spp, site);
-                    ctx.species.SPECIES_SEEDS[site][spp] = 0; // newIM nov2021, to adjust to the yearly update of Species_seeds
-                }
-#endif // WATER
 #endif // LCP_alternative
             }
         }

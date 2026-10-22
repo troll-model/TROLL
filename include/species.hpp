@@ -53,14 +53,12 @@ public:
     float s_rstem; //!< Stem respiration in the timestep (gC)
     float s_litterfall; //!< Leaf litterfall in the timestep (g dry mass)
 
-    float s_tlp; //!< Leaf water potential at turgor loss point (MPa); defined for consistency when WATER is deactivated
-#ifdef WATER     // Some of these parameters may include intraspecific variability, as in v.2.4.1.
+    float s_tlp; //!< Leaf water potential at turgor loss point (MPa); used by the water model
     // float s_g1;
     // float s_dWSF;
     // float s_phi_lethal,           //!< plant water potential at drought-induced death (MPa)
     // s_itlp,         //!< inverse of s_tlp
     // s_b;            //!< parameter used to compute the water stress factor (WSF) for stomatal limitation
-#endif
 
 
 

@@ -304,9 +304,7 @@ void RegisterParameters(Context &ctx)
 
     add_float("Cair", ctx.params.Cair, 0.0f, 1000000.0f, 400.0f);
 
-#ifdef WATER
     add_float("PRESS", ctx.params.PRESS, 10.0f, 110.0f, 101.0f);
-#endif
 
     add_bool("_LL_parameterization", ctx.opt._LL_parameterization, false, true, true);
     add_int("_LA_regulation", ctx.opt._LA_regulation, 0, 2, 2);

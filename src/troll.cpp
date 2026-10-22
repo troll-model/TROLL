@@ -108,9 +108,7 @@ static int RunTroll(int argc, char *argv[])
     if (ctx.opt._FromInventory)
     {
         snprintf(ctx.fileio.inputfile_inventory, sizeof(ctx.fileio.inputfile_inventory), "%s", ctx.buffers.bufi_data);
-#ifdef WATER
         snprintf(ctx.fileio.inputfile_SWC, sizeof(ctx.fileio.inputfile_SWC), "%s", ctx.buffers.bufi_dataSWC);
-#endif
     }
     // Registers parameters (used by AssignParamFromRegistry, the AssignValueGlobal replacement)
     // see src/params/param_registry.hpp and src/params/param_registry.cpp
@@ -177,9 +175,7 @@ static int RunTroll(int argc, char *argv[])
     cout << "CO2 concentration is: " << ctx.params.Cair << endl;
     cout << "Number of species: " << ctx.grid.nbspp << endl
          << endl;
-#ifdef WATER
     cout << "Atmospheric pressure is: " << ctx.params.PRESS << endl;
-#endif
 
     if (ctx.opt._GPPcrown == 1)
         cout << "Activated Module: FastGPP" << endl;
