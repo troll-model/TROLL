@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(TROLL VERSION 4.1.11 LANGUAGES C CXX)
+project(TROLL VERSION 4.2.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -74,6 +74,13 @@ if(TROLL_WARNINGS_AS_ERRORS)
     target_compile_options(${PROJECT_NAME} PRIVATE -Werror)
 endif()
 
+# Options removed in 4.2.0: the water cycle and drought phenology are always part of the
+# model, and the ABC outputs are gone. Warn instead of silently ignoring them.
+foreach(_removed TROLL_NO_WATER TROLL_NO_PHENO_DROUGHT Output_ABC WATER PHENO_DROUGHT)
+    if(_removed IN_LIST TROLL_DEFINES)
+        message(WARNING "TROLL_DEFINES: '${_removed}' was removed in TROLL 4.2.0 and has no effect (see NEWS.md)")
+    endif()
+endforeach()
 if(TROLL_DEFINES)
     message(STATUS "TROLL model options: ${TROLL_DEFINES}")
     target_compile_definitions(${PROJECT_NAME} PRIVATE ${TROLL_DEFINES})

@@ -1,3 +1,9 @@
+- TROLL 4.2.0: water cycle and drought phenology always on; Output_ABC removed (October 2026)
+  - The water cycle (`WATER`) is now part of the model, no longer a compile-time option. The non-`WATER` code paths no longer compiled and, once made to compile, produced a forest collapse (93% of trees dead on the first day). 97 conditional blocks resolved; dead functions `Tree::Rdayleaf` and `Tree::dailyRdayleaf` removed.
+  - Drought phenology (`PHENO_DROUGHT`, GMD Part 2, Eq. 1), on by default, is now always compiled.
+  - The `Output_ABC` option (outputs for approximate Bayesian computation), off by default and no longer compiling, is removed.
+  - The default model is unchanged: outputs bit-identical to 4.1.11 (stored references, zero tolerance). Code size: non-comment characters −22.0% (291,891 → 227,691), physical lines −21.1%, decision points −27.4%, Halstead effort −35.8%, conditional directives −61.1% (226 → 88).
+  - Builds that set `TROLL_NO_WATER`, `TROLL_NO_PHENO_DROUGHT` or `Output_ABC` must drop these settings (they are now ignored).
 - TROLL 4.1.11: affiliation update (October 2026)
   - Fabian Jörg Fischer's affiliation is now the Technical University of Munich (TUM), Germany, in the README and the Terms of Reference (version 1.2); 4.1.9 had changed it to the University of Bristol, his affiliation in the 2025 papers.
 - TROLL 4.1.10: API reference as website pages (October 2026)
