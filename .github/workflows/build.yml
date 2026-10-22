@@ -69,7 +69,6 @@ jobs:
           - { defines: "TROLL_NO_WATER",            known_broken: true }
           - { defines: "TROLL_NO_CROWN_UMBRELLA",   known_broken: true }
           - { defines: "TROLL_NO_FULL_CLIMATE",     known_broken: true }
-          - { defines: "Output_ABC",                known_broken: true }
           - { defines: "TRACK_INDIVIDUALS",         known_broken: true }
     steps:
       - uses: actions/checkout@v4

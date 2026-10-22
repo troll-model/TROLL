@@ -62,9 +62,6 @@ public:
     // s_b;            //!< parameter used to compute the water stress factor (WSF) for stomatal limitation
 #endif
 
-#ifdef Output_ABC
-    float s_dbhmax_realized; //!< Maximum dbh found across individuals from this species
-#endif
 
 
     //! Constructor of the Species class

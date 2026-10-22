@@ -54,9 +54,6 @@ struct OutputConfig
     std::fstream output_MIP_eco; //!< Ecosystem-level output of the Lichstein model intercomparison (MIP_Lichstein option)
     std::fstream output_MIP_ind; //!< Individual-level output of the Lichstein model intercomparison (MIP_Lichstein option)
 #endif
-#ifdef Output_ABC
-    std::fstream output_abc[11]; //!< Output streams for Approximate Bayesian Computation
-#endif
 #ifdef WATER
     std::fstream output[40]; //!< Output files
 #endif

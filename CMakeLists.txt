@@ -18,7 +18,7 @@ option(TROLL_OPENMP "Parallelise leaf fluxes and the LAImax table with OpenMP (r
 option(TROLL_LTO "Link-time optimisation (results unchanged, a few percent faster)" ON)
 set(TROLL_SANITIZE "" CACHE STRING "Semicolon-separated sanitizers, e.g. address;undefined")
 set(TROLL_DEFINES "" CACHE STRING
-    "Compile-time model options, e.g. \"Output_ABC;TROLL_NO_WATER\" (see include/troll_defines.hpp)")
+    "Compile-time model options, e.g. \"LAI_gradient;CACHE_LUT\" (see include/troll_defines.hpp)")
 
 # --- Dependencies --------------------------------------------------------------
 find_package(GSL REQUIRED)

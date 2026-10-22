@@ -25,9 +25,6 @@ void Evolution(Context &ctx)
     ctx.diag.nbtrees_n10 = ctx.diag.nbtrees_n30 = ctx.diag.nbdead_n1 = ctx.diag.nbdead_n10 = ctx.diag.nbdead_n30 = 0;
     ctx.diag.nbtrees_carbstarv_n1 = ctx.diag.nbtrees_carbstarv_n10 = ctx.diag.nbtrees_carbstarv_n30 = 0;
 
-#ifdef Output_ABC
-    nbdead_n10_abc = 0;
-#endif
     if (ctx.opt._BASICTREEFALL)
     {
         // secondary treefalls are triggered first, since they have been caused in the previous iteration
@@ -652,9 +649,6 @@ void TriggerTreefallSecondary(Context &ctx)
     ctx.diag.nbTreefall1 = 0;
     ctx.diag.nbTreefall10 = 0;
     ctx.diag.nbTreefall30 = 0;
-#ifdef Output_ABC
-    nbTreefall10_abc = 0;
-#endif
     for (int site = 0; site < ctx.grid.sites; site++)
     {
         ctx.field.Thurt[0][site] = ctx.field.Thurt[0][site + 2 * ctx.grid.sites] = 0;

@@ -163,40 +163,10 @@ inline int TrollThreads()
 // PointCloud globals migrated to ctx.pc:
 // mean_beam_pc, sd_beam_pc, klaser_pc, transmittance_laser, iter_pointcloud_generation
 
-#ifdef Output_ABC
-// Output creation for Approximate Bayesian Computation and Summary Statistics calculation. ABC produces large files, so metrics are pre-calculated within TROLL
-inline int chmchange_iter = 43; //!< Global variable: ad-hoc variable. Output at step 43 iterations before the final output, to simulate a suite of successive LiDAR measurements at Nouragues, from March 2012 to October 2015, so 3 * 12 + 7 = 43 !!!UPDATE
-// the margins of the ABC analysis, can be smaller than the actually simulated plot to deal with edge effects
-
-inline int margin;       //!< Global variable: for ABC -- margin used to deal with edge effects
-inline int row_start;    //!< Global variable: for ABC -- row start after margin clipping
-inline int row_end;      //!< Global variable: for ABC -- row end after margin clipping
-inline int col_start;    //!< Global variable: for ABC -- col start after margin clipping
-inline int col_end;      //!< Global variable: for ABC -- col end after margin clipping
-inline int sites_abc;    //!< Global variable: for ABC -- number of sites after margin clipping
-inline int nbvisited;    //!< Global variable: for ABC -- number of visited sites !!!UPDATE
-inline int patch_size;   //!< Global variable: for ABC -- patch size !!!UPDATE
-inline float isites_abc; //!< Global variable: for ABC -- inverse of number of sites after margin clipping
-
-inline int *chm_field_previous(0);     //!< Global vector: for ABC -- canopy height model (chm) calculated at previous step !!!UPDATE
-inline int *chm_field_current(0);      //!< Global vector: for ABC -- canopy height model (chm) calculated at current step !!!UPDATE
-inline int *chm_field_previous_ALS(0); //!< Global vector: for ABC -- canopy height model (chm) inferred from Airborne Lidar Scanning (ALS) at previous step
-inline int *chm_field_current_ALS(0);  //!< Global vector: for ABC -- canopy height model (chm) inferred from Airborne Lidar Scanning (ALS) at current step
-inline int *chm_field_changes(0);      //!< Global vector: for ABC -- change in canopy height as calculated
-inline int *chm_field_changes_ALS(0);  //!< Global vector: for ABC -- change in canopy height as observed
-inline float **transmittance_simulatedALS(0);
-inline float **transmittance_direct(0);
-inline int **transmittance_simulatedALS_sampling(0);
-inline float GPP_MA[120] = {0.0};        //!< Global variable: moving average of GPP across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
-inline float Litterfall_MA[120] = {0.0}; //!< Global variable: moving average of litterfall across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
-inline float Mortality_MA[120] = {0.0};  //!< Global variable: moving average of mortality across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
-inline float Treefall_MA[120] = {0.0};   //!< Global variable: moving average of treefall across 120 iterations (originally 120 months, could also be made dependent on iterperyear)
-#endif
 
 // DIAGNOSTICS OUTPUT STATISTICS migrated to ctx.diag:
 // nblivetrees, nbtrees_n10/n30, nbdead_n1/n10/n30,
 // nbTreefall1/10/30, nbtrees_carbstarv_n1/n10/n30, nbdbh, layer
-// (Output_ABC globals omitted: Output_ABC is #undef'd)
 
 #ifdef CHECK_CARBON
 inline float carbon_assimilated_total; //!< Global variable: --  !!!UPDATE
@@ -455,21 +425,6 @@ void SetParameter(string &parameter_name, string &parameter_value, N &parameter,
 //! @param quiet suppress console messages if true
 void SetParameter(string &parameter_name, string &parameter_value, string &parameter, string parameter_default, bool quiet); //!< See param_registry.hpp: string parameter
 
-#ifdef Output_ABC
-// these are functions needed to create ABC output
-void InitialiseABC(Context &ctx);                                                                                                                                                                                                                                                                                                                                                                                              //!< Global ABC function: initialise ABC conditions
-void UpdateMovingAveragesABC(Context &ctx);                                                                                                                                                                                                                                                                                                                                                                                //!< Global ABC function: yearly statistics
-void UpdateDBHtrackingABC(Context &ctx);                                                                                                                                                                                                                                                                                                                                                                                   //!< Global ABC function: update DBH function for ABC routines
-void UpdateTransmittanceCHM_ABC(int mean_beam, float sd_beam, float klaser, float transmittance_laser);                                                                                                                                                                                                                                                                                                                    //!< Global function: calculating the TROLL transmittance field from simulated LiDAR
-void OutputABCWriteHeaders(fstream &output_traitconservation, fstream &output_field, fstream &output_CHM, fstream &output_CHM_ALS, fstream &output_transmittance, fstream &output_transmittance_ALS, fstream &output_LAIfield, fstream &output_LAIfield_ALS, fstream &output_chmpotential, fstream &output_species, fstream &output_species10, fstream &output_traits, fstream &output_traits10, fstream &output_biomass); //!< Global function: write headers for ABC outputs
-void OutputABCConservationTraits(Context &ctx, fstream &output_traitconservation);                                                                                                                                                                                                                                                                                                                                         //!< Global ABC function: assesses the conservation of traits between input and output in TROLL
-void OutputABC_ground(Context &ctx, fstream &output_field);                                                                                                                                                                                                                                                                                                                                                                //!< Global ABC function: returns ABC ground outputs
-void OutputABC_species(Context &ctx, fstream &output_species, fstream &output_species10, fstream &output_traits, fstream &output_traits10, fstream &output_biomass);                                                                                                                                                                                                                                                       //!< Global ABC function: returns ABC outputs for species
-void OutputABC_CHM(Context &ctx, fstream &output_CHM, fstream &output_CHM_ALS, fstream &output_chmpotential);                                                                                                                                                                                                                                                                                                              //!< Global function: returns ABC outputs for canopy height model (CHM)
-void OutputABC_transmittance(Context &ctx, fstream &output_transmittance, fstream &output_transmittance_ALS);                                                                                                                                                                                                                                                                                                              //!< Global ABC function: ABC outputs
-void OutputABC(Context &ctx);                                                                                                                                                                                                                                                                                                                                                                                              //!< Global ABC function: output general ABC statistics
-void OutputCHM(Context &ctx, fstream &output_CHM);                                                                                                                                                                                                                                                                                                                                                                        //!< Global ABC function: creates a Canopy Height Model and LAD profile
-#endif
 
 #ifdef TRACK_INDIVIDUALS
 void TrackingData_andOutput(Context &ctx); //!< Global function: tree level tracking of key variables

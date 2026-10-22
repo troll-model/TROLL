@@ -139,9 +139,6 @@ public:
         t_sp_lab,    //!< Stores the species label.
         t_hurt;      //!< Stories the treefall index
 
-#ifdef Output_ABC
-    float t_dbh_previous; //!< Not documented  !!!UPDATE
-#endif
 
 #ifdef TRACK_INDIVIDUALS
     int t_month_born; //!< Month of birth (TRACK_INDIVIDUALS; note: tree.cpp uses t_timeofyear_born, so this option does not compile)

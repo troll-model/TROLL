@@ -162,9 +162,6 @@ static int RunTroll(int argc, char *argv[])
     InitialiseOutputStreams(ctx); // Initialise Output streams, taken outside of Initialise() function in v.3.1 to mirror AllocMem()
     AllocMem(ctx);                // Memory allocation
 
-#ifdef Output_ABC
-    InitialiseABC(ctx);
-#endif
 
     if (ctx.opt._OUTPUT_pointcloud)
     {
@@ -252,23 +249,6 @@ static int RunTroll(int argc, char *argv[])
             ExportPointcloud(ctx.pc.mean_beam_pc, ctx.pc.sd_beam_pc, ctx.pc.klaser_pc, ctx.pc.transmittance_laser, ctx.out.output_pointcloud); // v.3.1.6
         }*/
 
-#ifdef Output_ABC
-        int timespan_abc = 10 * ctx.time.iterperyear; // every 10 years, modified in v.3.0
-        int last_abc = ((ctx.time.nbiter + 5) / timespan_abc);
-        last_abc *= timespan_abc;
-        last_abc += -5;
-        if ((ctx.time.iter + 5) % timespan_abc == 0 || ctx.time.iter == last_abc - 43)
-        {
-            // simulated lidar, based on data from Nouragues ALS, assuming NIR laser
-            float transmittance_nir = 0.4; // transmittance of leaves in near infrared, used to calculate chances of laser hit
-            float mean_beam = 12.0;        // avg number of beams that reach top of canopy
-            float sd_beam = 5.0;           // standard deviation of those
-
-            UpdateTransmittanceCHM_ABC(mean_beam, sd_beam, ctx.params.klight, transmittance_nir);
-            OutputABC(ctx);
-            UpdateDBHtrackingABC(ctx);
-        }
-#endif
     }
 
     cout << "Simulation ends with " << ctx.diag.nblivetrees << " trees." << endl;

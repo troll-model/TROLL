@@ -40,9 +40,6 @@ Tree::Tree(Context &ctx)
     }
 #endif
 
-#ifdef Output_ABC
-    t_dbh_previous = 0.0;
-#endif
     if (ctx.opt._BASICTREEFALL)
         t_Ct = 0.0;
 };
@@ -227,9 +224,6 @@ void Tree::Birth(Context &ctx, int nume, int site0)
         // ###############
         // # for output ##
         // ###############
-#ifdef Output_ABC
-        t_dbh_previous = t_dbh;
-#endif
 
 #ifdef TRACK_INDIVIDUALS
         StartTracking(ctx);
@@ -791,12 +785,6 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         //*################*/
         //*## for output ##*/
         //*################*/
-#ifdef Output_ABC
-        // parameter_name = "dbh_previous";
-        // parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
-        // SetParameter(parameter_name, parameter_value, t_dbh_previous, 0.0f, t_dbh, t_dbh, quiet);
-        t_dbh_previous = t_dbh; // check whether proper initialisation is needed
-#endif
 #ifdef TRACK_INDIVIDUALS
         StartTracking(ctx);
 #endif
@@ -3112,9 +3100,6 @@ void Tree::UpdateTreeBiometry(Context &ctx)
     UpdateCR(ctx);
     UpdateCD(ctx);
 
-#ifdef Output_ABC
-    ctx.S[t_sp_lab].s_dbhmax_realized = fmaxf(ctx.S[t_sp_lab].s_dbhmax_realized, t_dbh);
-#endif
 }
 
 void Tree::UpdateVolumeDensity()
@@ -3169,12 +3154,6 @@ void Tree::Death(Context &ctx)
         ctx.diag.nbdead_n10++;
         if ((ctx.S[t_sp_lab].s_nbind10) > 0)
             (ctx.S[t_sp_lab].s_nbind10)--;
-#ifdef Output_ABC
-        int row = t_site / ctx.grid.cols;
-        int col = t_site % ctx.grid.cols;
-        if (row >= row_start && row < row_end && col >= col_start && col < col_end)
-            nbdead_n10_abc++;
-#endif
     }
     if (t_dbh * ctx.grid.LH > 0.3)
     {
@@ -3203,9 +3182,6 @@ void Tree::Death(Context &ctx)
     if (ctx.opt._BASICTREEFALL)
         t_Ct = 0.0;
 
-#ifdef Output_ABC
-    t_dbh_previous = 0.0;
-#endif
 }
 
 // ################################
@@ -3321,19 +3297,8 @@ void Tree::Treefall(Context &ctx, float angle)
 {
     // treefall statistics
     ctx.diag.nbTreefall1++;
-#ifdef Output_ABC
-    if (t_dbh * ctx.grid.LH > 0.1)
-    {
-        ctx.diag.nbTreefall10++;
-        int row = t_site / ctx.grid.cols;
-        int col = t_site % ctx.grid.cols;
-        if (row >= row_start && row < row_end && col >= col_start && col < col_end)
-            nbTreefall10_abc++;
-    }
-#else
     if (t_dbh * ctx.grid.LH > 0.1)
         ctx.diag.nbTreefall10++;
-#endif
     if (t_dbh * ctx.grid.LH > 0.3)
         ctx.diag.nbTreefall30++;
     int xx, yy;

@@ -95,30 +95,6 @@ void InitialiseOutputStreams(Context &ctx)
             ctx.out.output_pointcloud.imbue(locale::classic()); // justification here: https://stackoverflow.com/questions/14750496/sending-integer-to-fstream-as-little-endian; locale regulates how streams print and read values (i.e. commas vs. points for decimals, etc.); setting it to classic to ensure portability, but not entirely sure how important this is in practice for binary files
         }
 
-#ifdef Output_ABC
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_traitconservation.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[0].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_ground.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[1].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_chm.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[2].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_chmALS.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[3].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_transmittance.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[4].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_transmittanceALS.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[5].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_species.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[6].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_species10.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[7].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_traits.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[8].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_traits10.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[9].open(nnn, ios::out);
-        snprintf(nnn, sizeof(nnn), "%s_%i_abc_biomass.txt", ctx.buffers.buf, ctx.buffers.run_index);
-        ctx.out.output_abc[10].open(nnn, ios::out);
-#endif
 
 #ifdef WATER
         // snprintf(nnn, sizeof(nnn),"%s_%i_water_balance.txt",ctx.buffers.buf, ctx.buffers.run_index);
@@ -392,80 +368,6 @@ void Initialise(Context &ctx)
 #endif // CACHE_LUT
 }
 
-#ifdef Output_ABC
-// ######################################
-//  Global ABC function: initialise ABC conditions
-// ######################################
-//! - determine area to be taken into consideration for ABC and margin not to be taken into consideration (artefacts along border)
-//! @param ctx simulation context (all model state)
-void InitialiseABC(Context &ctx)
-{
-    margin = 0;
-    row_start = margin;
-    col_start = margin;
-    row_end = ctx.grid.rows - margin;
-    col_end = ctx.grid.cols - margin;
-    sites_abc = (row_end - row_start) * (col_end - col_start);
-    isites_abc = 1.0 / float(sites_abc);
-    cout << "row start: " << row_start << " | row end: " << row_end << " | sites_abc: " << sites_abc << endl;
-    // counter for recursive function (gap patches)
-    nbvisited = 0;
-    // distributions for simulated and empirical CHM
-    // precomputed, not directly deduced from empirical fields, as a separate algorithm is used (from LAStools)
-    if (NULL == (chm_field_previous = new int[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (chm_field_current = new int[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (chm_field_previous_ALS = new int[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (chm_field_current_ALS = new int[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (chm_field_changes = new int[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (chm_field_changes_ALS = new int[ctx.grid.sites]))
-        cerr << "!!! Mem_Alloc\n";
-    for (int s = 0; s < ctx.grid.sites; s++)
-    {
-        chm_field_previous[s] = 0;
-        chm_field_current[s] = 0;
-        chm_field_previous_ALS[s] = 0;
-        chm_field_current_ALS[s] = 0;
-        chm_field_changes[s] = 0;
-        chm_field_changes_ALS[s] = 0;
-    }
-    // field for simulated transmittance
-    if (NULL == (transmittance_simulatedALS = new float *[ctx.grid.HEIGHT + 1]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (transmittance_direct = new float *[ctx.grid.HEIGHT + 1]))
-        cerr << "!!! Mem_Alloc\n";
-    if (NULL == (transmittance_simulatedALS_sampling = new int *[ctx.grid.HEIGHT + 1]))
-        cerr << "!!! Mem_Alloc\n";
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-    {
-        if (NULL == (transmittance_simulatedALS[h] = new float[ctx.grid.sites]))
-            cerr << "!!! Mem_Alloc\n";
-        if (NULL == (transmittance_direct[h] = new float[ctx.grid.sites]))
-            cerr << "!!! Mem_Alloc\n";
-        if (NULL == (transmittance_simulatedALS_sampling[h] = new int[ctx.grid.sites]))
-            cerr << "!!! Mem_Alloc\n";
-    }
-    // set it to default 1 (full visibility)
-    for (int row = 0; row < ctx.grid.rows; row++)
-    {
-        for (int col = 0; col < ctx.grid.cols; col++)
-        {
-            for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-            {
-                transmittance_simulatedALS[h][col + row * ctx.grid.cols] = 1.0;
-                transmittance_direct[h][col + row * ctx.grid.cols] = 1.0;
-                transmittance_simulatedALS_sampling[h][col + row * ctx.grid.cols] = 0;
-            }
-        }
-    }
-    // initialise output streams
-    OutputABCWriteHeaders(ctx.out.output[11], ctx.out.output[12], ctx.out.output[13], ctx.out.output[14], ctx.out.output[15], ctx.out.output[16], ctx.out.output[17], ctx.out.output[18], ctx.out.output[19], ctx.out.output[23], ctx.out.output[24], ctx.out.output[25], ctx.out.output[26], ctx.out.output[27]);
-}
-#endif
 
 // ######################################
 //  Global function: point cloud generation
@@ -921,26 +823,6 @@ void AllocMem(Context &ctx)
     //**************************************
     ctx.diag.nbdbh.assign(ctx.grid.dbhmaxincm, int());
     ctx.diag.layer.assign(ctx.grid.HEIGHT + 1, float());
-#ifdef Output_ABC
-    if (NULL == (abundances_species = new int[ctx.grid.nbspp + 1]))
-        cerr << "!!! Mem_Alloc\n"; // vector to save species abundances every recorded ctx.time.timestep
-    if (NULL == (abundances_species10 = new int[ctx.grid.nbspp + 1]))
-        cerr << "!!! Mem_Alloc\n"; // vector to save species abundances every recorded ctx.time.timestep (dbh > 10cm)
-    if (NULL == (biomass_species = new float[ctx.grid.nbspp + 1]))
-        cerr << "!!! Mem_Alloc\n"; // vector to save species abundances every recorded ctx.time.timestep (dbh > 10cm)
-
-    if (NULL == (traits_species = new float *[ctx.grid.nbspp + 1]))
-        cerr << "!!! Mem_Alloc\n"; // vector to save species traits every recorded ctx.time.timestep
-
-    for (int spp = 0; spp < (ctx.grid.nbspp + 1); spp++)
-        if (NULL == (traits_species[spp] = new float[10]))
-            cerr << "!!! Mem_Alloc\n";
-    if (NULL == (traits_species10 = new float *[ctx.grid.nbspp + 1]))
-        cerr << "!!! Mem_Alloc\n"; // vector to save species traits every recorded ctx.time.timestep  (dbh > 10cm)
-    for (int spp = 0; spp < (ctx.grid.nbspp + 1); spp++)
-        if (NULL == (traits_species10[spp] = new float[10]))
-            cerr << "!!! Mem_Alloc\n";
-#endif
     ctx.species.SPECIES_GERM.assign(ctx.grid.nbspp + 1, int());
     ctx.species.SPECIES_SEEDS.resize(ctx.grid.sites);
     for (int site = 0; site < ctx.grid.sites; site++)                    // For each processor, we define a stripe above (labelled 0) and a stripe below (1). Each stripe is ctx.grid.SBORD in width.
@@ -1081,35 +963,4 @@ void FreeMem(Context &ctx)
     gsl_vector_free(ctx.rng.variation_N_P_LMA);
     ctx.rng.variation_N_P_LMA = nullptr;
 
-#ifdef Output_ABC
-    delete[] chm_field_previous;
-    delete[] chm_field_previous_ALS;
-    delete[] chm_field_current;
-    delete[] chm_field_current_ALS;
-    delete[] chm_field_changes;
-
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-    {
-        delete[] transmittance_simulatedALS[h];
-        delete[] transmittance_direct[h];
-        delete[] transmittance_simulatedALS_sampling[h];
-    }
-
-    delete[] transmittance_simulatedALS;
-    delete[] transmittance_direct;
-    delete[] transmittance_simulatedALS_sampling;
-
-    delete[] abundances_species;
-    delete[] abundances_species10;
-    delete[] biomass_species;
-
-    for (int spp = 0; spp < (ctx.grid.nbspp + 1); spp++)
-    {
-        delete[] traits_species[spp];
-        delete[] traits_species10[spp];
-    }
-    delete[] traits_species;
-    delete[] traits_species10;
-
-#endif
 }
