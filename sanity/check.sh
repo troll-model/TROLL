@@ -12,12 +12,10 @@
 set -e
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SANITY_DIR="$ROOT_DIR/sanity"
 BASE="./base_results"
 TEST="./test_runs"
 SKIP_RUN=false
-
-cd "$SANITY_DIR"
+NITER="${1:-20}" # number of iterations from command line argument or 20 by default
 
 # Colors
 GREEN='\033[0;32m'
@@ -30,7 +28,7 @@ echo -e "${YELLOW}=== TROLL SANITY CHECK ===${NC}"
 if [ $SKIP_RUN == false ]; then
 
     # ----------------------------------------
-    # 1. Create reference if missing
+    # Create reference if missing
     # ----------------------------------------
 
     if [ ! -d "$BASE" ] || [ -z "$(ls -A "$BASE")" ]; then
@@ -40,7 +38,7 @@ if [ $SKIP_RUN == false ]; then
       fi
       echo -e "${YELLOW}Cloning TROLL main branch (the reference)...${NC}"
       # clone TROLL main 
-      git clone --depth=1 https://github.com/troll-model/TROLL.git "$BASE"
+      git clone --branch main --depth=1 https://github.com/troll-model/TROLL.git "$BASE"
       # compile TROLL
       cd "$BASE"
       # Detect the operating system
@@ -60,36 +58,24 @@ if [ $SKIP_RUN == false ]; then
         g++ -w -O3 -Wall -o TROLLv4_exe mainTROLL4.0.cpp -lgsl -lgslcblas -lm
       fi
       echo -e "${GREEN}✔ TROLL reference compilation OK${NC}"
-      # reduce nomber of time iterations to 20
-      sed -E 's/nbiter[[:space:]]+365/nbiter 20/' ./example/global_inputs.txt > global_inputs_nbiter20.txt
+      # reduce nomber of time iterations to $NITER
+      sed -E "s/nbiter[[:space:]]+365/nbiter ${NITER}/" ./example/global_inputs.txt > "global_inputs_nbiter${NITER}.txt"
       
       # run TROLL
       echo -e "${YELLOW}Running TROLL reference version...${NC}"
       ./TROLLv4_exe \
-        -i./global_inputs_nbiter20.txt \
+        -i"./global_inputs_nbiter${NITER}.txt" \
         -s./example/species.txt \
         -m./example/daily_climate.txt \
         -d./example/halfhourly_climate.txt \
         -p./example/soil.txt -o./test
       echo -e "${GREEN}✔ TROLL reference run complete${NC}"
-      # clear old cache folder
-      cd $SANITY_DIR
-      rm -rf .troll_cache
+      # back to current folder
+      cd .. # reverse cd "$BASE"
     fi
 
     # ----------------------------------------
-    # 2. Compile
-    # ----------------------------------------
-    echo -e "${YELLOW}Compiling current version...${NC}"
-
-    cmake ..
-    make clean
-    make 
-
-    echo -e "${GREEN}✔ Compilation OK${NC}"
-
-    # ----------------------------------------
-    # 3. Run model
+    # Run model
     # ----------------------------------------
     echo -e "${YELLOW}Running current version...${NC}"
 
@@ -101,23 +87,24 @@ if [ $SKIP_RUN == false ]; then
     # Clean test_runs output directory
     rm -f "$TEST"/*
 
-    # reduce nomber of time iterations to 20
-    sed -E 's/nbiter[[:space:]]+365/nbiter 20/' ../example/global_inputs.txt > "$TEST"/global_inputs_nbiter20.txt
+    # reduce nomber of time iterations to $NITER
+    sed -E "s/nbiter[[:space:]]+365/nbiter ${NITER}/" "${ROOT_DIR}/example/global_inputs.txt" > "${TEST}/global_inputs_nbiter${NITER}.txt"
 
     ./TROLL \
-    -i"$TEST"/global_inputs_nbiter20.txt \
-    -s../example/species.txt \
-    -m../example/daily_climate.txt \
-    -d../example/halfhourly_climate.txt \
-    -p../example/soil.txt \
-    -o"$TEST/test"
-
+    -i"${TEST}/global_inputs_nbiter${NITER}.txt" \
+    -s"${ROOT_DIR}/example/species.txt" \
+    -m"${ROOT_DIR}/example/daily_climate.txt" \
+    -d"${ROOT_DIR}/example/halfhourly_climate.txt" \
+    -p"${ROOT_DIR}/example/soil.txt" \
+    -o"${TEST}/test"
     echo -e "${GREEN}✔ Run complete${NC}"
 
 fi
 
+wait
+
 # ----------------------------------------
-# 4. Compare results
+# Compare results
 # ----------------------------------------
 echo
 echo -e "${YELLOW}Comparing test_runs ↔ base_results...${NC}"
