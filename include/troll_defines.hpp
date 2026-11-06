@@ -17,6 +17,16 @@
 
 // test with positive g0 in stomatal conductance model
 #ifndef TROLL_NO_G0
+//! Warm start of the leaf energy-balance iteration (Tree::FluxesLeaf) from the previous half-hour step:
+//! 0 = off (start from air conditions, as in 4.2.0); 1 = previous leaf temperature; 2 = previous
+//! leaf-to-air temperature difference; 3 = as 2, plus CO2 and VPD at the leaf surface. Changes results.
+#ifndef TROLL_WARMSTART
+#define TROLL_WARMSTART 3
+#endif
+//! With TROLL_WARMSTART > 0: also require the leaf-surface VPD to settle (1%) before stopping
+#ifndef TROLL_WARMSTART_STRICT
+#define TROLL_WARMSTART_STRICT 0
+#endif
 #define G0 //!< Photosynthesis variant solving the coupled Farquhar-Medlyn system with minimum conductance g0 (default)
 #endif
 

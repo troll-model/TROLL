@@ -212,7 +212,9 @@ public:
     //! @param Tatop      air temperature at the top of the canopy (degC), for the net longwave lookup
     //! @param VPDatop    vapour pressure deficit at the top of the canopy (kPa), for the net longwave lookup
     //! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: transpiration (umol H2O m-2 s-1)
-    leafFluxes FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop);
+    //! Converged state of a FluxesLeaf call, used to warm-start the next half-hour step (TROLL_WARMSTART)
+    struct LeafWarmStart { bool valid = false; float TLEAF = 0.0f, dT = 0.0f, CS = 0.0f, DS = 0.0f, VPDa = 0.0f; };
+    leafFluxes FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop, LeafWarmStart *ws = nullptr);
     //! Daily mean leaf fluxes of one crown layer: FluxesLeaf over the daytime half-hourly steps.
     //! The climate arguments are relative to the canopy-top half-hourly series, not absolute values.
     //! @param ctx        simulation context (climate series)
@@ -225,6 +227,9 @@ public:
     //! @param wf_1016    [out] transpiration of the layer for the 10-16 cm DBH diagnostic (transpiration1016 output)
     //! @return carbon_flux and water_flux averaged over the daytime steps (units as FluxesLeaf)
     leafFluxes dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, float W, float ExtinctLW, float PPFDinc, float &wf_1016);
+    struct PhotosynTerms { int convT; float KmT, GammaT, Rday, VcmaxTW, VJ, J; };
+    void SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &pt);
+    leafFluxes Photosyn(Context &ctx, const PhotosynTerms &pt, float CS, float DS);
     leafFluxes Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS); //!< Leaf photosynthesis and stomatal conductance (see the definition for parameters)
     void OutputTreeStandard(Context &ctx, std::fstream &output); //!< Write the tree's state to a snapshot or site output stream
     void OutputTreeStandard(Context &ctx); //!< Write the tree's state to standard output

@@ -1393,7 +1393,7 @@ float Tree::DeathRate(Context &ctx, float dbh, float carbon_starv, float phi_roo
 TROLL_FLOAT_KERNEL_BEGIN // single-precision kernel: FluxesLeaf and Photosyn (see kernel_precision.hpp)
 
 //!  the function Tree::FluxesLeaf implements an iterative algorithm to determine the leaf temperature, and CO2 concentration and VPD at the leaf surface, ie the ones that should be taken as arguments of the Farquhar and stomatal conductance models. The latters are themeselves implemented within the function Tree::Photosyn (analogy with the MAESTRA/MAESPA code from which this iterative scheme has been inspired, see Medlyn et al. 2007 Tree physiology). At each iteration, Tree::FluxesLeaf computes carbon and water fluxes at the leaf level using the Farqhuar model and the Penman-Monteith equation, and updates T, CO2 and VPD accordingly. Starting by assuming that leaf T, CO2 and VPD equal the ones of the surrounding air, the iterative scheme stops when the difference in leaf T between two consecutive iterations is negligble. The corresponding carbon assimilation and water transpiration are then retained and provided as outputs of Tree::FluxesLeaf.
-leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop)
+leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop, LeafWarmStart *ws)
 {
 
     float TLEAF = 0.0f, CS = 0.0f, DS = 0.0f,                              // leaf temperature and CO2 concentration and vapour pressure deficit at the leaf surface.
@@ -1439,17 +1439,54 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     TLEAF = Ta; // Initialization of leaf T, CO2 & VPD at leaf surface equal to the ones of surrounding air
     DS = VPDa;
     CS = ctx.params.Cair; // IM: check whether we should not make ctx.params.Cair vary across the canopy.
+#if TROLL_WARMSTART > 0
+    if (ws && ws->valid)
+    { // warm start from the solution of the previous half-hour step of the same leaf layer
+#if TROLL_WARMSTART == 1
+        TLEAF = ws->TLEAF;           // previous leaf temperature
+#else
+        TLEAF = Ta + ws->dT;         // previous leaf-to-air temperature difference
+#endif
+#if TROLL_WARMSTART == 3
+        CS = ws->CS;                 // previous CO2 at the leaf surface
+        if (ws->VPDa > 0.0f) DS = ws->DS * (VPDa / ws->VPDa); // previous leaf-surface VPD, scaled by the change in air VPD
+#endif
+    }
+#endif
     leafFluxes ps;
-
+    // exact limit-cycle shortcut: the loop state is (TLEAF, CS, DS); once it repeats bit-for-bit, the
+    // remaining iterations replay the cycle, so the result of iteration ITERMAX-1 is already known.
+    constexpr int CYCLE_CHECK_FROM = 3, CYCLE_MAXPERIOD = 7;
+    float hT[30], hC[30], hD[30], hA[30], hE[30];
+    PhotosynTerms pt; pt.convT = -1; // temperature-dependent terms, recomputed only when the LUT bin changes
     for (int ITER = 0; ITER < ITERMAX; ITER++)
     { // Iterative loop:
+        const int it = ITER; // ITER is set to ITERMAX on convergence below, so record under this index
+        hT[it] = TLEAF; hC[it] = CS; hD[it] = DS;
+        if (ITER >= CYCLE_CHECK_FROM)
+        {
+            int period = 0;
+            for (int k = 1; k <= CYCLE_MAXPERIOD && k <= ITER; k++)
+                if (hT[ITER - k] == TLEAF && hC[ITER - k] == CS && hD[ITER - k] == DS) { period = k; break; }
+            if (period)
+            {
+                int j = ITER - period + (ITERMAX - 1 - ITER) % period;
+                ALEAF = hA[j];
+                ET = hE[j];
+                break;
+            }
+        }
 
         if (CS < 0 || DS < 0 || CS > 100000)
         {
             cout << "Warning in FluxesLeaf ! DS=" << DS << "; CS=" << CS << "; PPFD=" << PPFD << "; TLEAF=" << TLEAF << endl;
         }
 
-        ps = Photosyn(ctx, PPFD, TLEAF, CS, DS); // Compute CO2 assimilation rate and stomatal conductance at TLEAF, CS and DS
+        {
+            int convT = int(ctx.lookup.iTaccuracy * TLEAF);
+            if (convT != pt.convT) SetPhotosynTerms(ctx, PPFD, convT, pt);
+        }
+        ps = Photosyn(ctx, pt, CS, DS); // Compute CO2 assimilation rate and stomatal conductance at TLEAF, CS and DS
         ALEAF = ps.carbon_flux;             // in micromolCO2 ctx.params.m-2 s-1
         GSC = ps.water_flux;                // in mol CO2 ctx.params.m-2 s-1 by Photosyn function
 
@@ -1517,12 +1554,19 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
 
         float TDIFF = (Rnetiso - lambdaET) / HDIVT;
         float TLEAF1 = Ta + 0.25f * TDIFF; // divide by 4 to slow down convergence and avoid big changes -- taken from code from Vezy et al. 2018 -- cf. discussion with Guerric Le Maire
+#if TROLL_WARMSTART > 0 && TROLL_WARMSTART_STRICT
+        // with a warm start, T can look converged at once while the leaf-surface VPD (DS) has not
+        // settled: also require DS to change by less than 1% (DS at the start of this iteration: hD[it])
+        if (fabsf(TLEAF - TLEAF1) < 0.01f && fabsf(DS - hD[it]) <= 0.01f * hD[it])
+#else
         if (fabsf(TLEAF - TLEAF1) < 0.01f)
+#endif
         {
             // itmax=ITER;
             ITER = ITERMAX;
 
         } // If Tleaf diff < 0.01°C, stop search // check whether this threshold value is optimal
+        hA[it] = ALEAF; hE[it] = ET;
         TLEAF = TLEAF1; // update TLEAF for next iteration // cf. Vezy et al. and discussion with Guerric Lemaire: suggest to make smaller steps at each iteration to ease convergence (TDIFF -> TDIFF/4)
 
         if (isnan(DS) || isnan(ET) || isnan(ALEAF) || ET < 0.0f || TLEAF <= 0.0f || TLEAF > 50.0f || CS < 0 || DS < 0 || CS > 100000)
@@ -1534,6 +1578,13 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     // cout << "itmax=" << itmax << endl;
 
     // At the end of loop, return water (ET, in umol H2O ctx.params.m-2 s-1) and carbon (assimilation) fluxes
+#if TROLL_WARMSTART > 0
+    if (ws)
+    {
+        ws->valid = !(isnan(TLEAF) || isnan(CS) || isnan(DS)) && TLEAF > 0.0f && TLEAF <= 50.0f && CS > 0.0f && DS >= 0.0f;
+        ws->TLEAF = TLEAF; ws->dT = TLEAF - Ta; ws->CS = CS; ws->DS = DS; ws->VPDa = VPDa;
+    }
+#endif
     ET = ET * 1e6f;
 
     // if (ctx.time.iter > 4000 && t_height> 10.0) {
@@ -1556,16 +1607,26 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
 //! @param CS     CO2 concentration at the leaf surface (umol mol-1)
 //! @param DS     vapour pressure deficit at the leaf surface (kPa)
 //! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: stomatal conductance to CO2 (mol m-2 s-1)
-leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS)
+void Tree::SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &pt)
 {
+    pt.convT = convT;
+    pt.KmT = ctx.lookup.LookUp_KmT[convT];
+    pt.GammaT = ctx.lookup.LookUp_GammaT[convT];
+    pt.Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP_F;
+    pt.VcmaxTW = t_Vcmax * ctx.lookup.LookUp_VcmaxT[convT] * t_WSF_A;
+    float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
+    float I = ctx.params.alpha * PPFD;
+    pt.J = ElectronTransportRate(ctx.params.theta, I, JmaxTW);
+    pt.VJ = pt.J * 0.25f;
+}
+leafFluxes Tree::Photosyn(Context &ctx, const PhotosynTerms &pt, float CS, float DS)
+{
+    const float KmT = pt.KmT, GammaT = pt.GammaT, Rday = pt.Rday, VcmaxTW = pt.VcmaxTW, VJ = pt.VJ, J = pt.J;
+    const int convT = pt.convT; const float PPFD = -1.0f, TLEAF = -1.0f; // only used in warning messages
 
     float Anet;
 
     // Parameters for the Farquhar model
-    int convT = int(ctx.lookup.iTaccuracy * TLEAF);
-    float KmT = ctx.lookup.LookUp_KmT[convT];                        // with temperature dependencies
-    float GammaT = ctx.lookup.LookUp_GammaT[convT];                  // with temperature dependencies
-    float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP_F; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
 
     ////////////// Model of stomatal conductance for CO2 /////////////
     float GSDIVA;
@@ -1585,7 +1646,6 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     float A, B, C, AC, AJ;
 
     // Solution when Rubisco activity is limiting
-    float VcmaxTW = t_Vcmax * ctx.lookup.LookUp_VcmaxT[convT] * t_WSF_A;
     A = ctx.params.g0 + GSDIVA * (VcmaxTW - Rday);
     B = (1.0f - CS * GSDIVA) * (VcmaxTW - Rday) + ctx.params.g0 * (KmT - CS) - GSDIVA * (VcmaxTW * GammaT + KmT * Rday);
     C = -(1.0f - CS * GSDIVA) * (VcmaxTW * GammaT + KmT * Rday) - ctx.params.g0 * KmT * CS;
@@ -1598,10 +1658,6 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
         AC = VcmaxTW * (CIC - GammaT) / (CIC + KmT);
 
     // Solution when electron transport rate is limiting
-    float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
-    float I = ctx.params.alpha * PPFD;
-    float J = ElectronTransportRate(ctx.params.theta, I, JmaxTW); // 4.1.2: stable form of QUAD(theta, -(I + JmaxTW), JmaxTW * I, -1)
-    float VJ = J * 0.25f;
     A = ctx.params.g0 + GSDIVA * (VJ - Rday);
     B = (1.0f - CS * GSDIVA) * (VJ - Rday) + ctx.params.g0 * (2.0f * GammaT - CS) - GSDIVA * (VJ * GammaT + 2.0f * GammaT * Rday);
     C = -(1.0f - CS * GSDIVA) * GammaT * (VJ + 2.0f * Rday) - ctx.params.g0 * 2.0f * GammaT * CS;
@@ -1731,6 +1787,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 {
     float dailyA = 0.0;
     float dailylT = 0.0;
+    LeafWarmStart ws; // warm start between consecutive half-hour steps (unused if TROLL_WARMSTART == 0)
 
     // cout << "In dailyFluxesLeaf PPFD=" << PPFD << "; T=" << T << "; VPD=" << VPD << "; W=" << W << endl;
 
@@ -1817,7 +1874,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 
 #endif
 
-        leafFluxes fluxes_vardaytimestep = FluxesLeaf(ctx, ppfd_vardaytimestep, vpd_vardaytimestep, t_vardaytimestep, ws_vardaytimestep, ExtinctLW, ppfd_top_vardaytimestep, ppfd_inc_vardaytimestep, t_top_vardaytimestep, vpd_top_vardaytimestep);
+        leafFluxes fluxes_vardaytimestep = FluxesLeaf(ctx, ppfd_vardaytimestep, vpd_vardaytimestep, t_vardaytimestep, ws_vardaytimestep, ExtinctLW, ppfd_top_vardaytimestep, ppfd_inc_vardaytimestep, t_top_vardaytimestep, vpd_top_vardaytimestep, &ws);
 
         dailyA += fluxes_vardaytimestep.carbon_flux;
         dailylT += fluxes_vardaytimestep.water_flux;
