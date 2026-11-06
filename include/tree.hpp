@@ -199,6 +199,17 @@ public:
     void UpdateCD(Context &ctx); //!< Crown depth from height (GMD Part 1 Eq. 18)
     float DeathRateNDD(Context &ctx, float dbh, float carbon_starv, float ndd); //!< Death rate including negative density dependence (NDD option)
     float DeathRate(Context &ctx, float dbh, float carbon_starv, float phi_root); //!< Death rate of the tree per timestep
+    //! Converged state of a FluxesLeaf call, carried to the next half-hour step of the same leaf
+    //! layer to warm-start its iteration (TROLL_WARMSTART, see troll_defines.hpp)
+    struct LeafWarmStart
+    {
+        bool valid = false; //!< true once a step has converged to a usable state
+        float TLEAF = 0.0f; //!< leaf temperature (degC)
+        float dT = 0.0f;    //!< leaf-to-air temperature difference (degC)
+        float CS = 0.0f;    //!< CO2 concentration at the leaf surface (umol mol-1)
+        float DS = 0.0f;    //!< vapour pressure deficit at the leaf surface (kPa)
+        float VPDa = 0.0f;  //!< air vapour pressure deficit of that step (kPa), to rescale DS
+    };
     //! Leaf energy balance coupled with photosynthesis and stomatal conductance, for one leaf
     //! layer and one half-hourly step: iterates leaf temperature to convergence (GMD Part 1, Sect.\ 2.5).
     //! @param ctx        simulation context (parameters, lookup tables)
@@ -211,9 +222,8 @@ public:
     //! @param PPFDinc    PPFD incident on the layer, i.e. above it (umol photons m-2 s-1)
     //! @param Tatop      air temperature at the top of the canopy (degC), for the net longwave lookup
     //! @param VPDatop    vapour pressure deficit at the top of the canopy (kPa), for the net longwave lookup
+    //! @param ws         [in,out] warm-start state of the previous step of this layer (nullptr: start from air conditions)
     //! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: transpiration (umol H2O m-2 s-1)
-    //! Converged state of a FluxesLeaf call, used to warm-start the next half-hour step (TROLL_WARMSTART)
-    struct LeafWarmStart { bool valid = false; float TLEAF = 0.0f, dT = 0.0f, CS = 0.0f, DS = 0.0f, VPDa = 0.0f; };
     leafFluxes FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop, LeafWarmStart *ws = nullptr);
     //! Daily mean leaf fluxes of one crown layer: FluxesLeaf over the daytime half-hourly steps.
     //! The climate arguments are relative to the canopy-top half-hourly series, not absolute values.
@@ -227,9 +237,20 @@ public:
     //! @param wf_1016    [out] transpiration of the layer for the 10-16 cm DBH diagnostic (transpiration1016 output)
     //! @return carbon_flux and water_flux averaged over the daytime steps (units as FluxesLeaf)
     leafFluxes dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, float W, float ExtinctLW, float PPFDinc, float &wf_1016);
-    struct PhotosynTerms { int convT; float KmT, GammaT, Rday, VcmaxTW, VJ, J; };
-    void SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &pt);
-    leafFluxes Photosyn(Context &ctx, const PhotosynTerms &pt, float CS, float DS);
+    //! Temperature- and light-dependent terms of Photosyn for one leaf-temperature lookup bin,
+    //! reused across the iterations of FluxesLeaf while the bin does not change
+    struct PhotosynTerms
+    {
+        int convT;     //!< leaf-temperature lookup bin these terms were computed for (-1: none yet)
+        float KmT;     //!< Michaelis-Menten coefficient of Rubisco at leaf temperature (umol mol-1)
+        float GammaT;  //!< CO2 compensation point without dark respiration at leaf temperature (umol mol-1)
+        float Rday;    //!< leaf day respiration at leaf temperature (umol CO2 m-2 s-1)
+        float VcmaxTW; //!< Vcmax at leaf temperature, with water stress (umol CO2 m-2 s-1)
+        float VJ;      //!< electron-transport-limited rate J/4 (umol CO2 m-2 s-1)
+        float J;       //!< electron transport rate (umol e- m-2 s-1)
+    };
+    void SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &pt); //!< Fill PhotosynTerms for one temperature bin (see the definition for parameters)
+    leafFluxes Photosyn(Context &ctx, const PhotosynTerms &pt, float CS, float DS);  //!< Leaf photosynthesis and stomatal conductance from precomputed terms (see the definition for parameters)
     leafFluxes Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS); //!< Leaf photosynthesis and stomatal conductance (see the definition for parameters)
     void OutputTreeStandard(Context &ctx, std::fstream &output); //!< Write the tree's state to a snapshot or site output stream
     void OutputTreeStandard(Context &ctx); //!< Write the tree's state to standard output

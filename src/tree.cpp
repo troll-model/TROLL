@@ -1458,7 +1458,8 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     // remaining iterations replay the cycle, so the result of iteration ITERMAX-1 is already known.
     constexpr int CYCLE_CHECK_FROM = 3, CYCLE_MAXPERIOD = 7;
     float hT[30], hC[30], hD[30], hA[30], hE[30];
-    PhotosynTerms pt; pt.convT = -1; // temperature-dependent terms, recomputed only when the LUT bin changes
+    PhotosynTerms pt{}; // temperature-dependent terms, recomputed only when the LUT bin changes
+    pt.convT = -1;      // no bin yet: the first iteration always computes them
     for (int ITER = 0; ITER < ITERMAX; ITER++)
     { // Iterative loop:
         const int it = ITER; // ITER is set to ITERMAX on convergence below, so record under this index
@@ -1599,14 +1600,13 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
 
 #ifdef G0
 
-//! Farquhar-von Caemmerer-Berry photosynthesis coupled with Medlyn stomatal conductance at the
-//! leaf surface (GMD Part 1, Sect. 2.5.1, Eqs. 24-25).
+//! Temperature- and light-dependent terms of Photosyn for one leaf-temperature lookup bin:
+//! KmT, GammaT, Rday and Vcmax from the lookup tables, and the electron transport rate J
+//! (GMD Part 1, Sect. 2.5.1). Called by FluxesLeaf only when the bin changes between iterations.
 //! @param ctx    simulation context
 //! @param PPFD   photosynthetic photon flux density on the leaf (umol photons m-2 s-1)
-//! @param TLEAF  leaf temperature (degC)
-//! @param CS     CO2 concentration at the leaf surface (umol mol-1)
-//! @param DS     vapour pressure deficit at the leaf surface (kPa)
-//! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: stomatal conductance to CO2 (mol m-2 s-1)
+//! @param convT  leaf-temperature lookup bin, int(iTaccuracy * TLEAF)
+//! @param pt     [out] terms for that bin
 void Tree::SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &pt)
 {
     pt.convT = convT;
@@ -1619,6 +1619,15 @@ void Tree::SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &
     pt.J = ElectronTransportRate(ctx.params.theta, I, JmaxTW);
     pt.VJ = pt.J * 0.25f;
 }
+
+//! Farquhar-von Caemmerer-Berry photosynthesis coupled with Medlyn stomatal conductance at the
+//! leaf surface (GMD Part 1, Sect. 2.5.1, Eqs. 24-25), from the terms of the current leaf
+//! temperature precomputed by SetPhotosynTerms.
+//! @param ctx    simulation context
+//! @param pt     temperature- and light-dependent terms at the leaf temperature (SetPhotosynTerms)
+//! @param CS     CO2 concentration at the leaf surface (umol mol-1)
+//! @param DS     vapour pressure deficit at the leaf surface (kPa)
+//! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: stomatal conductance to CO2 (mol m-2 s-1)
 leafFluxes Tree::Photosyn(Context &ctx, const PhotosynTerms &pt, float CS, float DS)
 {
     const float KmT = pt.KmT, GammaT = pt.GammaT, Rday = pt.Rday, VcmaxTW = pt.VcmaxTW, VJ = pt.VJ, J = pt.J;
