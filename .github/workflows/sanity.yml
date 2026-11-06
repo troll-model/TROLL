@@ -5,7 +5,12 @@ on: [push, pull_request]
 jobs:
   sanity:
     name: Regression checks (bit-exact vs pinned reference)
-    runs-on: ubuntu-latest
+    # Pinned: sanity/golden was generated on Ubuntu 24.04 (GCC 13.3, glibc 2.39) and the long runs
+    # are only bit-exact on the same toolchain. ubuntu-latest moves to Ubuntu 26 from October 2026,
+    # whose compiler and libm change the last bits of the lookup tables; with the 4.2.1 warm start
+    # that tips a demographic draw within the year and fails sanity-stand on near-zero daily values.
+    # Move this pin and regenerate sanity/golden (make golden) together.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
