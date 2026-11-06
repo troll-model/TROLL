@@ -259,7 +259,7 @@ public:
     float predLeafLifespanKikuzawa(Context &ctx);
     float GetCrownAreaFilled(float crown_area); //!< Crown area actually filled with leaves, given the crown gap fraction (m2)
 #ifdef TRACK_INDIVIDUALS
-    float StartTracking(Context &ctx);
+    void StartTracking(Context &ctx);
 #endif
 };
 

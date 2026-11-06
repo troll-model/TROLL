@@ -3170,7 +3170,7 @@ float Tree::GetCrownAreaFilled(float crown_area)
 #ifdef TRACK_INDIVIDUALS
 // Diagnostic function to track trees born at a reference year
 //! @param ctx simulation context (all model state)
-float Tree::StartTracking(Context &ctx)
+void Tree::StartTracking(Context &ctx)
 {
     // Only tracks trees born in a mature forest at year 501
     // currently hardcoded
