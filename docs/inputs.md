@@ -54,8 +54,9 @@ One row per daytime half-hour (net radiation > 0), all days in sequence.
 | `VPD` | vapour pressure deficit above the canopy | kPa |
 | `WS` | wind speed at the meteorological station | m s⁻¹ |
 
-Values of `Snet` below 0.01 W m⁻² are dark steps (set to 0; no photosynthesis is computed for
-them, 4.3.0). Since 4.3.1, values from 0.01 to 1 W m⁻² are used as read (they were raised to 1).
+Values of `Snet` below 1 W m⁻² are dark steps (set to 0; no photosynthesis is computed for
+them; threshold 0.01 W m⁻² from 4.3.0 to 4.3.5, 1 W m⁻² since 4.3.6). Values above are used as
+read (before 4.3.1, values up to 1 W m⁻² were raised to 1).
 
 ## 24-hour climate file (`-d`, 4.3.1)
 
@@ -75,7 +76,7 @@ by name, in any order.
 | `Rainfall` | rainfall during the step (summed per day: one event per day) | mm |
 
 How the day is integrated: photosynthesis and transpiration over the lit steps
-(`Snet` ≥ 0.01 W m⁻²); leaf dark respiration over the dark steps, each at its own temperature;
+(`Snet` ≥ 1 W m⁻²); leaf dark respiration over the dark steps, each at its own temperature;
 stem respiration averaged over all steps; the daily means used for canopy light, soil
 evaporation and the lookup tables (temperature, VPD, wind, light) over the lit steps, as with
 the daytime file. The night temperature of each day (`NightTemperature`) is the mean of its
@@ -125,8 +126,9 @@ cannot be read, TROLL stops with an error.
 | `theta` | 0.7 | — (curvature, Eq. 25) | parameter of the Farquhar model |
 | `g1` | 3.77 | kPa^0.5 | parameter g1 of Medlyn et al ’s stomatal conductance model |
 | `g0` | 5.0 | **mmol H₂O m⁻² s⁻¹** (converted in the code; see note) | minimum leaf conductance to water vapour |
-| `Rday_inhibition` | 0.4 | fraction (0-1) | 4.3.4, optional: leaf respiration in the light as a fraction of dark respiration (light inhibition); 0.4 = 60% inhibition, the value used before 4.3.4; JULES uses 0.7 |
-| `Rday_inhibition_Snet` | 0.01 | W m⁻² | 4.3.4, optional: shortwave irradiance above the canopy from which `Rday_inhibition` applies; lit steps below it respire as in the dark (0.01: every lit step is inhibited; JULES: about 2) |
+| `Rday_inhibition` | 0.7 | fraction (0-1) | 4.3.4, optional: leaf respiration in the light as a fraction of dark respiration (light inhibition); default 0.7 = 30% inhibition, as in JULES (since 4.3.6; 0.4 before) |
+| `Rday_inhibition_Snet` | 2 | W m⁻² | 4.3.4, optional: shortwave irradiance above the canopy from which `Rday_inhibition` applies; below it, leaves respire as in the dark (default 2, as in JULES, since 4.3.6; 0.01 before) |
+| `Snet_min_leaf` | 0 | W m⁻² | 4.3.6, optional: light at a leaf layer (above-canopy shortwave equivalent) below which photosynthesis is not computed for that layer, which then only respires; 0 = off. At 1 W m⁻² it saves 2-5% of computing time but lowers NPP by about 0.7% and transpiration by up to 1.5% (1 ha stand); for exploratory runs |
 | `pheno_a0` | 0.2 | — (a_T,o, GMD Part 2 Eq. 1) | threshold for change in old leaf shedding rate, in proportion of TLP |
 | `pheno_b0` | 0.02 | MPa (b_T,o in GMD Part 2 Eq. 1; the file describes it "in proportion of tree height", see open questions) | threshold for change in old leaf shedding rate, in proportion of tree height |
 | `pheno_delta` | 0.2 | — (δ_o) | amplitude of change in old leaf shedding rate |

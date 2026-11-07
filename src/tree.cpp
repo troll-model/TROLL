@@ -1795,15 +1795,17 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
 
 TROLL_FLOAT_KERNEL_END
 
-//! Leaf day respiration at temperature T, as subtracted in Tree::Photosyn (Rday): used for the dark
-//! steps of Tree::dailyFluxesLeaf (Snet < SNET_MIN_PHOTOSYNTHESIS), where photosynthesis is not run.
-//! @param ctx  simulation context (lookup tables)
-//! @param T    temperature (degC), the air temperature of the step
-//! @return leaf day respiration (umol CO2 m-2 s-1), positive, with the light inhibition Rday_inhibition (4.3.4)
-float Tree::LeafDayRespiration(Context &ctx, float T)
+//! Leaf respiration at temperature T, as subtracted in Tree::Photosyn (Rday), for the steps and leaf
+//! layers of Tree::dailyFluxesLeaf where photosynthesis is not run: dark steps of the daytime input
+//! (Snet < SNET_MIN_PHOTOSYNTHESIS) and, with Snet_min_leaf > 0, shaded layers (4.3.6).
+//! @param ctx     simulation context (lookup tables)
+//! @param T       temperature (degC), the air temperature of the step at the layer
+//! @param factor  light inhibition: Rday_inhibition if the canopy top receives at least Rday_inhibition_Snet, else 1
+//! @return leaf respiration (umol CO2 m-2 s-1), positive
+float Tree::LeafDayRespiration(Context &ctx, float T, float factor)
 {
     int convT = int(ctx.lookup.iTaccuracy * T);
-    return t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * ctx.params.Rday_inhibition;
+    return t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * factor;
 }
 
 //! - Function Tree::dailyFluxesLeaf
@@ -1821,6 +1823,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
     {
         float snet_vardaytimestep = 1.0f; // 4.3.0: shortwave irradiance of the step (W m-2)
         bool dark = false;
+        bool leaf_shaded = false; // 4.3.6
 
 #ifdef FULL_CLIMATE
 
@@ -1864,6 +1867,8 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
             cout << "Warning in dailyFluxesLeaf !!! vpd_wardaytimestep <=0" << endl;
         }
         dark = snet_vardaytimestep < SNET_MIN_PHOTOSYNTHESIS; // 4.3.0
+        // 4.3.6: optional bypass of shaded leaf layers, from the light reaching the layer
+        leaf_shaded = !dark && ctx.params.Snet_min_leaf > 0.0f && ppfd_vardaytimestep < ctx.params.Snet_min_leaf * ctx.params.SWtoPPFD;
         if (ppfd_vardaytimestep <= 0 && !dark)
         {
             cout << "Warning ppfd_vardaytimestep  <=0 in dailyFluxesLeaf !!!" << endl;
@@ -1906,10 +1911,12 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 #endif
 
         leafFluxes fluxes_vardaytimestep;
-        if (dark)
-        { // 4.3.0: no light: no energy balance and no photosynthesis; leaf day respiration at air temperature.
+        const float rday_factor = (snet_vardaytimestep >= ctx.params.Rday_inhibition_Snet) ? ctx.params.Rday_inhibition : 1.0f; // 4.3.6: as in FluxesLeaf
+        if (dark || leaf_shaded)
+        { // 4.3.0: no light: no energy balance and no photosynthesis; leaf respiration at air temperature.
           // 4.3.1: with 24-hour input, the leaf respiration of dark steps is counted in Rnight instead (ComputeRespGPP)
-            fluxes_vardaytimestep.resp_flux = ctx.climate.full_day ? 0.0f : LeafDayRespiration(ctx, t_vardaytimestep);
+          // 4.3.6: also shaded layers (Snet_min_leaf), lit at the canopy top: their respiration stays here
+            fluxes_vardaytimestep.resp_flux = (dark && ctx.climate.full_day) ? 0.0f : LeafDayRespiration(ctx, t_vardaytimestep, rday_factor);
             fluxes_vardaytimestep.carbon_flux = -fluxes_vardaytimestep.resp_flux;
             fluxes_vardaytimestep.water_flux = 0.0f;
             ws = LeafWarmStart(); // the next lit step starts again from air conditions
