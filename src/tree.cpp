@@ -1901,8 +1901,9 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 
         leafFluxes fluxes_vardaytimestep;
         if (dark)
-        { // 4.3.0: no light: no energy balance and no photosynthesis; leaf day respiration at air temperature
-            fluxes_vardaytimestep.carbon_flux = -LeafDayRespiration(ctx, t_vardaytimestep);
+        { // 4.3.0: no light: no energy balance and no photosynthesis; leaf day respiration at air temperature.
+          // 4.3.1: with 24-hour input, the leaf respiration of dark steps is counted in Rnight instead (ComputeRespGPP)
+            fluxes_vardaytimestep.carbon_flux = ctx.climate.full_day ? 0.0f : -LeafDayRespiration(ctx, t_vardaytimestep);
             fluxes_vardaytimestep.water_flux = 0.0f;
             ws = LeafWarmStart(); // the next lit step starts again from air conditions
         }
@@ -1911,7 +1912,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 
         dailyA += fluxes_vardaytimestep.carbon_flux;
         dailylT += fluxes_vardaytimestep.water_flux;
-        if (i > 5 && i < 18.5)
+        if (ctx.climate.full_day ? (ctx.climate.varday_time[i] >= 10.0f && ctx.climate.varday_time[i] < 16.0f) : (i > 5 && i < 18.5)) // 4.3.1: clock time with 24-hour input
         {
             wf_1016 += fluxes_vardaytimestep.water_flux;
         }
@@ -2139,6 +2140,8 @@ void Tree::CalcLAImax(Context &ctx)
         int convTnight = int(ctx.lookup.iTaccuracy * ctx.climate.Tnight_year);
 #endif
         float Rnight_LAI = t_Rdark * effLA_night * ctx.lookup.LookUp_Rleaf[convTnight];
+        if (ctx.climate.full_day) // 4.3.1: dark steps of the mean daily cycle, at their own temperature
+            Rnight_LAI = t_Rdark * 0.83f * 15.7788f * ctx.time.timestep * NightRleafHours(ctx, ctx.climate.WDailyMean_all.data(), ctx.climate.tDailyMean_all.data());
 
         // add up the two components of leaf respiration, and multiply the result by 1.5 (fine root respiration), since in TROLL, this cannot be separated from leaf respiration
         float Rleaf_LAI = Rtot_by_Rabove * Rtotleaf_by_Rdark * Rnight_LAI + (Rtotleaf_by_Rdark - 1) * Rnight_LAI;
@@ -2321,6 +2324,11 @@ float Tree::predLeafLifespanKikuzawa(Context &ctx)
 
     float GPP_effective = (GPP - Rtot_by_Rabove * Rtotleaf_by_Rdark * Rnight + (Rtotleaf_by_Rdark - 1) * Rnight);
 
+    if (ctx.climate.full_day)
+    { // 4.3.1: GPP is a 24-hour mean (0 in dark steps): rescale to the daylight mean, then integrate over daylight hours
+        const float dl = fmaxf(ctx.climate.daylight_hours, ctx.time.step_hours);
+        GPP_effective = (GPP * ctx.time.nbhours_covered / dl - Rtot_by_Rabove * Rtotleaf_by_Rdark * Rnight + (Rtotleaf_by_Rdark - 1) * Rnight) * dl / ctx.time.nbhours_covered;
+    }
     GPP_effective *= ctx.time.nbhours_covered * 3600.0 * 12.0 / 1000000.0; // we convert micromoles C/ctx.params.m^2/s into gC/ctx.params.m^2/day (factor 12.0 for conversion into gC, 3600 for second-hour conversion, and 10^6 to convert micromoles to moles; finally, we divide by the total leaf area that intercepted the light, since
 
     int convT = int(ctx.lookup.iTaccuracy * 25.0); // temperature data at a resolution of Taccuracy=0.1°C -- stored in lookup tables ranging from 0°C to 50°C ---
@@ -2555,7 +2563,10 @@ RespGPPResult Tree::ComputeRespGPP(Context &ctx)
 
     float effLAT = (0.75 * t_LA + 0.25 * t_matureLA) * ctx.time.nbhours_covered * 23.652 * 0.000001 * ctx.time.timestep; // assuming that the decline in stomatal conductance of young and old leaves is less than for photosynthetic capacities (cf. ALbert et al. 2018)(75% the one of mature leaves), ie the water use efficiencies is lower of young and old leaves. Note that idally the Farquhar model should be applied to each leaf cohorts separately... 23.652=18.10^-6 * 3600*365, where 18.10^-6 is to convert micromol H20 into g, 3600*365 to convert s into year (as ctx.time.timestep is given in year); and 0.000001 is to convert g in m3.
     r.transpiration *= effLAT;                                                                         // this is the amount of water transpired by the tree during the ctx.time.timestep in m3.  CHECK: from our WILT data of sapflow of several canopy mature trees, and assuming a constant sapwood thickness of 4cm, this can be 5-110 liter/day, ie. 0.005-0.11 m3/day. See also values in Granier et al. 1996 (0.250-0.3 m3/day for a big dominant canopy tree), or Andrade et al. 1998 Oecologia (46-379 kg/day, ie. 0.046-0.379 m3/day). Note, in this version, we never account for nighttime transpiration... to be discussed.
-    r.transpiration_1016 *= (0.75 * t_LA + 0.25 * t_matureLA) * 0.0324 * 0.000001;                  // where 0.0324= 18.10^-6*3600*0.5
+    if (ctx.climate.full_day) // 4.3.1: 18e-6 * 3600 * step duration (0.0324 for half-hour steps)
+        r.transpiration_1016 *= (0.75f * t_LA + 0.25f * t_matureLA) * 18.0e-6f * 3600.0f * ctx.time.step_hours * 0.000001f;
+    else
+        r.transpiration_1016 *= (0.75 * t_LA + 0.25 * t_matureLA) * 0.0324 * 0.000001;                  // where 0.0324= 18.10^-6*3600*0.5
 
     int convT = int(ctx.lookup.iTaccuracy * ctx.climate.tDailyMean);  // temperature data at a resolution of Taccuracy=0.1°C -- stored in lookup tables ranging from 0°C to 50°C ---
     int convTnight = int(ctx.lookup.iTaccuracy * ctx.climate.tnight); // temperature data at a resolution of Taccuracy=0.1°C -- stored in lookup tables ranging from 0°C to 50°C ---
@@ -2564,6 +2575,11 @@ RespGPPResult Tree::ComputeRespGPP(Context &ctx)
 
     // the following two lines should maybe be revised, because the decline in respiration might not be the same as in photosynthetic activity. Kitajima et al. 2002 found no or small reductions in respiration with leaf age, Reich et al. 2009 did (Rdark/Amax constant), but often respiration declines are less steep than photosynthetic capacity, cf. Villar et al. 1995
     r.Rnight = t_Rdark * effLA_night * ctx.lookup.LookUp_Rleaf[convTnight];
+    if (ctx.climate.full_day)
+    { // 4.3.1, 24-hour input: stem respiration averaged over the 24 h; leaf dark respiration over the dark steps, each at its temperature
+        r.Rstem = t_sapwood_area * (t_height - t_CD) * ctx.climate.Rstem_LUT_mean;
+        r.Rnight = t_Rdark * (0.75f * t_LA + 0.25f * t_matureLA) * 15.7788f * ctx.time.timestep * ctx.climate.Rleaf_night_hours;
+    }
     return r;
 }
 

@@ -357,6 +357,10 @@ void ReadInputGeneral(Context &ctx);                                //!< Global 
 void ReadInputSpecies(Context &ctx);                                //!< Global function: read in species parameter sheet
 void ReadInputDailyvar(Context &ctx);                               //!< Global function: read in daily climate variation
 void ReadInputClimate(Context &ctx);                                //!< Global function: read in climate data
+bool Climate24hFormat(Context &ctx);                                //!< Global function (4.3.1): true if the -d file is a 24-hour climate file (has a Rainfall column)
+void ReadInputClimate24h(Context &ctx);                             //!< Global function (4.3.1): read a 24-hour climate file (replaces the -m and -d pair)
+float NightRleafHours(Context &ctx, const float *light, const float *T); //!< Global function (4.3.1): sum over dark steps of LookUp_Rleaf(T) * step duration (h)
+void UpdateClimate24h(Context &ctx, int day);                       //!< Global function (4.3.1): daylight hours and respiration factors of one day of 24-hour input
 void ReadInputSoil(Context &ctx);                                   //!< Global function: read in soil data
 void Initialise(Context &ctx);                                      //!< Global function: initialisation with bare ground conditions
 void InitialiseIntraspecific(Context &ctx);                         //!< Global function: initialise intraspecific variables

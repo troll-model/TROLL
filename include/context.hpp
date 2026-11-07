@@ -117,6 +117,7 @@ struct TimeState
     int nbsteps_varday; //!< Number of steps for environmental variables
     float inv_nbsteps_varday; //!< The inverse of the step number for environmental variables
     float nbhours_covered; //!< Number of hours of environmental variables in the environmental input file
+    float step_hours = 0.5f; //!< Duration of one sub-daily climate step (h): nbhours_covered / nbsteps_varday (4.3.1)
     float timestep; //!< Duration of one timestep (in years)=1/iterperyear
 };
 
@@ -136,6 +137,11 @@ struct Climate
     std::vector<float> varday_WS; //!< Wind speed variation during an average day, since v.2.5:  standardized with respect to the mean and summing to 0 (adimensional)
 
     float tnight; //!< Night mean temperature (degree C)
+    bool full_day = false; //!< 4.3.1: true when the sub-daily climate input covers 24 hours (single file with a Rainfall column, read by ReadInputClimate24h)
+    std::vector<float> varday_time; //!< 4.3.1, 24-hour input: clock time (h) at the start of each sub-daily step of a day
+    float daylight_hours = 12.0f; //!< 4.3.1, 24-hour input: hours of the current day with Snet >= SNET_MIN_PHOTOSYNTHESIS
+    float Rleaf_night_hours = 0.0f; //!< 4.3.1, 24-hour input: sum over the dark steps of the current day of LookUp_Rleaf(T) * step duration (h)
+    float Rstem_LUT_mean = 0.0f; //!< 4.3.1, 24-hour input: mean of LookUp_Rstem(T) over all steps of the current day
     float precip; //!< Rainfall  (mm)
     float WSDailyMean; //!< WindSpeed (m/s)
     float WDailyMean; //!< Daily mean irradiance (average for timestep) (micromol PAR photon/m^2/s), used in the photosynthesis part. !!! W/m2 is the common unit of meteorological stations ==> need to be converted using SWtoPPFD

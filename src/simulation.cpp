@@ -147,6 +147,50 @@ void UpdateSeeds(Context &ctx)
 //  Global function: Update all fields
 // #################################
 //! - This is an important function for TROLL -- Includes many of the operations
+//! Sum over the dark steps of one day (Snet < SNET_MIN_PHOTOSYNTHESIS) of LookUp_Rleaf(T) times the step
+//! duration (h): the temperature-weighted hours of night leaf respiration, for 24-hour climate input (4.3.1).
+//! @param ctx   simulation context (lookup tables, step duration)
+//! @param light Snet of the nbsteps_varday steps of the day (W m-2)
+//! @param T     air temperature of the same steps (degC)
+//! @return sum of LookUp_Rleaf(T) * step_hours over the dark steps (h)
+float NightRleafHours(Context &ctx, const float *light, const float *T)
+{
+    const int nT = int(ctx.lookup.LookUp_Rleaf.size());
+    float s = 0.0f;
+    for (int j = 0; j < ctx.time.nbsteps_varday; j++)
+        if (light[j] < SNET_MIN_PHOTOSYNTHESIS)
+        {
+            int convT = int(ctx.lookup.iTaccuracy * T[j]);
+            convT = convT < 0 ? 0 : (convT >= nT ? nT - 1 : convT);
+            s += ctx.lookup.LookUp_Rleaf[convT] * ctx.time.step_hours;
+        }
+    return s;
+}
+
+//! Daily quantities of 24-hour climate input for one day (4.3.1): daylight hours (steps with
+//! Snet >= SNET_MIN_PHOTOSYNTHESIS), the night leaf respiration factor (NightRleafHours) and the mean
+//! stem respiration factor (LookUp_Rstem averaged over all steps).
+//! @param ctx simulation context (climate series, lookup tables)
+//! @param day index of the day in the climate series
+void UpdateClimate24h(Context &ctx, int day)
+{
+    const int n = ctx.time.nbsteps_varday, nT = int(ctx.lookup.LookUp_Rstem.size());
+    const float *light = &ctx.climate.varday_light[day * n];
+    const float *T = &ctx.climate.varday_T[day * n];
+    float daylight = 0.0f, rstem = 0.0f;
+    for (int j = 0; j < n; j++)
+    {
+        if (light[j] >= SNET_MIN_PHOTOSYNTHESIS)
+            daylight += ctx.time.step_hours;
+        int convT = int(ctx.lookup.iTaccuracy * T[j]);
+        convT = convT < 0 ? 0 : (convT >= nT ? nT - 1 : convT);
+        rstem += ctx.lookup.LookUp_Rstem[convT];
+    }
+    ctx.climate.daylight_hours = daylight;
+    ctx.climate.Rstem_LUT_mean = rstem / float(n);
+    ctx.climate.Rleaf_night_hours = NightRleafHours(ctx, light, T);
+}
+
 //! - set the iteration environment -- nb: the current structure of code suppose that environment is periodic (a period = a year), if one wants to input a variable climate, with interannual variation and climate change along the simulation, a full climatic input needs to be input (ie number of columns=ctx.time.iter and not ctx.time.iterperyear) and change ctx.time.iterperyear by ctx.time.nbiter here.
 //! @param ctx simulation context (all model state)
 void UpdateField(Context &ctx)
@@ -160,6 +204,8 @@ void UpdateField(Context &ctx)
     ctx.climate.WDailyMean = ctx.climate.DailyMeanIrradiance[ctx.time.iter % ctx.time.nbdays] * ctx.params.SWtoPPFD;
     ctx.climate.tDailyMean = ctx.climate.DailyMeanTemperature[ctx.time.iter % ctx.time.nbdays];
     ctx.climate.VPDDailyMean = ctx.climate.DailyMeanVapourPressureDeficit[ctx.time.iter % ctx.time.nbdays];
+    if (ctx.climate.full_day)
+        UpdateClimate24h(ctx, ctx.time.iter % ctx.time.nbdays); // 4.3.1
 
 #else
     ctx.climate.tnight = ctx.climate.NightTemperature[ctx.time.iter % ctx.time.iterperyear];
@@ -375,7 +421,8 @@ void UpdateField(Context &ctx)
         float r_aero = 43.17347 * exp(alphaInoue * (1 - 1 / ctx.soil.Canopy_height_DCELL[d])) / ctx.soil.TopWindSpeed_DCELL[d]; // aerodynamic resistance to hear transfer (boundary ctx.diag.layer just above the soil surface), in s ctx.params.m-1 (see equ. 7 and 14 in Duursma & Medlyn 2012; and equ. B10 in Merlin et al. 2016). 43.17347= log(1/0.001)/(0.40*0.40), where 1= the reference height where the wind speed is measured, in ctx.params.m, 0.001=the momentum soil roughness in ctx.params.m (set to 0.001 following Yang et al. 2008 and Stefan et al 2015 in Merlin et al. 2016 equ B10), and 0.40=the von Karman constant.
 #endif
         float Rtot = r_soil + r_aero;                                                                                 // in s ctx.params.m-1
-        float e = ctx.time.nbhours_covered * ctx.grid.sites_per_dcell * ctx.grid.LH * ctx.grid.LH * 0.0078 * (esoil - eair) / ((Tsoil - ABSZERO) * Rtot); // 0.0078 = 0.001*3600*18e-3/8.31 with 18e-3 = the molar mass of water vapor in kg/mol and 8.31 the ideal gas constant in J/mol/K; 0.001*3600*ctx.time.nbhours_covered*ctx.grid.sites_per_dcell*ctx.grid.LH*ctx.grid.LH is used to convert evaporation in kg ctx.params.m-2 s-1 to m3 per day per dcell.
+        const float hours_evap = ctx.climate.full_day ? ctx.climate.daylight_hours : ctx.time.nbhours_covered; // 4.3.1: daytime hours, as with the daytime means used here
+        float e = hours_evap * ctx.grid.sites_per_dcell * ctx.grid.LH * ctx.grid.LH * 0.0078 * (esoil - eair) / ((Tsoil - ABSZERO) * Rtot); // 0.0078 = 0.001*3600*18e-3/8.31 with 18e-3 = the molar mass of water vapor in kg/mol and 8.31 the ideal gas constant in J/mol/K; 0.001*3600*ctx.time.nbhours_covered*ctx.grid.sites_per_dcell*ctx.grid.LH*ctx.grid.LH is used to convert evaporation in kg ctx.params.m-2 s-1 to m3 per day per dcell.
 
         // if (ctx.soil.soil_phi3D[0][d] < -1) {
         //  cout << "r_soil=" << r_soil << " r_soil_sellers=" << r_soil_sellers <<" r_aero=" <<r_aero << " VPDground=" << VPDground << " esat_ground=" << esat_ground << " esoil=" << esoil << " eair=" << eair << " ctx.soil.soil_phi3D[0][d]=" << ctx.soil.soil_phi3D[0][d] << " Tsoil=" << Tsoil << " ctx.soil.TopWindSpeed_DCELL[d]=" << ctx.soil.TopWindSpeed_DCELL[d] << " Wind ground level=" << exp(-alphaInoue*(1-1/ctx.soil.Canopy_height_DCELL[d]))*ctx.soil.TopWindSpeed_DCELL[d] << " evaporation S92=" << e  << " evaporation S92_sellers=" << e_sellers << " e_granier=" << e_Granier << " ctx.soil.SWC3D[0][d]-ctx.soil.Min_SWC[0]=" << ctx.soil.SWC3D[0][d]-ctx.soil.Min_SWC[0] << endl;

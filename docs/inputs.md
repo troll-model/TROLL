@@ -6,8 +6,8 @@ TROLL reads five input files, given on the command line, plus two optional ones:
 | --- | --- | --- |
 | `-i` | global parameters | grid, simulation length, physiology and allometry parameters, options |
 | `-s` | species parameters | one row per species: traits and allometric parameters |
-| `-m` | daily climate | one row per day |
-| `-d` | half-hourly climate | one row per daytime half-hour |
+| `-m` | daily climate | one row per day (not used with a 24-hour `-d` file) |
+| `-d` | sub-daily climate | daytime half-hours, or (4.3.1) a 24-hour file with rainfall |
 | `-p` | soil | one row per soil layer |
 | `-f` (optional) | forest inventory | initial forest, e.g. the `final_pattern.txt` output of a previous run |
 | `-w` (optional) | soil water content | initial soil water, e.g. the `final_SWC3D.txt` output of a previous run |
@@ -53,6 +53,33 @@ One row per daytime half-hour (net radiation > 0), all days in sequence.
 | `Snet` | incoming shortwave radiation above the canopy | W m⁻² |
 | `VPD` | vapour pressure deficit above the canopy | kPa |
 | `WS` | wind speed at the meteorological station | m s⁻¹ |
+
+Values of `Snet` below 0.01 W m⁻² are dark steps (set to 0; no photosynthesis is computed for
+them, 4.3.0). Since 4.3.1, values from 0.01 to 1 W m⁻² are used as read (they were raised to 1).
+
+## 24-hour climate file (`-d`, 4.3.1)
+
+A single file replacing the `-m` and `-d` pair; it is recognised by its `Rainfall` column, and
+`-m` is then not needed. One row per sub-daily step, covering the whole day (for example 24
+hourly or 48 half-hourly steps), with the same number of steps every day; columns are matched
+by name, in any order.
+
+| Column | Meaning | Unit |
+| --- | --- | --- |
+| `DayJulian` | day of the year; a new day starts when this value changes | — |
+| `time_numeric` | clock time at the start of the step (day 1: 0, then regular steps) | h |
+| `Temp` | air temperature above the canopy | °C |
+| `Snet` | incoming shortwave radiation above the canopy (0 at night) | W m⁻² |
+| `VPD` | vapour pressure deficit above the canopy | kPa |
+| `WS` | wind speed at the meteorological station | m s⁻¹ |
+| `Rainfall` | rainfall during the step (summed per day: one event per day) | mm |
+
+How the day is integrated: photosynthesis and transpiration over the lit steps
+(`Snet` ≥ 0.01 W m⁻²); leaf dark respiration over the dark steps, each at its own temperature;
+stem respiration averaged over all steps; the daily means used for canopy light, soil
+evaporation and the lookup tables (temperature, VPD, wind, light) over the lit steps, as with
+the daytime file. The night temperature of each day (`NightTemperature`) is the mean of its
+dark steps. A converter from ERA5-Land point time series writes this format (`era5land_to_troll.py --hourly24`).
 
 ## Soil file (`-p`)
 

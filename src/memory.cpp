@@ -313,8 +313,13 @@ void Initialise(Context &ctx)
 
     ReadInputSpecies(ctx);
 #ifdef FULL_CLIMATE
-    ReadInputClimate(ctx);
-    ReadInputDailyvar(ctx);
+    if (Climate24hFormat(ctx))
+        ReadInputClimate24h(ctx); // 4.3.1: one 24-hour file (-d) with rainfall; -m is not used
+    else
+    {
+        ReadInputClimate(ctx);
+        ReadInputDailyvar(ctx);
+    }
 #else
     ReadInputDailyvar(ctx);
     ReadInputClimate(ctx);

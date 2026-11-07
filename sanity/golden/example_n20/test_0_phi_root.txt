@@ -1,9 +1,9 @@
 iter	abundance_weighted_phi_root	abundance_weighted_phi_root_n10	agb_weighted_phi_root
 0	-0.0180385	-nan	-0.0185769
 1	-0.0191526	-nan	-0.0196607
-2	-0.018308	-nan	-0.0187932
+2	-0.0183079	-nan	-0.0187932
 3	-0.018411	-nan	-0.0188782
-4	-0.0185085	-nan	-0.0189585
+4	-0.0185084	-nan	-0.0189585
 1	0
 2	0
 3	0
@@ -158,11 +158,11 @@ iter	abundance_weighted_phi_root	abundance_weighted_phi_root_n10	agb_weighted_ph
 152	0
 153	0
 
-5	-0.0186141	-nan	-0.0190462
+5	-0.0186141	-nan	-0.0190461
 6	-0.0187348	-nan	-0.0191504
 7	-0.0192044	-nan	-0.0196056
 8	-0.0189676	-nan	-0.0193553
-9	-0.0190798	-nan	-0.0194551
+9	-0.0190797	-nan	-0.0194551
 1	0
 2	0
 3	0
@@ -320,7 +320,7 @@ iter	abundance_weighted_phi_root	abundance_weighted_phi_root_n10	agb_weighted_ph
 10	-0.0192064	-nan	-0.0195719
 11	-0.0208279	-nan	-0.0211877
 12	-0.0218995	-nan	-0.0222549
-13	-0.0220836	-nan	-0.0224313
+13	-0.0220835	-nan	-0.0224313
 14	-0.022729	-nan	-0.0230747
 1	0
 2	0
@@ -477,10 +477,10 @@ iter	abundance_weighted_phi_root	abundance_weighted_phi_root_n10	agb_weighted_ph
 153	0
 
 15	-0.0227221	-nan	-0.0230621
-16	-0.0225257	-nan	-0.0228588
+16	-0.0225256	-nan	-0.0228588
 17	-0.0224398	-nan	-0.0227669
-18	-0.023998	-nan	-0.0243236
-19	-0.0201692	-nan	-0.0204815
+18	-0.0239979	-nan	-0.0243236
+19	-0.0201692	-nan	-0.0204814
 1	0
 2	0
 3	0

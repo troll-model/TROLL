@@ -335,6 +335,84 @@ void ReadInputSpecies(Context &ctx)
 
 #ifdef FULL_CLIMATE
 
+//! Daily means of the sub-daily climate (DailyMean* vectors), mean daily cycle (*DailyMean_all) and
+//! the values of the first day. With 24-hour input (ctx.climate.full_day), the daily means are taken
+//! over the lit steps only (Snet >= SNET_MIN_PHOTOSYNTHESIS), so that they keep their meaning of daytime
+//! means; the mean daily cycle covers all steps.
+//! @param ctx simulation context (climate series and time)
+static void ComputeClimateMeans(Context &ctx)
+{
+    ctx.climate.WDailyMean_all.assign(ctx.time.nbsteps_varday, float());
+    ctx.climate.tDailyMean_all.assign(ctx.time.nbsteps_varday, float());
+    ctx.climate.VPDDailyMean_all.assign(ctx.time.nbsteps_varday, float());
+    ctx.climate.windDailyMean_all.assign(ctx.time.nbsteps_varday, float());
+
+    for (int j = 0; j < ctx.time.nbsteps_varday; j++)
+    {
+        ctx.climate.WDailyMean_all[j] = ctx.climate.tDailyMean_all[j] = ctx.climate.VPDDailyMean_all[j] = ctx.climate.windDailyMean_all[j] = 0.0;
+    }
+
+    ctx.climate.WDailyMean_year = 0.0;
+
+    for (int i = 0; i < ctx.time.nbdays; i++)
+    {
+
+        float DailyMeanTemperature_current = 0.0, DailyMeanWindSpeed_current = 0.0, DailyMeanIrradiance_current = 0.0, DailyMeanVapourPressureDeficit_current = 0.0;
+        int nlit = 0;
+        if (ctx.climate.full_day)
+            for (int j = 0; j < ctx.time.nbsteps_varday; j++)
+                if (ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j] >= SNET_MIN_PHOTOSYNTHESIS)
+                    nlit++;
+
+        for (int j = 0; j < ctx.time.nbsteps_varday; j++)
+        {
+            if (nlit == 0 || ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j] >= SNET_MIN_PHOTOSYNTHESIS) // 4.3.1, 24-hour input: daytime (lit) means
+                DailyMeanTemperature_current += ctx.climate.varday_T[i * ctx.time.nbsteps_varday + j];
+            if (nlit == 0 || ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j] >= SNET_MIN_PHOTOSYNTHESIS) // 4.3.1, 24-hour input: daytime (lit) means
+                DailyMeanWindSpeed_current += ctx.climate.varday_WS[i * ctx.time.nbsteps_varday + j];
+            if (nlit == 0 || ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j] >= SNET_MIN_PHOTOSYNTHESIS) // 4.3.1, 24-hour input: daytime (lit) means
+                DailyMeanIrradiance_current += ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j];
+            if (nlit == 0 || ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j] >= SNET_MIN_PHOTOSYNTHESIS) // 4.3.1, 24-hour input: daytime (lit) means
+                DailyMeanVapourPressureDeficit_current += ctx.climate.varday_vpd[i * ctx.time.nbsteps_varday + j];
+
+            ctx.climate.WDailyMean_all[j] += ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j];
+            ctx.climate.VPDDailyMean_all[j] += ctx.climate.varday_vpd[i * ctx.time.nbsteps_varday + j];
+            ctx.climate.tDailyMean_all[j] += ctx.climate.varday_T[i * ctx.time.nbsteps_varday + j];
+            ctx.climate.windDailyMean_all[j] += ctx.climate.varday_WS[i * ctx.time.nbsteps_varday + j];
+        }
+
+        const float inv_n = (nlit == 0) ? ctx.time.inv_nbsteps_varday : 1.0f / float(nlit);
+        DailyMeanTemperature_current *= inv_n;
+        DailyMeanWindSpeed_current *= inv_n;
+        DailyMeanIrradiance_current *= inv_n;
+        DailyMeanVapourPressureDeficit_current *= inv_n;
+
+        ctx.climate.WDailyMean_year += DailyMeanIrradiance_current;
+
+        ctx.climate.DailyMeanTemperature.push_back(DailyMeanTemperature_current);
+        ctx.climate.DailyMeanWindSpeed.push_back(DailyMeanWindSpeed_current);
+        ctx.climate.DailyMeanIrradiance.push_back(DailyMeanIrradiance_current);
+        ctx.climate.DailyMeanVapourPressureDeficit.push_back(DailyMeanVapourPressureDeficit_current);
+    }
+
+    for (int j = 0; j < ctx.time.nbsteps_varday; j++)
+    {
+        ctx.climate.WDailyMean_all[j] /= ctx.time.nbdays;
+        ctx.climate.VPDDailyMean_all[j] /= ctx.time.nbdays;
+        ctx.climate.tDailyMean_all[j] /= ctx.time.nbdays;
+        ctx.climate.windDailyMean_all[j] /= ctx.time.nbdays;
+    }
+
+    ctx.climate.WDailyMean_year *= ctx.params.SWtoPPFD / ctx.time.nbdays;
+
+    ctx.climate.tnight = ctx.climate.NightTemperature[0];
+    ctx.climate.precip = ctx.climate.Rainfall[0];
+    ctx.climate.WSDailyMean = ctx.climate.DailyMeanWindSpeed[0];
+    ctx.climate.WDailyMean = ctx.climate.DailyMeanIrradiance[0] * ctx.params.SWtoPPFD;
+    ctx.climate.tDailyMean = ctx.climate.DailyMeanTemperature[0];
+    ctx.climate.VPDDailyMean = ctx.climate.DailyMeanVapourPressureDeficit[0];
+}
+
 //! Global function: This function reads inputs from the environmental daily variation input file
 //! @param ctx simulation context (all model state)
 void ReadInputDailyvar(Context &ctx)
@@ -374,14 +452,9 @@ void ReadInputDailyvar(Context &ctx)
             }
 
             if (varday_light_current < SNET_MIN_PHOTOSYNTHESIS)
-            { // 4.3.0: dark step (night, or no light): kept at 0, photosynthesis is not run for it
+            { // 4.3.0: dark step (night, or no light): kept at 0, photosynthesis is not run for it (4.3.1: values above are no longer raised to 1)
                 varday_light_current = 0.0f;
                 nb_dark_steps++;
-            }
-            else if (varday_light_current <= 1)
-            {
-                varday_light_current = 1;
-                cout << "Warning, light is <=1, on day " << day_current << " at " << starttime_current << "h." << endl;
             }
 
             if (varday_WS_current <= 0.1)
@@ -404,6 +477,7 @@ void ReadInputDailyvar(Context &ctx)
         cout << "Read in: " << ctx.time.nbsteps_varday << " timesteps per day, covering " << ctx.time.nbhours_covered << " hours of the day." << endl;
         cout << "Successfully read in daytime variation file" << endl;
         ctx.time.inv_nbsteps_varday = 1.0 / float(ctx.time.nbsteps_varday);
+        ctx.time.step_hours = ctx.time.nbhours_covered / float(ctx.time.nbsteps_varday);
         if (nb_dark_steps > 0)
             cout << "Read in: " << nb_dark_steps << " dark steps (Snet < " << SNET_MIN_PHOTOSYNTHESIS << " W m-2), without photosynthesis." << endl;
     }
@@ -412,65 +486,7 @@ void ReadInputDailyvar(Context &ctx)
         cout << "ERROR with the daily variation file" << endl;
     }
 
-    ctx.climate.WDailyMean_all.assign(ctx.time.nbsteps_varday, float());
-    ctx.climate.tDailyMean_all.assign(ctx.time.nbsteps_varday, float());
-    ctx.climate.VPDDailyMean_all.assign(ctx.time.nbsteps_varday, float());
-    ctx.climate.windDailyMean_all.assign(ctx.time.nbsteps_varday, float());
-
-    for (int j = 0; j < ctx.time.nbsteps_varday; j++)
-    {
-        ctx.climate.WDailyMean_all[j] = ctx.climate.tDailyMean_all[j] = ctx.climate.VPDDailyMean_all[j] = ctx.climate.windDailyMean_all[j] = 0.0;
-    }
-
-    ctx.climate.WDailyMean_year = 0.0;
-
-    for (int i = 0; i < ctx.time.nbdays; i++)
-    {
-
-        float DailyMeanTemperature_current = 0.0, DailyMeanWindSpeed_current = 0.0, DailyMeanIrradiance_current = 0.0, DailyMeanVapourPressureDeficit_current = 0.0;
-
-        for (int j = 0; j < ctx.time.nbsteps_varday; j++)
-        {
-            DailyMeanTemperature_current += ctx.climate.varday_T[i * ctx.time.nbsteps_varday + j];
-            DailyMeanWindSpeed_current += ctx.climate.varday_WS[i * ctx.time.nbsteps_varday + j];
-            DailyMeanIrradiance_current += ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j];
-            DailyMeanVapourPressureDeficit_current += ctx.climate.varday_vpd[i * ctx.time.nbsteps_varday + j];
-
-            ctx.climate.WDailyMean_all[j] += ctx.climate.varday_light[i * ctx.time.nbsteps_varday + j];
-            ctx.climate.VPDDailyMean_all[j] += ctx.climate.varday_vpd[i * ctx.time.nbsteps_varday + j];
-            ctx.climate.tDailyMean_all[j] += ctx.climate.varday_T[i * ctx.time.nbsteps_varday + j];
-            ctx.climate.windDailyMean_all[j] += ctx.climate.varday_WS[i * ctx.time.nbsteps_varday + j];
-        }
-
-        DailyMeanTemperature_current *= ctx.time.inv_nbsteps_varday;
-        DailyMeanWindSpeed_current *= ctx.time.inv_nbsteps_varday;
-        DailyMeanIrradiance_current *= ctx.time.inv_nbsteps_varday;
-        DailyMeanVapourPressureDeficit_current *= ctx.time.inv_nbsteps_varday;
-
-        ctx.climate.WDailyMean_year += DailyMeanIrradiance_current;
-
-        ctx.climate.DailyMeanTemperature.push_back(DailyMeanTemperature_current);
-        ctx.climate.DailyMeanWindSpeed.push_back(DailyMeanWindSpeed_current);
-        ctx.climate.DailyMeanIrradiance.push_back(DailyMeanIrradiance_current);
-        ctx.climate.DailyMeanVapourPressureDeficit.push_back(DailyMeanVapourPressureDeficit_current);
-    }
-
-    for (int j = 0; j < ctx.time.nbsteps_varday; j++)
-    {
-        ctx.climate.WDailyMean_all[j] /= ctx.time.nbdays;
-        ctx.climate.VPDDailyMean_all[j] /= ctx.time.nbdays;
-        ctx.climate.tDailyMean_all[j] /= ctx.time.nbdays;
-        ctx.climate.windDailyMean_all[j] /= ctx.time.nbdays;
-    }
-
-    ctx.climate.WDailyMean_year *= ctx.params.SWtoPPFD / ctx.time.nbdays;
-
-    ctx.climate.tnight = ctx.climate.NightTemperature[0];
-    ctx.climate.precip = ctx.climate.Rainfall[0];
-    ctx.climate.WSDailyMean = ctx.climate.DailyMeanWindSpeed[0];
-    ctx.climate.WDailyMean = ctx.climate.DailyMeanIrradiance[0] * ctx.params.SWtoPPFD;
-    ctx.climate.tDailyMean = ctx.climate.DailyMeanTemperature[0];
-    ctx.climate.VPDDailyMean = ctx.climate.DailyMeanVapourPressureDeficit[0];
+    ComputeClimateMeans(ctx);
 }
 
 //! Global function: This function reads inputs from the environmental variation input file
@@ -525,6 +541,187 @@ void ReadInputClimate(Context &ctx)
         cout << "ERROR with the climate file" << endl;
     }
     InClim.close();
+}
+
+//! True if the sub-daily climate file (-d) is a 24-hour climate file: its header has a Rainfall column (4.3.1).
+//! @param ctx simulation context (file names)
+//! @return true for the 24-hour format, false for the daytime format used with a -m daily file
+bool Climate24hFormat(Context &ctx)
+{
+    fstream In(ctx.fileio.inputfile_daytimevar, ios::in);
+    if (!In)
+        return false;
+    string header;
+    getline(In, header);
+    istringstream hs(header);
+    string name;
+    while (hs >> name)
+        if (name == "Rainfall")
+            return true;
+    return false;
+}
+
+//! Read a 24-hour climate file (4.3.1): columns DayJulian, time_numeric, Temp, Snet, VPD, WS and Rainfall
+//! (any order, tab or space separated), the same number of steps on every day, steps covering 0-24 h.
+//! Fills the sub-daily series as ReadInputDailyvar does, and the daily series of ReadInputClimate:
+//! Rainfall is the daily sum, NightTemperature the mean temperature of the dark steps (all steps if none).
+//! Snet < SNET_MIN_PHOTOSYNTHESIS is set to 0 (dark step); VPD <= 0.01 and wind <= 0.1 are raised to these
+//! values, as in ReadInputDailyvar, with one summary line instead of a warning per step.
+//! @param ctx simulation context (climate series and time)
+void ReadInputClimate24h(Context &ctx)
+{
+    cout << endl
+         << "Reading in file: " << ctx.fileio.inputfile_daytimevar << " (24-hour climate, with rainfall; no -m file needed)" << endl;
+    fstream In(ctx.fileio.inputfile_daytimevar, ios::in);
+    if (!In)
+    {
+        cerr << "ERROR with the 24-hour climate file" << endl;
+        exit(1);
+    }
+    const char *names[7] = {"DayJulian", "time_numeric", "Temp", "Snet", "VPD", "WS", "Rainfall"};
+    int col[7] = {-1, -1, -1, -1, -1, -1, -1};
+    string header;
+    getline(In, header);
+    {
+        istringstream hs(header);
+        string name;
+        int k = 0;
+        while (hs >> name)
+        {
+            for (int c = 0; c < 7; c++)
+                if (name == names[c])
+                    col[c] = k;
+            k++;
+        }
+    }
+    for (int c = 0; c < 7; c++)
+        if (col[c] < 0)
+        {
+            cerr << "ERROR in the 24-hour climate file: no column " << names[c] << endl;
+            exit(1);
+        }
+
+    ctx.climate.varday_light.clear();
+    ctx.climate.varday_vpd.clear();
+    ctx.climate.varday_T.clear();
+    ctx.climate.varday_WS.clear();
+    ctx.climate.varday_time.clear();
+    ctx.climate.NightTemperature.clear();
+    ctx.climate.Rainfall.clear();
+    ctx.climate.full_day = true;
+
+    long nb_dark = 0, nb_vpd = 0, nb_ws = 0, nb_rain = 0;
+    int steps_first_day = 0, steps_today = 0, nbdays = 0;
+    float day_prev = 0.0f, rain_today = 0.0f, tdark_today = 0.0f, tall_today = 0.0f;
+    int ndark_today = 0;
+    auto close_day = [&]()
+    {
+        if (nbdays == 1)
+            steps_first_day = steps_today;
+        else if (steps_today != steps_first_day)
+        {
+            cerr << "ERROR in the 24-hour climate file: " << steps_today << " steps on day " << nbdays << ", " << steps_first_day << " on day 1" << endl;
+            exit(1);
+        }
+        ctx.climate.Rainfall.push_back(rain_today);
+        ctx.climate.NightTemperature.push_back(ndark_today > 0 ? tdark_today / float(ndark_today) : tall_today / float(steps_today));
+    };
+    string line;
+    vector<float> v;
+    while (getline(In, line))
+    {
+        istringstream ls(line);
+        v.clear();
+        float x;
+        while (ls >> x)
+            v.push_back(x);
+        if (v.empty())
+            continue;
+        if (int(v.size()) < 7)
+        {
+            cerr << "ERROR in the 24-hour climate file: line with " << v.size() << " values" << endl;
+            exit(1);
+        }
+        float day = v[col[0]], time = v[col[1]], T = v[col[2]], light = v[col[3]], vpd = v[col[4]], ws = v[col[5]], rain = v[col[6]];
+        if (nbdays == 0 || day != day_prev)
+        {
+            if (nbdays > 0)
+                close_day();
+            nbdays++;
+            day_prev = day;
+            steps_today = 0;
+            rain_today = tdark_today = tall_today = 0.0f;
+            ndark_today = 0;
+        }
+        if (light < SNET_MIN_PHOTOSYNTHESIS)
+        {
+            light = 0.0f;
+            nb_dark++;
+            tdark_today += T;
+            ndark_today++;
+        }
+        if (vpd <= 0.01f)
+        {
+            vpd = 0.01f;
+            nb_vpd++;
+        }
+        if (ws <= 0.1f)
+        {
+            ws = 0.1f;
+            nb_ws++;
+        }
+        if (rain < 0.0f)
+        {
+            rain = 0.0f;
+            nb_rain++;
+        }
+        if (nbdays == 1)
+            ctx.climate.varday_time.push_back(time);
+        ctx.climate.varday_light.push_back(light);
+        ctx.climate.varday_vpd.push_back(vpd);
+        ctx.climate.varday_T.push_back(T);
+        ctx.climate.varday_WS.push_back(ws);
+        rain_today += rain;
+        tall_today += T;
+        steps_today++;
+    }
+    if (nbdays == 0)
+    {
+        cerr << "ERROR: the 24-hour climate file has no data" << endl;
+        exit(1);
+    }
+    close_day();
+
+    ctx.time.nbdays = nbdays;
+    // as in ReadInputClimate, which is not called with 24-hour input
+    ctx.time.iterperyear = 365;
+    ctx.time.timestep = 1.0 / float(ctx.time.iterperyear);
+    ctx.climate.Tnight_year = 0.0;
+    for (int i = 0; i < ctx.time.nbdays; i++)
+        ctx.climate.Tnight_year += ctx.climate.NightTemperature[i];
+    ctx.climate.Tnight_year *= 1.0 / float(ctx.time.nbdays);
+    ctx.time.nbsteps_varday = steps_first_day;
+    ctx.time.inv_nbsteps_varday = 1.0f / float(ctx.time.nbsteps_varday);
+    ctx.time.nbhours_covered = 24.0f;
+    ctx.time.step_hours = 24.0f / float(ctx.time.nbsteps_varday);
+    const float t0 = ctx.climate.varday_time[0];
+    float maxgap = 0.0f;
+    for (int j = 1; j < ctx.time.nbsteps_varday; j++)
+        maxgap = fmaxf(maxgap, fabsf(ctx.climate.varday_time[j] - ctx.climate.varday_time[j - 1] - ctx.time.step_hours));
+    if (fabsf(t0) > 0.01f || maxgap > 0.01f)
+        cout << "WARNING: the steps of day 1 do not start at 0 h with a regular spacing of " << ctx.time.step_hours << " h; they are assumed to cover 24 hours." << endl;
+
+    cout << "Read in: " << ctx.time.nbdays << " days, " << ctx.time.nbsteps_varday << " timesteps per day of " << ctx.time.step_hours << " h, covering 24 hours." << endl;
+    cout << "Read in: " << nb_dark << " dark steps (Snet < " << SNET_MIN_PHOTOSYNTHESIS << " W m-2), without photosynthesis." << endl;
+    if (nb_vpd + nb_ws + nb_rain > 0)
+        cout << "Read in: " << nb_vpd << " steps with VPD raised to 0.01 kPa, " << nb_ws << " with wind raised to 0.1 m s-1, " << nb_rain << " negative rainfall values set to 0." << endl;
+
+    ComputeClimateMeans(ctx);
+    ctx.climate.daylight_hours = 0.0f;
+    for (int j = 0; j < ctx.time.nbsteps_varday; j++)
+        if (ctx.climate.varday_light[j] >= SNET_MIN_PHOTOSYNTHESIS)
+            ctx.climate.daylight_hours += ctx.time.step_hours;
+    cout << "Successfully read in 24-hour climate file" << endl;
 }
 
 #else // FULL_CLIMATE

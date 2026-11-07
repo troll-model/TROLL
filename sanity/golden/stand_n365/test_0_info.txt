@@ -1,4 +1,4 @@
-TROLL version : 4.3.0
+TROLL version : 4.3.1
 Random seed : 1 (_NONRANDOM)
 
 TROLL simulator
@@ -17,5 +17,5 @@ TROLL simulator
  Duration of timestep : 0.00273973 years
  Number of Species    : 14
 
-Average computation time : 21.9511 seconds.
+Average computation time : 21.9514 seconds.
 End of simulation.
