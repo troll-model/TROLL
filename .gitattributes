@@ -1,0 +1,5 @@
+# TROLL output files kept as test references: their lines end with a tab, as TROLL writes them,
+# and they must stay byte-identical to TROLL's output. Trailing whitespace is data here, so git
+# (diff --check, apply, am) does not report it as an error.
+sanity/golden/** -whitespace
+sanity/fixtures/** -whitespace
