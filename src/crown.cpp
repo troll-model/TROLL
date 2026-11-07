@@ -6,12 +6,10 @@
 /////// GLOBAL FUNCTIONS ///////////////////////
 ////////////////////////////////////////////////
 
-#ifdef G0
 
 // Solves the quadratic equation. ROOT: finds smaller (-1), larger (1) root.
 // QUAD(): see include/quad.hpp (inline since 4.1.2)
 
-#endif
 
 //! Global functions to compute Vcmax (on a mass basis) and leaf dark respiration (on a leaf area basis)
 // newIM : to avoid repeating same functions in Tree and Species class. Was needed for the Species class to correctly initialise Rdark and compute LCP
@@ -37,7 +35,6 @@ float CalcRdark(float LMA, float Nmass, float Pmass, float Vcmax)
     return (Rdark);
 }
 
-#ifdef CROWN_UMBRELLA
 
 // Global function: linear decrease of crown radius
 //! @param ctx simulation context (all model state)
@@ -88,23 +85,15 @@ void GetDensitiesGradient(float LAI, float CD, float &dens_top, float &dens_belo
     {
         dens_top = 0.5 * LAI;
         dens_belowtop = 0.25 * LAI;
-#ifdef CROWN_UMBRELLA
         dens_layer = 0.25 * LAI;
-#else
-        dens_layer = 0.25 * LAI / (CD - 2.0);
-#endif
     }
 }
 
 // Global function: deduces within-crown density from LAI, assuming uniform leaf distribution
 void GetDensityUniform(float LAI, float CD, float &dens_layer) // RENAMED: ctx.params.dens → dens_layer
 {
-#ifdef CROWN_UMBRELLA
     float crownshells_limit = fminf(CD, 3.0);
     dens_layer = LAI / crownshells_limit;
-#else
-    dens_layer = LAI / CD;
-#endif
 }
 
 // Global function: dummy function when no modification is needed
@@ -292,7 +281,6 @@ void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, 
     int intabsorb = CalcIntabsorb(absorb_prev, absorb_delta);
     int intincident = CalcIntabsorb(absorb_prev);
 
-#ifdef FULL_CLIMATE
     // Obtain PPFD, VPD and T for the voxel
     float PPFD_voxel = ctx.lookup.LookUp_flux_absorption[intabsorb];
     float VPD_voxel = ctx.lookup.LookUp_VPD[intabsorb];
@@ -300,15 +288,6 @@ void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, 
     float PPFD_voxel_incident = ctx.lookup.LookUp_flux[intincident];
     float ExtinctLW_voxel = ctx.lookup.LookUp_ExtinctLW[intincident];
 
-#else // FULL_CLIMATE
-      // Obtain PPFD, VPD and T for the voxel
-    float PPFD_voxel = ctx.climate.WDailyMean * ctx.lookup.LookUp_flux_absorption[intabsorb];
-    float VPD_voxel = ctx.climate.VPDDailyMean * ctx.lookup.LookUp_VPD[intabsorb];
-    float T_voxel = ctx.climate.tDailyMean - ctx.lookup.LookUp_T[intabsorb];
-    float PPFD_voxel_incident = ctx.climate.WDailyMean * ctx.lookup.LookUp_flux[intincident];
-    float ExtinctLW_voxel = ctx.lookup.LookUp_ExtinctLW[intincident];
-
-#endif // FULL_CLIMATE
 
     // Add the three variables up, weighted by leaf density inside voxel
     canopy_environment_cumulated[0] += dens_layer;
@@ -372,4 +351,3 @@ void AddCrownVolumeLayer(Context &ctx, int row_center, int col_center, float hei
         }
     }
 }
-#endif

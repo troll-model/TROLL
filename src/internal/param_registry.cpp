@@ -255,12 +255,10 @@ void RegisterParameters(Context &ctx)
     add_float("phi", ctx.params.phi, 0.0f, 1.0f, 0.06f);
     add_float("g1", ctx.params.g1, 0.0f, 1000.0f, 3.77f);
 
-#ifdef G0
     add_float("g0", ctx.params.g0, 0.0f, 30.0f, 5.0f);
     add_float("Rday_inhibition", ctx.params.Rday_inhibition, 0.0f, 1.0f, 0.7f);           // 4.3.4; JULES default since 4.3.6
     add_float("Rday_inhibition_Snet", ctx.params.Rday_inhibition_Snet, 0.0f, 2000.0f, 2.0f); // 4.3.4; JULES default since 4.3.6
     add_float("Snet_min_leaf", ctx.params.Snet_min_leaf, 0.0f, 2000.0f, 0.0f);              // 4.3.6
-#endif
 
     add_float("pheno_a0", ctx.params.pheno_a0, 0.0f, 1.0f, 0.5f);
     add_float("pheno_b0", ctx.params.pheno_b0, 0.0f, 1.0f, 0.5f);

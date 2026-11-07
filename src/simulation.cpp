@@ -196,7 +196,6 @@ void UpdateClimate24h(Context &ctx, int day)
 void UpdateField(Context &ctx)
 {
 
-#ifdef FULL_CLIMATE
 
     ctx.climate.tnight = ctx.climate.NightTemperature[ctx.time.iter % ctx.time.nbdays];
     ctx.climate.precip = ctx.climate.Rainfall[ctx.time.iter % ctx.time.nbdays];
@@ -207,15 +206,6 @@ void UpdateField(Context &ctx)
     if (ctx.climate.full_day)
         UpdateClimate24h(ctx, ctx.time.iter % ctx.time.nbdays); // 4.3.1
 
-#else
-    ctx.climate.tnight = ctx.climate.NightTemperature[ctx.time.iter % ctx.time.iterperyear];
-    ctx.climate.precip = ctx.climate.Rainfall[ctx.time.iter % ctx.time.iterperyear];
-    ctx.climate.WSDailyMean = ctx.climate.DailyMeanWindSpeed[ctx.time.iter % ctx.time.iterperyear];
-    ctx.climate.WDailyMean = ctx.climate.DailyMeanIrradiance[ctx.time.iter % ctx.time.iterperyear] * ctx.params.SWtoPPFD;
-    ctx.climate.tDailyMean = ctx.climate.DailyMeanTemperature[ctx.time.iter % ctx.time.iterperyear];
-    ctx.climate.VPDDailyMean = ctx.climate.DailyMeanVapourPressureDeficit[ctx.time.iter % ctx.time.iterperyear];
-
-#endif // FULL_CLIMATE
 
     UpdateSeeds(ctx);
 
@@ -333,7 +323,6 @@ void UpdateField(Context &ctx)
             ctx.soil.Canopy_height_DCELL[d] = 0.0;
         }
 
-#ifdef FULL_CLIMATE
         if (ctx.soil.Canopy_height_DCELL[d] <= MeteoStation_Height)
         {
             ctx.soil.TopWindSpeed_DCELL[d] = 1.204 / log(16.67 * ((MeteoStation_Height / ctx.soil.Canopy_height_DCELL[d]) - 0.8)); // WS is the ctx.time.timestep windspeed at a height=MeteoStation_Height, and ctx.soil.TopWindSpeed_DCELL is the wind speed computed at a height=ctx.soil.Canopy_height_DCELL[d], according to the model of Monteith & Unsworth 2008 (see Rau et al's TROLL manuscript), with d=0.8H and z0=0.06H; 16.67~1/0.06, 1.204=log(0.2/0.06).
@@ -344,14 +333,6 @@ void UpdateField(Context &ctx)
         {
             cout << "in UpdateField: d=" << d << "; Canopyheight_DCELL[d]=" << ctx.soil.Canopy_height_DCELL[d] << "; ctx.soil.HSum_DCELL[d]=" << ctx.soil.HSum_DCELL[d] << "; ctx.soil.TopWindSpeed_DCELL[d]=" << ctx.soil.TopWindSpeed_DCELL[d] << endl;
         }
-#else
-        if (ctx.soil.Canopy_height_DCELL[d] <= MeteoStation_Height)
-        {
-            ctx.soil.TopWindSpeed_DCELL[d] = ctx.climate.WSDailyMean * 1.204 / log(16.67 * ((MeteoStation_Height / ctx.soil.Canopy_height_DCELL[d]) - 0.8)); // WS is the ctx.time.timestep windspeed at a height=MeteoStation_Height, and ctx.soil.TopWindSpeed_DCELL is the wind speed computed at a height=ctx.soil.Canopy_height_DCELL[d], according to the model of Monteith & Unsworth 2008 (see Rau et al's TROLL manuscript), with d=0.8H and z0=0.06H; 16.67~1/0.06, 1.204=log(0.2/0.06).
-        }
-        else
-            ctx.soil.TopWindSpeed_DCELL[d] = ctx.climate.WSDailyMean * exp(alphaInoue * (1 - MeteoStation_Height / ctx.soil.Canopy_height_DCELL[d]));
-#endif
 
         // cout << "iter=" << ctx.time.iter << " ctx.climate.WSDailyMean=" << ctx.climate.WSDailyMean << " d=" << d <<  " canopy_height_DCELL[d]=" << ctx.soil.Canopy_height_DCELL[d] << " ctx.soil.HSum_DCELL[d]=" << ctx.soil.HSum_DCELL[d] <<" ctx.soil.TopWindSpeed_DCELL[d]=" << ctx.soil.TopWindSpeed_DCELL[d];
         // if (d==225) cout << " d=" << d <<  " canopy_height_DCELL[d]=" << ctx.soil.Canopy_height_DCELL[d] ;
@@ -415,11 +396,7 @@ void UpdateField(Context &ctx)
         float eair = esat_ground - VPDground;                                                      // in Pa
         // float r_soil = exp(8.206 - 4.255*ctx.soil.SWC3D[0][d]/ctx.soil.Max_SWC[0]) ; // soil surface resistance in s ctx.params.m-1, following Sellers et al. 1992 equ. 19, see also equ 12 in Merlin et al. 2016 (also used in CLM, Oleson et al. 2007).
         float r_soil = exp(8.206 - 4.255 * ctx.soil.SWC3D[0][d] / ctx.soil.FC_SWC[0]); // soil surface resistance in s ctx.params.m-1, following Sellers et al. 1992 equ. 19, see also equ 12 in Merlin et al. 2016 (also used in CLM, Oleson et al. 2007).
-#ifdef FULL_CLIMATE
         float r_aero = 43.17347 * exp(alphaInoue * (1 - 1 / ctx.soil.Canopy_height_DCELL[d])) / (ctx.climate.WSDailyMean * ctx.soil.TopWindSpeed_DCELL[d]); // aerodynamic resistance to hear transfer (boundary ctx.diag.layer just above the soil surface), in s ctx.params.m-1 (see equ. 7 and 14 in Duursma & Medlyn 2012; and equ. B10 in Merlin et al. 2016). 43.17347= log(1/0.001)/(0.40*0.40), where 1= the reference height where the wind speed is measured, in ctx.params.m, 0.001=the momentum soil roughness in ctx.params.m (set to 0.001 following Yang et al. 2008 and Stefan et al 2015 in Merlin et al. 2016 equ B10), and 0.40=the von Karman constant.
-#else
-        float r_aero = 43.17347 * exp(alphaInoue * (1 - 1 / ctx.soil.Canopy_height_DCELL[d])) / ctx.soil.TopWindSpeed_DCELL[d]; // aerodynamic resistance to hear transfer (boundary ctx.diag.layer just above the soil surface), in s ctx.params.m-1 (see equ. 7 and 14 in Duursma & Medlyn 2012; and equ. B10 in Merlin et al. 2016). 43.17347= log(1/0.001)/(0.40*0.40), where 1= the reference height where the wind speed is measured, in ctx.params.m, 0.001=the momentum soil roughness in ctx.params.m (set to 0.001 following Yang et al. 2008 and Stefan et al 2015 in Merlin et al. 2016 equ B10), and 0.40=the von Karman constant.
-#endif
         float Rtot = r_soil + r_aero;                                                                                 // in s ctx.params.m-1
         const float hours_evap = ctx.climate.full_day ? ctx.climate.daylight_hours : ctx.time.nbhours_covered; // 4.3.1: daytime hours, as with the daytime means used here
         float e = hours_evap * ctx.grid.sites_per_dcell * ctx.grid.LH * ctx.grid.LH * 0.0078 * (esoil - eair) / ((Tsoil - ABSZERO) * Rtot); // 0.0078 = 0.001*3600*18e-3/8.31 with 18e-3 = the molar mass of water vapor in kg/mol and 8.31 the ideal gas constant in J/mol/K; 0.001*3600*ctx.time.nbhours_covered*ctx.grid.sites_per_dcell*ctx.grid.LH*ctx.grid.LH is used to convert evaporation in kg ctx.params.m-2 s-1 to m3 per day per dcell.

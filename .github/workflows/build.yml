@@ -1,9 +1,9 @@
 name: Build TROLL (Cross-Platform)
 on:
   pull_request:
-    branches: [ "dev" ]
+    branches: [ "dev", "release-*" ]
   push:
-    branches: [ "dev" ]
+    branches: [ "dev", "release-*" ]
   workflow_dispatch:
 
 jobs:
@@ -62,12 +62,8 @@ jobs:
           - { defines: "CACHE_LUT",                 known_broken: false }
           - { defines: "CHECK_CARBON",              known_broken: false }
           - { defines: "TROLL_NO_LCP_alternative",  known_broken: false }
-          - { defines: "TROLL_NO_G0",               known_broken: false }
           - { defines: "TROLL_NO_FF_todiscuss",     known_broken: false }
           - { defines: "TROLL_NO_CHM_SPIKEFREE",    known_broken: false }
-          - { defines: "TROLL_NO_CROWN_UMBRELLA",   known_broken: true }
-          - { defines: "TROLL_NO_FULL_CLIMATE",     known_broken: true }
-          - { defines: "TRACK_INDIVIDUALS",         known_broken: true }
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies

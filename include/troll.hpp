@@ -179,7 +179,6 @@ inline float carbon_stored_free;       //!< Global variable: --  !!!UPDATE
 
 // MPI PROCEDURES
 
-#ifdef CROWN_UMBRELLA
 // TREESHAPE CALCULATIONS
 // All these calculations are currently defined as non-member functions, but could potentially be converted to class Tree
 // See function description for more details
@@ -341,7 +340,6 @@ void LoopLayerUpdateCrownStatistic_template(Context &ctx, int row_center, int co
     }
 }
 //!< Global function: Template function to loop across crown layer and update
-#endif
 
 float CalcVcmaxm(float LMA, float Nmass, float Pmass);             //!< Returns Vcmaxm, in micromol C g-1 s-1
 float CalcRdark(float lma, float nmass, float pmass, float vcmax); //!< Returns Rdark, in micromol C m-2 s-1
@@ -421,9 +419,6 @@ void SetParameter(string &parameter_name, string &parameter_value, N &parameter,
 void SetParameter(string &parameter_name, string &parameter_value, string &parameter, string parameter_default, bool quiet); //!< See param_registry.hpp: string parameter
 
 
-#ifdef TRACK_INDIVIDUALS
-void TrackingData_andOutput(Context &ctx); //!< Global function: tree level tracking of key variables
-#endif
 
 // Species and Tree class declarations moved to include/species.hpp and include/tree.hpp
 // (included transitively via context.hpp)

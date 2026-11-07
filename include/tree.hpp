@@ -122,9 +122,7 @@ public:
     int t_multiplier_seed; //!< Not documented  !!!UPDATE
     float t_sapwood_area;  //!< Sapwood area !!!UPDATE units, description
 
-#ifdef CROWN_UMBRELLA
     float t_Crown_Slope; //!< Not documented  !!!UPDATE
-#endif
 
     unsigned short
         t_from_Data, //!< Indicator: tree was born through initialisation (1) or through simulation routine (0)
@@ -132,35 +130,6 @@ public:
         t_hurt;      //!< Stories the treefall index
 
 
-#ifdef TRACK_INDIVIDUALS
-    int t_month_born; //!< Month of birth (TRACK_INDIVIDUALS; note: tree.cpp uses t_timeofyear_born, so this option does not compile)
-
-    int t_seedsproduced; //!< Seeds produced in the timestep (TRACK_INDIVIDUALS)
-    int t_seedsproduced_sumyear; //!< Seeds produced in the current year (TRACK_INDIVIDUALS)
-    int t_time_carbonstarvation; //!< Number of timesteps with carbon starvation (TRACK_INDIVIDUALS)
-    int t_time_carbonstarvation_year; //!< Number of timesteps with carbon starvation in the current year (TRACK_INDIVIDUALS)
-    float t_GPP_sumyear; //!< Sum of GPP over the current year (TRACK_INDIVIDUALS)
-    float t_NPP_sumyear; //!< Sum of NPP over the current year (TRACK_INDIVIDUALS)
-    float t_GPPsquared_sumyear; //!< Sum of squared GPP over the current year (for the variance) (TRACK_INDIVIDUALS)
-    float t_NPPsquared_sumyear; //!< Sum of squared NPP over the current year (for the variance) (TRACK_INDIVIDUALS)
-    float t_Rday_sumyear; //!< Sum of daytime leaf respiration over the current year (TRACK_INDIVIDUALS)
-    float t_Rnight_sumyear; //!< Sum of night-time leaf respiration over the current year (TRACK_INDIVIDUALS)
-    float t_Rstem_sumyear; //!< Sum of stem respiration over the current year (TRACK_INDIVIDUALS)
-    float t_LAIabove_effavgyear; //!< Mean effective LAI above the tree over the current year (TRACK_INDIVIDUALS)
-    float t_carbon_storage_avgyear; //!< Mean carbon storage over the current year (TRACK_INDIVIDUALS)
-    float t_dbh_tracked; //!< DBH at the start of the tracking period (m) (TRACK_INDIVIDUALS)
-    float t_height_tracked; //!< Height at the start of the tracking period (m) (TRACK_INDIVIDUALS)
-    float t_CR_tracked; //!< Crown radius at the start of the tracking period (m) (TRACK_INDIVIDUALS)
-    float t_agb_tracked; //!< Aboveground biomass at the start of the tracking period (TRACK_INDIVIDUALS)
-    float t_LAIcum; //!< LAI above the tree, cumulated over the tracking period (TRACK_INDIVIDUALS)
-    float t_LAIeffcum; //!< Effective LAI above the tree, cumulated over the tracking period (TRACK_INDIVIDUALS)
-    float t_GPPcum; //!< GPP cumulated over the tracking period (TRACK_INDIVIDUALS)
-    float t_NPPcum; //!< NPP cumulated over the tracking period (TRACK_INDIVIDUALS)
-    float t_LAIsquared_cum; //!< Squared LAI cumulated over the tracking period (for the variance) (TRACK_INDIVIDUALS)
-    float t_LAIeffsquared_cum; //!< Squared effective LAI cumulated over the tracking period (TRACK_INDIVIDUALS)
-    float t_GPPsquared_cum; //!< Squared GPP cumulated over the tracking period (TRACK_INDIVIDUALS)
-    float t_NPPsquared_cum; //!< Squared NPP cumulated over the tracking period (TRACK_INDIVIDUALS)
-#endif
     // Constructor
     //! Constructor: an empty site (no tree), with per-tree vectors sized for this simulation
     //! @param ctx simulation context (all model state)
@@ -256,16 +225,12 @@ public:
     };
     void SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &pt); //!< Fill PhotosynTerms for one temperature bin (see the definition for parameters)
     leafFluxes Photosyn(Context &ctx, const PhotosynTerms &pt, float CS, float DS);  //!< Leaf photosynthesis and stomatal conductance from precomputed terms (see the definition for parameters)
-    leafFluxes Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS); //!< Leaf photosynthesis and stomatal conductance (see the definition for parameters)
     void OutputTreeStandard(Context &ctx, std::fstream &output); //!< Write the tree's state to a snapshot or site output stream
     void OutputTreeStandard(Context &ctx); //!< Write the tree's state to standard output
     void CalcLAImax(Context &ctx);
     void CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax);
     float predLeafLifespanKikuzawa(Context &ctx);
     float GetCrownAreaFilled(float crown_area); //!< Crown area actually filled with leaves, given the crown gap fraction (m2)
-#ifdef TRACK_INDIVIDUALS
-    void StartTracking(Context &ctx);
-#endif
 };
 
 #endif

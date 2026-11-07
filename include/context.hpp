@@ -55,9 +55,6 @@ struct OutputConfig
     std::fstream output_MIP_ind; //!< Individual-level output of the Lichstein model intercomparison (MIP_Lichstein option)
 #endif
     std::fstream output[40]; //!< Output files
-#ifdef TRACK_INDIVIDUALS
-    std::fstream output_track[3]; //!< Output streams for tracking of trees
-#endif
 };
 
 //! Model options (flags) read from the global parameter file

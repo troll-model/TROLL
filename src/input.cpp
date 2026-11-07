@@ -142,9 +142,7 @@ void ReadInputGeneral(Context &ctx)
 
         ctx.grid.i_sites_per_dcell = 1.0 / float(ctx.grid.sites_per_dcell);
         ctx.params.PPFDtoSW = 1 / ctx.params.SWtoPPFD;
-#ifdef G0
         ctx.params.g0 *= 0.001 * GSVGSC; // ctx.params.g0 is provided in mmolH20 ctx.params.m-2 s-1, but will be used in Photosyn function for stomatal conductance to CO2 in molCO2 ctx.params.m-2 s-1 (and then converted back to flux of H20 in FluxesLeaf)
-#endif
         ctx.grid.LV = 1.0 / ctx.grid.NV;
         ctx.grid.LH = 1.0 / ctx.grid.NH;
         if (ctx.time.nbout)
@@ -337,7 +335,6 @@ void ReadInputSpecies(Context &ctx)
     InSpecies.close();
 }
 
-#ifdef FULL_CLIMATE
 
 //! Daily means of the sub-daily climate (DailyMean* vectors), mean daily cycle (*DailyMean_all) and
 //! the values of the first day. With 24-hour input (ctx.climate.full_day), the daily means are taken
@@ -728,143 +725,6 @@ void ReadInputClimate24h(Context &ctx)
     cout << "Successfully read in 24-hour climate file" << endl;
 }
 
-#else // FULL_CLIMATE
-
-//! Global function: This function reads inputs from the environmental daily variation input file
-//! @param ctx simulation context (all model state)
-void ReadInputDailyvar(Context &ctx)
-{
-    // currently very simple reading in, only basic error checking
-    cout << endl
-         << "Reading in file: " << ctx.fileio.inputfile_daytimevar << endl;
-
-    fstream InDaily(ctx.fileio.inputfile_daytimevar, ios::in);
-
-    if (InDaily)
-    {
-        InDaily.getline(ctx.fileio.buffer, 256, '\n'); // read in header
-
-        // we go through all lines in the input file
-        ctx.time.nbsteps_varday = 0;
-        ctx.time.nbhours_covered = 0.0;
-
-        string line;
-        while (getline(InDaily, line))
-        {
-            istringstream linestream(line);
-
-            float starttime_current, endtime_current, varday_light_current, varday_vpd_current, varday_T_current, varday_WS_current;
-            linestream >> starttime_current >> endtime_current >> varday_light_current >> varday_vpd_current >> varday_T_current >> varday_WS_current;
-            float nbhours_current;
-            if (endtime_current > starttime_current)
-                nbhours_current = endtime_current - starttime_current; // just calculate the time window
-            else
-                nbhours_current = 24.0 - (starttime_current - endtime_current); // i.e. if starttime is 23.5 and endtime is 0.5, etc. Calculate the inverse time window and then subtract from 24
-
-            ctx.time.nbhours_covered += nbhours_current;
-            ctx.climate.varday_light.push_back(varday_light_current);
-            ctx.climate.varday_vpd.push_back(varday_vpd_current);
-            ctx.climate.varday_T.push_back(varday_T_current);
-            ctx.climate.varday_WS.push_back(varday_WS_current);
-            cout << "at: " << starttime_current << " vardaytime_light: " << ctx.climate.varday_light[ctx.time.nbsteps_varday] << " vardaytime_vpd: " << ctx.climate.varday_vpd[ctx.time.nbsteps_varday] << " vardaytime_T: " << ctx.climate.varday_T[ctx.time.nbsteps_varday] << " vardaytime_WS: " << ctx.climate.varday_WS[ctx.time.nbsteps_varday] << endl;
-            ctx.time.nbsteps_varday++;
-        }
-
-        totday_light = 0.0;
-        for (int i = 0; i < ctx.time.nbsteps_varday; i++)
-        {
-            totday_light += ctx.climate.varday_light[i];
-            cout << i << "\t" << ctx.climate.varday_light[i] << endl;
-        }
-        cout << totday_light << endl;
-        totday_light *= 1.0 / float(ctx.time.nbsteps_varday);
-        cout << totday_light << endl;
-        cout << "Read in: " << ctx.time.nbsteps_varday << " timesteps per day, covering " << ctx.time.nbhours_covered << " hours of the day." << endl;
-        cout << "Successfully read in daytime variation file" << endl;
-        ctx.time.inv_nbsteps_varday = 1.0 / float(ctx.time.nbsteps_varday);
-    }
-    else
-    {
-        cout << "ERROR with the daily variation file" << endl;
-    }
-}
-
-//! Global function: This function reads inputs from the environmental variation input file
-//! - v.3.0 of the code suppose that environment is periodic (a period = a year), if one want to make climate vary, with interannual variation and climate change along the simulation, one just need to provide the full climate input of the whole simulation (ie number of columns=ctx.time.iter and not ctx.time.iterperyear) and change ctx.time.iterperyear by ctx.time.nbiter here.
-//! @param ctx simulation context (all model state)
-void ReadInputClimate(Context &ctx)
-{
-    cout << endl
-         << "Reading in file: " << ctx.fileio.inputfile_climate << endl;
-
-    fstream InClim(ctx.fileio.inputfile_climate, ios::in);
-
-    if (InClim)
-    {
-        // we go through all lines in the input file
-        ctx.time.iterperyear = 0;
-        InClim.getline(ctx.fileio.buffer, 256, '\n');
-        // cout << "Header line: " << ctx.fileio.buffer << endl;
-
-        string line;
-        while (getline(InClim, line))
-        {
-            istringstream linestream(line);
-
-            float DailyMeanTemperature_current, NightTemperature_current, Rainfall_current, DailyMeanWindSpeed_current, DailyMeanIrradiance_current, DailyMeanVapourPressureDeficit_current;
-            linestream >> DailyMeanTemperature_current >> NightTemperature_current >> Rainfall_current >> DailyMeanWindSpeed_current >> DailyMeanIrradiance_current >> DailyMeanVapourPressureDeficit_current;
-
-            ctx.climate.DailyMeanTemperature.push_back(DailyMeanTemperature_current);
-            ctx.climate.NightTemperature.push_back(NightTemperature_current);
-            ctx.climate.Rainfall.push_back(Rainfall_current);
-            ctx.climate.DailyMeanWindSpeed.push_back(DailyMeanWindSpeed_current);
-            ctx.climate.DailyMeanIrradiance.push_back(DailyMeanIrradiance_current);
-            ctx.climate.DailyMeanVapourPressureDeficit.push_back(DailyMeanVapourPressureDeficit_current);
-            // cout <<  DailyMeanTemperature_current << "\t" <<  NightTemperature_current << "\t" <<  Rainfall_current << "\t" <<  DailyMeanWindSpeed_current << "\t" <<  DailyMeanIrradiance_current << "\t" <<   DailyMeanVapourPressureDeficit_current << endl;
-            ctx.time.iterperyear++;
-        }
-
-        ctx.time.timestep = 1.0 / float(ctx.time.iterperyear);
-        cout << "Read in climate data for " << ctx.time.iterperyear << " iterations per year." << endl;
-        // choose average conditions
-        ctx.climate.WDailyMean_year = ctx.climate.tDailyMean_year = ctx.climate.VPDDailyMean_year = ctx.climate.Tnight_year = 0.0;
-        ctx.climate.windDailyMean_year = 0.0;
-
-        for (int i = 0; i < ctx.time.iterperyear; i++)
-        {
-            // ctx.climate.DailyMeanVapourPressureDeficit[i]*=1.33; test main_1.33VPD on MESO@LR - 13/05/22
-
-            ctx.climate.WDailyMean_year += ctx.climate.DailyMeanIrradiance[i] * ctx.params.SWtoPPFD;
-            ctx.climate.tDailyMean_year += ctx.climate.DailyMeanTemperature[i];
-            ctx.climate.VPDDailyMean_year += ctx.climate.DailyMeanVapourPressureDeficit[i];
-            ctx.climate.windDailyMean_year += ctx.climate.DailyMeanWindSpeed[i];
-            ctx.climate.Tnight_year += ctx.climate.NightTemperature[i];
-        }
-
-        ctx.climate.WDailyMean_year *= 1.0 / float(ctx.time.iterperyear);
-        ctx.climate.tDailyMean_year *= 1.0 / float(ctx.time.iterperyear);
-        ctx.climate.VPDDailyMean_year *= 1.0 / float(ctx.time.iterperyear);
-        ctx.climate.windDailyMean_year *= 1.0 / float(ctx.time.iterperyear);
-        // cout << "ctx.climate.WDailyMean: " << ctx.climate.WDailyMean_year << endl;
-        ctx.climate.Tnight_year *= 1.0 / float(ctx.time.iterperyear);
-
-        ctx.climate.tnight = ctx.climate.NightTemperature[ctx.time.iter % ctx.time.iterperyear];
-        ctx.climate.precip = ctx.climate.Rainfall[ctx.time.iter % ctx.time.iterperyear];
-        ctx.climate.WSDailyMean = ctx.climate.DailyMeanWindSpeed[ctx.time.iter % ctx.time.iterperyear];
-        ctx.climate.WDailyMean = ctx.climate.DailyMeanIrradiance[ctx.time.iter % ctx.time.iterperyear] * ctx.params.SWtoPPFD;
-        ctx.climate.tDailyMean = ctx.climate.DailyMeanTemperature[ctx.time.iter % ctx.time.iterperyear];
-        ctx.climate.VPDDailyMean = ctx.climate.DailyMeanVapourPressureDeficit[ctx.time.iter % ctx.time.iterperyear];
-
-        cout << "Successfully read the climate file" << endl;
-    }
-    else
-    {
-        cout << "ERROR with the climate file" << endl;
-    }
-    InClim.close();
-}
-
-#endif // FULL_CLIMATE
 
 //! Global function: This function reads inputs from the soil input file
 //! - in v.3.0, all soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) are computed from soil texture data (%clay, %silt, %sand) provided in input for each ctx.diag.layer. If additional information is available from the field (soil pH, organic content, dry bulk density, cation exchange capacity), this could be also provided in input and used to refine the computation of these soil parameters (see Table 2 in Marthews et al. 2014 Geoscientific Model Development and Hodnett & Tomasella 2002 Geoderma -- for tropical soils). Alternatively, if no local field soil data is available, these soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) should be drawn from global maps and databases --see Marthews et al. 2014, and directly provided in input. ==> ccl: to standardize the input file, the soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) should probably be provided in input, and the computation of those properties from the available local data (here %clay, %silt, %sand) made using a new function of RconTROLL (and not here)

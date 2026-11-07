@@ -1,6 +1,6 @@
 Package: TROLL
 Title: Individual- and Trait-Based Model of Tropical Forest Dynamics
-Version: 4.3.6
+Version: 4.3.7
 Authors@R: c(
     person("Isabelle", "Maréchaux", role = c("aut", "cre"), email = "dev@troll-model.org",
            comment = c(ORCID = "0000-0002-5401-0197")),

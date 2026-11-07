@@ -6,7 +6,7 @@ TROLL is an individual- and trait-based model of tropical forest dynamics. It si
 tree in a forest stand of 1 to 100 ha on a 1 m resolution 3D grid, and tracks forest structure,
 carbon and water fluxes, and species-level biodiversity in the same simulation.
 
-This repository holds **TROLL 4.3.6**, the current implementation of the **TROLL 4.0 model**
+This repository holds **TROLL 4.3.7**, the current implementation of the **TROLL 4.0 model**
 described in Maréchaux et al. (2025) and evaluated in Schmitt et al. (2025). Versions 4.1.x
 reorganise, test, document and accelerate the code; two of them change simulation results
 slightly (4.1.1: single-precision leaf physiology; 4.1.2: a correction to the light-limited
@@ -67,10 +67,13 @@ cmake -S . -B build -DOpenMP_ROOT=$(brew --prefix libomp)
 
 Model options are listed in `include/troll_defines.hpp`. Options that are on by default are
 switched off with `TROLL_NO_<OPTION>`; options that are off by default are switched on by naming
-them, e.g. `cmake -S . -B build -DTROLL_DEFINES="LAI_gradient;CACHE_LUT"`. CI builds each option;
-`TROLL_NO_CROWN_UMBRELLA`, `TROLL_NO_FULL_CLIMATE` and `TRACK_INDIVIDUALS` currently do not
-compile. Since 4.2.0, the water cycle and drought phenology are part of the model, no longer
-options, and the `Output_ABC` option has been removed.
+them, e.g. `cmake -S . -B build -DTROLL_DEFINES="LAI_gradient;CACHE_LUT"`. CI builds each option.
+Since 4.2.0, the water cycle and drought phenology are part of the model, no longer options, and
+the `Output_ABC` option has been removed. Since 4.3.7, the options that no longer compiled or were
+no longer used have been removed (`TROLL_NO_FULL_CLIMATE`, `TROLL_NO_CROWN_UMBRELLA`,
+`TROLL_NO_G0`, `TRACK_INDIVIDUALS`, `TROLL_WARMSTART`, `TROLL_WARMSTART_STRICT`): the full
+sub-daily climate, umbrella crowns, the g0 photosynthesis solution and the warm start are always
+used.
 
 ## Running TROLL
 

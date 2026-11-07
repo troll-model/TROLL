@@ -18,9 +18,6 @@ static double PercentOrZero(double num, double den)
 void Average(Context &ctx)
 {
 
-#ifdef TRACK_INDIVIDUALS
-    TrackingData_andOutput(ctx);
-#endif
 
 
     int site, spp;
@@ -623,7 +620,6 @@ void OutputVisual(Context &ctx)
                     ratio_NPP_GPP = 0.0;
                 output_statistics.push_back(ratio_NPP_GPP);
 
-#ifdef CROWN_UMBRELLA
                 float fraction_filled_target = 1.0;                  // we assume a fully filled crown for all trees
                 int max_shells = min(crown_top - crown_base + 1, 4); // since the new crown shapes
 
@@ -634,24 +630,6 @@ void OutputVisual(Context &ctx)
                 {
                     LoopLayerUpdateCrownStatistic_template(ctx, row, col, height, CR, CD, fraction_filled_target, shell_fromtop, [&ctx](float CR, float e, float p){ return GetRadiusSlope(ctx, CR, e, p); }, row_slice, output_statistics, KeepIntAsIs, [&ctx](int h, int s, int rs, vector<float> &os){ OutputCrownSliced(ctx, h, s, rs, os); });
                 }
-#else
-                int crown_intarea = GetCrownIntarea(CR);
-
-                for (int h = 0; h <= crown_base; h++)
-                    OutputCrownSliced(ctx, h, s, row_slice, output_statistics);
-
-                for (int h = crown_base; h <= crown_top; h++)
-                {
-                    for (int i = 0; i < crown_intarea; i++)
-                    {
-                        int site_relative = ctx.lookup.LookUp_Crown_site[i];
-                        int row_crown = row + site_relative / 51 - 25;
-                        int col_crown = col + site_relative % 51 - 25;
-                        int site_crown = col_crown + row_crown * ctx.grid.cols;
-                        OutputCrownSliced(ctx, h, s, row_slice, output_statistics);
-                    }
-                }
-#endif
             }
         }
     }
@@ -1088,70 +1066,6 @@ void GenerateVoxelreturnsALS(Context &ctx, vector<int> &beams, vector<float> &be
     }
 } */
 
-#ifdef TRACK_INDIVIDUALS
-// ##############################################
-//  Global function: tree level tracking of key variables
-// ##############################################
-//! @param ctx simulation context (all model state)
-void TrackingData_andOutput(Context &ctx)
-{
-    for (int site = 0; site < ctx.grid.sites; site++)
-    {
-        // we start the accounting the year after the trees have been born
-        if (ctx.T[site].t_age > 0)
-        {
-            int timeofyear_born = ctx.T[site].t_timeofyear_born;
-
-            if (timeofyear_born >= 0)
-            {
-                // these are the yearly figures, reset to zero every year
-                ctx.T[site].t_GPP_sumyear += ctx.T[site].t_GPP;
-                ctx.T[site].t_GPPsquared_sumyear += ctx.T[site].t_GPP * ctx.T[site].t_GPP;
-                ctx.T[site].t_NPP_sumyear += ctx.T[site].t_NPP;
-                ctx.T[site].t_NPPsquared_sumyear += ctx.T[site].t_NPP * ctx.T[site].t_NPP;
-                ctx.T[site].t_Rday_sumyear += ctx.T[site].t_Rday;
-                ctx.T[site].t_Rnight_sumyear += ctx.T[site].t_Rnight;
-                ctx.T[site].t_Rstem_sumyear += ctx.T[site].t_Rstem;
-                ctx.T[site].t_carbon_storage_avgyear += ctx.T[site].t_carbon_storage * ctx.time.timestep;
-                // these are the whole lifetime cumulated figures, never reset to zero and put out at tree death
-                ctx.T[site].t_GPPcum += ctx.T[site].t_GPP;
-                ctx.T[site].t_NPPcum += ctx.T[site].t_NPP;
-                ctx.T[site].t_GPPsquared_cum += ctx.T[site].t_GPP * ctx.T[site].t_GPP;
-                ctx.T[site].t_NPPsquared_cum += ctx.T[site].t_NPP * ctx.T[site].t_NPP;
-
-                float agb = 1000.0 * ctx.T[site].CalcAGB(ctx);
-
-                // write to output every year and then reset to zero
-                int timeofyear = GetTimeofyear(ctx);
-                if (timeofyear == timeofyear_born)
-                {
-                    // write to output
-                    if (ctx.T[site].t_dbh >= 0.1)
-                    {
-                        ctx.out.output_track[1] << ctx.T[site].t_site << "\t" << timeofyear_born << "\t" << ctx.time.iter << "\t" << ctx.T[site].t_age << "\t" << ctx.T[site].t_seedsproduced_sumyear << "\t" << ctx.T[site].t_seedsproduced << "\t" << ctx.T[site].t_time_carbonstarvation_year << "\t" << ctx.T[site].t_time_carbonstarvation << "\t" << ctx.T[site].t_dbh << "\t" << ctx.T[site].t_dbh - ctx.T[site].t_dbh_tracked << "\t" << ctx.T[site].t_height << "\t" << ctx.T[site].t_height - ctx.T[site].t_height_tracked << "\t" << ctx.T[site].t_CR << "\t" << ctx.T[site].t_CR - ctx.T[site].t_CR_tracked << "\t" << agb << "\t" << agb - ctx.T[site].t_agb_tracked << "\t" << ctx.T[site].t_GPP_sumyear << "\t" << ctx.T[site].t_GPPsquared_sumyear << "\t" << ctx.T[site].t_NPP_sumyear << "\t" << ctx.T[site].t_NPPsquared_sumyear << "\t" << ctx.T[site].t_Rday_sumyear << "\t" << ctx.T[site].t_Rnight_sumyear << "\t" << ctx.T[site].t_Rstem_sumyear << "\t" << ctx.T[site].t_LAIabove_effavgyear << "\t" << ctx.T[site].t_carbon_storage_avgyear << endl;
-                    }
-                    // reset
-                    ctx.T[site].t_time_carbonstarvation_year = 0;
-                    ctx.T[site].t_seedsproduced_sumyear = 0;
-                    ctx.T[site].t_GPP_sumyear = 0.0;
-                    ctx.T[site].t_GPPsquared_sumyear = 0.0;
-                    ctx.T[site].t_NPP_sumyear = 0.0;
-                    ctx.T[site].t_NPPsquared_sumyear = 0.0;
-                    ctx.T[site].t_Rday_sumyear = 0.0;
-                    ctx.T[site].t_Rnight_sumyear = 0.0;
-                    ctx.T[site].t_Rstem_sumyear = 0.0;
-                    ctx.T[site].t_LAIabove_effavgyear = 0.0;
-                    ctx.T[site].t_carbon_storage_avgyear = 0.0;
-                    ctx.T[site].t_dbh_tracked = ctx.T[site].t_dbh;
-                    ctx.T[site].t_height_tracked = ctx.T[site].t_height;
-                    ctx.T[site].t_CR_tracked = ctx.T[site].t_CR;
-                    ctx.T[site].t_agb_tracked = agb;
-                }
-            }
-        }
-    }
-}
-#endif
 
 
 
@@ -1189,7 +1103,4 @@ void CloseOutputs(Context &ctx)
     CloseStream(ctx.out.output_MIP_ind);
 #endif
     CloseStreams(ctx.out.output);
-#ifdef TRACK_INDIVIDUALS
-    CloseStreams(ctx.out.output_track);
-#endif
 }

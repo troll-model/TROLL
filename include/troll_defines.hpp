@@ -15,36 +15,23 @@
 #define LCP_alternative
 #endif
 
-// test with positive g0 in stomatal conductance model
-#ifndef TROLL_NO_G0
 //! Shortwave irradiance (Snet, W m-2) below which a sub-daily step is treated as dark (4.3.0; 1 W m-2 since 4.3.6, 0.01 before):
 //! Tree::dailyFluxesLeaf does not run the leaf energy balance and photosynthesis for it, and the
 //! step contributes leaf day respiration only (no assimilation, no transpiration)
 #ifndef SNET_MIN_PHOTOSYNTHESIS
 #define SNET_MIN_PHOTOSYNTHESIS 1.0f // 4.3.6: was 0.01
 #endif
-//! Warm start of the leaf energy-balance iteration (Tree::FluxesLeaf) from the previous half-hour step:
-//! 0 = off (start from air conditions, as in 4.2.0); 1 = previous leaf temperature; 2 = previous
-//! leaf-to-air temperature difference; 3 = as 2, plus CO2 and VPD at the leaf surface. Changes results.
-#ifndef TROLL_WARMSTART
-#define TROLL_WARMSTART 3
-#endif
-//! With TROLL_WARMSTART > 0: also require the leaf-surface VPD to settle (1%) before stopping
-#ifndef TROLL_WARMSTART_STRICT
-#define TROLL_WARMSTART_STRICT 0
-#endif
-#define G0 //!< Photosynthesis variant solving the coupled Farquhar-Medlyn system with minimum conductance g0 (default)
-#endif
+// 4.3.7: photosynthesis is always the coupled Farquhar-Medlyn solution with minimum conductance g0
+// (the former G0 option; the alternative variant, TROLL_NO_G0, was removed), and the leaf energy
+// balance always uses the warm start of 4.2.1 (the former TROLL_WARMSTART 3; the variants 0-2 and
+// TROLL_WARMSTART_STRICT were removed).
 
 //! small additions and quick fixes that need to be checked/discussed very carefully
 #ifndef TROLL_NO_FF_todiscuss
 #define FF_todiscuss
 #endif
 
-//! new in v.2.4.1, modified in v.2.5: If activated, crowns are assumed to grow cylindrical until they reach 3m in depth, then the center of the crown will experience quicker height growth than the outer parts of the crown, thus leading to an umbrella like crown shape (with slope depending on crown depth and width). Depending on the slope parameter, trees will look more like cylinders or more like cones. Contrary to previous versions, however, the crown will not fill its shape underneath the first three layers. The crown will simply become umbrella-like, with a dense layer that spans out from its stem, and empty space underneath. This allows for a very simple computation of just three crown layers, while retaining their spread across the crown depth, enough realism for LiDAR derived CHMs and for eventual non vertical light penetration. New in v.2.5: Entirely modelled through one template that simulates loops across a crown layer/shell and can be applied to any calculation that requires to calculate crown properties (CalcLAI, Fluxh, etc.). Furthermore, enhanced flexibility for future incorporation of other crown shape functions (e.g. spherical, etc.)
-#ifndef TROLL_NO_CROWN_UMBRELLA
-#define CROWN_UMBRELLA
-#endif
+// Crown shape (new in v.2.4.1, modified in v.2.5; always on since 4.3.7, the former CROWN_UMBRELLA option): crowns are assumed to grow cylindrical until they reach 3m in depth, then the center of the crown will experience quicker height growth than the outer parts of the crown, thus leading to an umbrella like crown shape (with slope depending on crown depth and width). Depending on the slope parameter, trees will look more like cylinders or more like cones. Contrary to previous versions, however, the crown will not fill its shape underneath the first three layers. The crown will simply become umbrella-like, with a dense layer that spans out from its stem, and empty space underneath. This allows for a very simple computation of just three crown layers, while retaining their spread across the crown depth, enough realism for LiDAR derived CHMs and for eventual non vertical light penetration. New in v.2.5: Entirely modelled through one template that simulates loops across a crown layer/shell and can be applied to any calculation that requires to calculate crown properties (CalcLAI, Fluxh, etc.). Furthermore, enhanced flexibility for future incorporation of other crown shape functions (e.g. spherical, etc.)
 
 //! new in v.2.4.1, modified in v.2.5: a tree's leaf density changes from top to bottom. Broadly based on Kitajima 2004 (Ann Bot), we assume that trees allocate 50% of their leaves to the first meter of their crown, 25% to the second meter layer, and the rest evenly spread across the crown. In case of the umbrella-like crowns, layers correspond to depth from canopy top. In case of a gap in the top layers, there is no shift of leaf density to a lower layer. This ensures that the gaps are real gaps. New in v.2.5: activated within a single function (LAI2dens) as part of the crown template scheme. Small effect in this case, however, since all leaves are concentrated in three shells anyways, with a shift from (0.33,0.33,0.33) to (0.5, 0.25,0.25) likely no strong effect. If implemented for cylindric crowns with full depth, this might, however, have a strong effect, as upper leaves are less impacted by crown overlap than lower leaves.
 // LAI_gradient: OFF by default (define LAI_gradient to enable)
@@ -54,15 +41,11 @@
 #define CHM_SPIKEFREE
 #endif
 
-//! new in v.2.5: DIAGNOSTIC TOOL, individual-based tracking of trees for PBA (process-based analytics, an accounting-like monitoring of model behavior through individual states and processes). PLEASE BE AWARE: onset of tracking is currently hardcoded to comprise trees born in year 501 in forest regeneration. Also: Filesizes can get VERY VERY LARGE if more trees are included.
-// TRACK_INDIVIDUALS: OFF by default (define TRACK_INDIVIDUALS to enable)
-
 //! new in v.2.5: DIAGNOSTIC TOOL, checking of carbon budgets, could potentially be extended for nutrient budget checking in the future. The idea is to keep track of carbon stocks and carbon fluxes every timestep to see whether there are any deviations from expectations - to do so, differences between stocks are computed at each timestep, and can be compared to the gross and net assimilation of carbon
 // CHECK_CARBON: OFF by default (define CHECK_CARBON to enable)
 
-#ifndef TROLL_NO_FULL_CLIMATE
-#define FULL_CLIMATE
-#endif
+// 4.3.7: the climate is always read with its sub-daily values as given (the former FULL_CLIMATE
+// option; the standardised-variation alternative, TROLL_NO_FULL_CLIMATE, was removed).
 
 //! includes specific developments and outputs needed for the MIP experiment led by Jeremy Lichstein.
 // MIP_Lichstein: OFF by default (define MIP_Lichstein to enable)

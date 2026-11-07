@@ -274,27 +274,6 @@ void InitialiseOutputStreams(Context &ctx)
         }
 
 
-#ifdef TRACK_INDIVIDUALS
-        if (ctx.opt._OUTPUT_extended)
-        {
-            // these are the "cases" of trees that are followed
-            snprintf(nnn, sizeof(nnn), "%s_%i_trees_fortracking.txt", ctx.buffers.buf, ctx.buffers.run_index);
-            ctx.out.output_track[0].open(nnn, ios::out);
-            ctx.out.output_track[0] << "site" << "\t" << "timeofyear_born" << "\t" << "col" << "\t" << "row" << "\t" << "species" << "\t" << "dbh" << "\t" << "cr" << "\t" << "height" << "\t" << "agb" << "\t" << "multiplier_cr" << "\t" << "multiplier_height" << "\t" << "wsg" << "\t" << "Nmass" << "\t" << "Pmass" << "\t" << "LMA" << "\t" << "deviation_wsg" << "\t" << "multiplier_Nmass" << "\t" << "multiplier_Pmass" << "\t" << "multiplier_lma" << "\t" << "Vcmax" << "\t" << "Jmax" << "\t" << "Rdark" << "\t" << "LAImax" << "\t" << "leaflifespan" << endl;
-
-            // these are the "activities" that are recorded for each tree
-            snprintf(nnn, sizeof(nnn), "%s_%i_trees_tracked.txt", ctx.buffers.buf, ctx.buffers.run_index);
-            ctx.out.output_track[1].open(nnn, ios::out);
-
-            ctx.out.output_track[1] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seeds" << "\t" << "seedstotal" << "\t" << "carbstarv" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "dbhgrowth" << "\t" << "height" << "\t" << "heightgrowth" << "\t" << "cr" << "\t" << "crgrowth" << "\t" << "agb" << "\t" << "agbgrowth" << "\t" << "GPP" << "\t" << "GPPsq" << "\t" << "NPP" << "\t" << "NPPsq" << "\t" << "Rday" << "\t" << "Rnight" << "\t" << "Rstem" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "carbstore_avg" << endl;
-
-            // this is to get information on the dead trees > 10cm
-            snprintf(nnn, sizeof(nnn), "%s_%i_trees_aftertracking.txt", ctx.buffers.buf, ctx.buffers.run_index);
-            ctx.out.output_track[2].open(nnn, ios::out);
-
-            ctx.out.output_track[2] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seedstotal" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "height" << "\t" << "cr" << "\t" << "agb" << "\t" << "GPP" << "\t" << "NPP" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "GPPsquared" << "\t" << "NPPsquared" << "\t" << "LAIabovesquared_avg" << "\t" << "LAIabovesquared_effavg" << endl;
-        }
-#endif
     }
 }
 
@@ -312,7 +291,6 @@ void Initialise(Context &ctx)
     ctx.diag.nblivetrees = 0;
 
     ReadInputSpecies(ctx);
-#ifdef FULL_CLIMATE
     if (Climate24hFormat(ctx))
         ReadInputClimate24h(ctx); // 4.3.1: one 24-hour file (-d) with rainfall; -m is not used
     else
@@ -320,10 +298,6 @@ void Initialise(Context &ctx)
         ReadInputClimate(ctx);
         ReadInputDailyvar(ctx);
     }
-#else
-    ReadInputDailyvar(ctx);
-    ReadInputClimate(ctx);
-#endif
 
     ReadInputSoil(ctx);
 

@@ -178,11 +178,7 @@ void Tree::Birth(Context &ctx, int nume, int site0)
         }
         else
         {
-#ifdef CROWN_UMBRELLA
             t_LAI = ctx.params.dens * fminf(t_CD, 3.0);
-#else
-        t_LAI = ctx.params.dens * t_CD;
-#endif
             t_LA = t_LAI * crown_area_nogaps;
         }
         CalcLeafLifespan(ctx);
@@ -211,9 +207,6 @@ void Tree::Birth(Context &ctx, int nume, int site0)
         // # for output ##
         // ###############
 
-#ifdef TRACK_INDIVIDUALS
-        StartTracking(ctx);
-#endif
 
 #ifdef LCP_alternative
         ctx.species.SPECIES_SEEDS[site0][nume] = 0; // newIM nov2021, to adjust to the yearly update of Species_seeds
@@ -613,11 +606,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
                 t_LA = t_LAmax;   // assume half the maximum leaf area?
                 t_LAI = t_LA/crown_area_nogaps;
             } else {
-#ifdef CROWN_UMBRELLA
                 t_LAI = ctx.params.dens * fminf(t_CD, 3.0);
-#else
-                t_LAI = ctx.params.dens * t_CD;
-#endif
                 t_LA = t_LAI * crown_area_nogaps;
             }
             InitialiseLeafPools();
@@ -763,9 +752,6 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         //*################*/
         //*## for output ##*/
         //*################*/
-#ifdef TRACK_INDIVIDUALS
-        StartTracking(ctx);
-#endif
     }
     return (success);
 }
@@ -783,11 +769,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
 //            t_LA = t_LAmax;   // assume half the maximum leaf area?
 //            t_LAI = t_LA/crown_area_nogaps;
 //        } else {
-// #ifdef CROWN_UMBRELLA
 //            t_LAI = ctx.params.dens * fminf(t_CD, 3.0);
-// #else
-//            t_LAI = ctx.params.dens * t_CD;
-// #endif
 //            t_LA = t_LAI * crown_area_nogaps;
 //        }
 //        InitialiseLeafPools();
@@ -822,7 +804,6 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
 // #################################################
 //! - modified in v.2.3: additional contribution to voxels that are not fully occupied by the tree crown. !!!: this does not calculate ctx.field.LAI3D directly, this only calculates the density in each voxel belonging to a tree. The final LAI field is calculated outside of the class Tree
 //! - modified in v.2.4 and v.2.5: introducing an alternative crown shape, "umbrella"-like, inspired by previous shell models and similar to the crown shapes in the PPA. If activated, crowns contain three layers of vegetation that, once the crown goes beyond 3m in depth, will bend downwards on the edges with a linear slope. Since v.2.5 all loops (CalcLAI, Fluxh, leafarea_max) are executed through the same template. This allows to implement other crown shapes in the future and ensures that modifications are carried through across the code
-#ifdef CROWN_UMBRELLA
 //! @param ctx simulation context (all model state)
 void Tree::CalcLAI(Context &ctx)
 {
@@ -845,66 +826,6 @@ void Tree::CalcLAI(Context &ctx)
         }
     }
 }
-#else
-//! @param ctx simulation context (all model state)
-void Tree::CalcLAI(Context &ctx)
-{
-    if (t_age > 0)
-    {
-        int crown_base = int(t_height - t_CD),
-            crown_top = int(t_height);
-        int site_crowncenter = t_site + t_CrownDisplacement;
-        int row_crowncenter = site_crowncenter / ctx.grid.cols;
-        int col_crowncenter = site_crowncenter % ctx.grid.cols;
-
-        float fraction_abovetop = t_height - float(crown_top);
-        float fraction_belowbase = float(crown_base + 1) - (t_height - t_CD);
-
-        float crown_area = PI * t_CR * t_CR;      // floor of crown_area to bound area accumulation
-        int crown_intarea = int(crown_area);      // floor of crown_area to bound area accumulation
-        crown_intarea = max(crown_intarea, 1);    // minimum area of crown (1)
-        crown_intarea = min(crown_intarea, 1963); // maximum area of crown (radius 25), int(3.14*25*25), int(3.14*25*25)
-
-        float dens_avg = t_LAI / t_CD;
-        float fraction_filled_target = t_fraction_filled;
-
-        for (int h = crown_base; h <= crown_top; h++)
-        {
-            float fraction_filled_actual = 0.0;
-            float dens_layer;
-
-            dens_layer = dens_avg;
-            if (crown_top == crown_base)
-                dens_layer *= t_CD;
-            else if (h == crown_top)
-                dens_layer *= fraction_abovetop;
-            else if (h == crown_base)
-                dens_layer *= fraction_belowbase;
-
-            for (int i = 0; i < crown_intarea; i++)
-            {
-                if (fraction_filled_actual > fraction_filled_target)
-                {
-                    fraction_filled_actual = (fraction_filled_actual * float(i)) / (float(i) + 1.0);
-                }
-                else
-                {
-                    fraction_filled_actual = (fraction_filled_actual * float(i) + 1.0) / (float(i) + 1.0);
-                    int site_relative = ctx.lookup.LookUp_Crown_site[i];
-                    int row = row_crowncenter + site_relative / 51 - 25;
-                    int col = col_crowncenter + site_relative % 51 - 25;
-
-                    if (row >= 0 && row < ctx.grid.rows && col >= 0 && col < ctx.grid.cols)
-                    {
-                        int site = col + ctx.grid.cols * row + ctx.grid.SBORD;
-                        ctx.field.LAI3D[h][site] += dens_layer;
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
 
 
 // ##################################################
@@ -1169,7 +1090,6 @@ void Tree::Water_uptake(Context &ctx)
 //! - v.2.3.: Tree::Fluxh() computes the average light flux received by a tree crown ctx.diag.layer at height h , and also the average VPD and T (modified 1/02/2016)
 //! - modified in v.2.4: weighting of each ctx.diag.layer's GPP by the leafarea in the ctx.diag.layer, this is also computed here
 //! - modified in v.2.4 and v.2.5: introducing an alternative crown shape, "umbrella"-like, inspired by previous shell models and similar to the crown shapes in the PPA. If activated, crowns contain three layers of vegetation that, once the crown goes beyond 3m in depth, will bend downwards on the edges with a linear slope. Since v.2.5 all loops (CalcLAI, Fluxh, leafarea_max) are executed through the same template. This allows to implement other crown shapes in the future and ensures that modifications are carried through across the code
-#ifdef CROWN_UMBRELLA
 //! @param ctx simulation context (all model state)
 //! @param h height layer (m)
 //! @param PPFD [out] light at the layer relative to the canopy top (fraction)
@@ -1210,96 +1130,6 @@ void Tree::Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float
     //}
 }
 
-#else
-//! @param ctx simulation context (all model state)
-//! @param h height layer (m)
-//! @param PPFD [out] light at the layer relative to the canopy top (fraction)
-//! @param VPD [out] VPD at the layer relative to the canopy top (factor)
-//! @param Tmp [out] decrease in air temperature from the canopy top (degC)
-//! @param leafarea_layer [out] leaf area of the crown in the layer (m2)
-void Tree::Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float &leafarea_layer)
-{
-
-    int site_crowncenter = t_site + t_CrownDisplacement;
-    int row_crowncenter = site_crowncenter / ctx.grid.cols;
-    int col_crowncenter = site_crowncenter % ctx.grid.cols;
-
-    float crown_area = fmaxf(PI * t_CR * t_CR, 0.0);
-    int crown_intarea = int(crown_area);      // floor of crown_area to bound area accumulation
-    crown_intarea = max(crown_intarea, 1);    // minimum area of crown (1)
-    crown_intarea = min(crown_intarea, 1963); // maximum area of crown (radius 25), int(3.14*25*25)
-
-    float fraction_filled_target = t_fraction_filled;
-    float fraction_filled_actual = 0.0;
-
-    int crown_intarea_gaps = 0;
-    int crown_intarea_allocated_nogaps = 0;
-
-    // loop over LookUp table, until crown_intarea is reached
-    for (int i = 0; i < crown_intarea; i++)
-    {
-        if (fraction_filled_actual > fraction_filled_target)
-        {
-            fraction_filled_actual = (fraction_filled_actual * float(i)) / (float(i) + 1.0);
-            crown_intarea_gaps++;
-        }
-        else
-        {
-            fraction_filled_actual = (fraction_filled_actual * float(i) + 1.0) / (float(i) + 1.0);
-            int site_relative = ctx.lookup.LookUp_Crown_site[i];
-            int row = row_crowncenter + site_relative / 51 - 25;
-            int col = col_crowncenter + site_relative % 51 - 25;
-
-            if (row >= 0 && row < ctx.grid.rows && col >= 0 && col < ctx.grid.cols)
-            {
-                int site = col + ctx.grid.cols * row + ctx.grid.SBORD;
-                float absorb_prev = ctx.field.LAI3D[h][site];
-                float absorb_current = ctx.field.LAI3D[h - 1][site];
-                float absorb_delta = absorb_current - absorb_prev;
-                if (absorb_delta < 0.0)
-                    absorb_delta = 0.0; //! eliminate rounding errors
-                int intabsorb = CalcIntabsorb(absorb_prev, absorb_delta);
-                PPFD += ctx.climate.WDailyMean * ctx.lookup.LookUp_flux_absorption[intabsorb];
-                VPD += ctx.climate.VPDDailyMean * ctx.lookup.LookUp_VPD[intabsorb];
-                Tmp += ctx.climate.tDailyMean - ctx.lookup.LookUp_T[intabsorb];
-                crown_intarea_allocated_nogaps++;
-            }
-        }
-    }
-
-    // weighting has to be done via the actually allocated crown area (integer), not the floating point value
-    float icrown_intarea_allocated = 1.0 / float(crown_intarea_allocated_nogaps);
-
-    PPFD *= icrown_intarea_allocated;
-    VPD *= icrown_intarea_allocated;
-    Tmp *= icrown_intarea_allocated;
-
-    // weighting of each ctx.diag.layer
-    float crown_area_nogaps;
-    if (fraction_filled_actual > fraction_filled_target)
-        crown_area_nogaps = float(crown_intarea - crown_intarea_gaps);
-    else
-        crown_area_nogaps = crown_area - float(crown_intarea_gaps);
-
-    int h_index = h - 1;
-    int crown_top = int(t_height);
-    int crown_base = int(t_height - t_CD);
-    float fraction_abovetop = t_height - float(crown_top);
-    float fraction_belowbase = float(crown_base + 1) - (t_height - t_CD);
-    float dens_avg = t_LAI / t_CD;
-
-    float dens_layer = dens_avg;
-    if (crown_top == crown_base)
-        dens_layer *= t_CD;
-    else if (h_index == crown_top)
-        dens_layer *= fraction_abovetop;
-    else if (h_index == crown_base)
-        dens_layer *= fraction_belowbase;
-
-    // given constant density within ctx.diag.layer, we just need to multiply by area
-    leafarea_layer = dens_layer * crown_area_nogaps;
-}
-#endif
 
 // #############################
 //  Empirical functions (traits)
@@ -1439,20 +1269,12 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     TLEAF = Ta; // Initialization of leaf T, CO2 & VPD at leaf surface equal to the ones of surrounding air
     DS = VPDa;
     CS = ctx.params.Cair; // IM: check whether we should not make ctx.params.Cair vary across the canopy.
-#if TROLL_WARMSTART > 0
     if (ws && ws->valid)
     { // warm start from the solution of the previous half-hour step of the same leaf layer
-#if TROLL_WARMSTART == 1
-        TLEAF = ws->TLEAF;           // previous leaf temperature
-#else
         TLEAF = Ta + ws->dT;         // previous leaf-to-air temperature difference
-#endif
-#if TROLL_WARMSTART == 3
         CS = ws->CS;                 // previous CO2 at the leaf surface
         if (ws->VPDa > 0.0f) DS = ws->DS * (VPDa / ws->VPDa); // previous leaf-surface VPD, scaled by the change in air VPD
-#endif
     }
-#endif
     leafFluxes ps;
     // exact limit-cycle shortcut: the loop state is (TLEAF, CS, DS); once it repeats bit-for-bit, the
     // remaining iterations replay the cycle, so the result of iteration ITERMAX-1 is already known.
@@ -1559,13 +1381,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
 
         float TDIFF = (Rnetiso - lambdaET) / HDIVT;
         float TLEAF1 = Ta + 0.25f * TDIFF; // divide by 4 to slow down convergence and avoid big changes -- taken from code from Vezy et al. 2018 -- cf. discussion with Guerric Le Maire
-#if TROLL_WARMSTART > 0 && TROLL_WARMSTART_STRICT
-        // with a warm start, T can look converged at once while the leaf-surface VPD (DS) has not
-        // settled: also require DS to change by less than 1% (DS at the start of this iteration: hD[it])
-        if (fabsf(TLEAF - TLEAF1) < 0.01f && fabsf(DS - hD[it]) <= 0.01f * hD[it])
-#else
         if (fabsf(TLEAF - TLEAF1) < 0.01f)
-#endif
         {
             // itmax=ITER;
             ITER = ITERMAX;
@@ -1583,13 +1399,11 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     // cout << "itmax=" << itmax << endl;
 
     // At the end of loop, return water (ET, in umol H2O ctx.params.m-2 s-1) and carbon (assimilation) fluxes
-#if TROLL_WARMSTART > 0
     if (ws)
     {
         ws->valid = !(isnan(TLEAF) || isnan(CS) || isnan(DS)) && TLEAF > 0.0f && TLEAF <= 50.0f && CS > 0.0f && DS >= 0.0f;
         ws->TLEAF = TLEAF; ws->dT = TLEAF - Ta; ws->CS = CS; ws->DS = DS; ws->VPDa = VPDa;
     }
-#endif
     ET = ET * 1e6f;
 
     // if (ctx.time.iter > 4000 && t_height> 10.0) {
@@ -1603,7 +1417,6 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     return outFluxes;
 }
 
-#ifdef G0
 
 //! Temperature- and light-dependent terms of Photosyn for one leaf-temperature lookup bin:
 //! KmT, GammaT, Rday and Vcmax from the lookup tables, and the electron transport rate J
@@ -1710,88 +1523,6 @@ leafFluxes Tree::Photosyn(Context &ctx, const PhotosynTerms &pt, float CS, float
     return outPhotosyn;
 }
 
-#else
-
-//! Farquhar-von Caemmerer-Berry photosynthesis coupled with Medlyn stomatal conductance at the
-//! leaf surface (GMD Part 1, Sect. 2.5.1, Eqs. 24-25).
-//! @param ctx    simulation context
-//! @param PPFD   photosynthetic photon flux density on the leaf (umol photons m-2 s-1)
-//! @param TLEAF  leaf temperature (degC)
-//! @param CS     CO2 concentration at the leaf surface (umol mol-1)
-//! @param DS     vapour pressure deficit at the leaf surface (kPa)
-//! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: stomatal conductance to CO2 (mol m-2 s-1)
-leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS)
-{
-
-    float CI, Anet;
-
-    // Parameters for the Farquhar model
-    int convT = int(ctx.lookup.iTaccuracy * TLEAF);
-    float KmT = ctx.lookup.LookUp_KmT[convT];                        // with temperature dependencies
-    float GammaT = ctx.lookup.LookUp_GammaT[convT];                  // with temperature dependencies
-    float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * ctx.params.Rday_inhibition; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
-
-    // Model of stomatal conductance for CO2
-    float GSDIVA = (1.0f + t_g1 / sqrtf(DS)) / CS; // Medlyn et al. 2011 Global Change Biology. Note that ctx.params.g1 is now a tree class variable that is initiated at tree birth (in Tree::Birth) and updated in Tree::Water_Availability depending on the tree water stress.
-    // float GSDIVA = (1.0 + ctx.params.g1/sqrt(VPD))/(CS-GammaT); //Dewar et al. 2018 New Phytologist
-    if (GSDIVA <= 0 || isnan(GSDIVA))
-    {
-        cout << "Warning in Photosyn ! GSDIVA=" << GSDIVA << "; DS=" << DS << "; CS=" << CS << endl;
-        cout << "In Photosyn: PPFD=" << PPFD << "; TLEAF=" << TLEAF << "; CS=" << CS << "; DS=" << DS << endl;
-    }
-
-    // Internal CO2 concentration, assuming that minimal conductance (cf. Duursma et al. 2019 New Phytologist, ~cuticular conductance) is negligeable (ctx.params.g0~0) [Note that, if ctx.params.g0>0, then a quadratic solution must be computed, which complexifies and should lengthen the speed of the code ==> to try later]. Expression derived using Medlyn et al. 2011 GCB model (see equ. 7 in Marechaux & Chave 2017, and equ. 13 in Medlyn et al. 2011 corrigendum)
-    CI = CS * t_g1 / (t_g1 + sqrtf(DS));
-
-    // Farquhar model of photosynthesis
-    // Solution when Rubisco activity is limiting
-    float AC, AJ;
-    float VcmaxTW = t_Vcmax * ctx.lookup.LookUp_VcmaxT[convT] * t_WSF_A;
-    if ((CI <= 0.0f) || (CI - CS > 0.01f))
-    { // newIM: have replaced CI>CS by (CI-CS>0.01) to avoid error due to comparing floats (maybe there would be a best way to fix this...)
-        AC = 0.0f;
-    }
-    else
-        AC = VcmaxTW * (CI - GammaT) / (CI + KmT);
-    // Solution when electron transport rate is limiting
-    float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
-    float I = ctx.params.alpha * PPFD;
-    float J = ElectronTransportRate(ctx.params.theta, I, JmaxTW); // 4.1.2: stable form, see quad.hpp
-    AJ = 0.25f * J * (CI - GammaT) / (CI + 2.0f * GammaT);
-    if ((AJ - Rday) < 1.0e-6f)
-    {
-        CI = CS; // Below light compensation point
-        AJ = 0.25f * J * (CI - GammaT) / (CI + 2.0f * GammaT);
-    }
-    Anet = fminf(AC, AJ) - Rday; // compute the *net* assimilation rate, in micromol C02 ctx.params.m-2 s-1
-
-    if (isnan(Anet) || isnan(GSDIVA))
-    {
-        cout << "Warning in Photosyn: " << ", Anet= " << Anet << ", GSDIVA=" << GSDIVA << "; Anet*GSDIVA=" << Anet * GSDIVA << ", AC= " << AC << ", AJ= " << AJ << ", Rday=" << Rday << ", CS=" << CS << "; CI=" << CI << ", DS= " << DS << ", TLEAF= " << TLEAF << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << "; GammaT=" << GammaT << "; KmT=" << KmT << "; J=" << J << "; PPFD=" << PPFD << "; T_Rdark=" << t_Rdark << "; convT=" << convT << endl;
-    }
-
-    if (isnan(Anet * GSDIVA) && Anet == 0.0f)
-    { // to solve nan issue when ANet=0 and GSDIVA=inf
-        Anet = 1.0e-5f;
-    }
-
-    leafFluxes outPhotosyn;
-    outPhotosyn.carbon_flux = Anet; // in micromol C02 ctx.params.m-2 s-1
-    if (fabs(GSDIVA * Anet) < 1.0e-6f)
-        outPhotosyn.water_flux = 1.0e-5f; // GSC should not have null values
-    else
-        outPhotosyn.water_flux = fabs(GSDIVA * Anet); // in mol CO2 ctx.params.m-2 s-1, the conversion to mol H20 is made in function FluxesLeaf. Note that it is here assumed that the minimal stomatal conductance (ctx.params.g0) is negligeable.
-    // if (outPhotosyn.water_flux<ctx.params.g0) outPhotosyn.water_flux=ctx.params.g0; // just as a reminder: in both Duursma's pacakage and Vezy's MAESPA code, such line is added (in Duursma, it is written: "# Extra step here; GS can be negative", in Vezy, it is written: "! Set nearly zero conductance (for numerical reasons)". this results in no possible negative values or zero values for GSC.
-
-    if (isnan(outPhotosyn.water_flux) || isnan(outPhotosyn.carbon_flux))
-    {
-        cout << "Warning in Photosyn: " << ", Anet= " << Anet << ", AC= " << AC << ", AJ= " << AJ << ", Rday=" << Rday << ", GSDIVA=" << GSDIVA << ", CS=" << CS << "; CI=" << CI << ", DS= " << DS << ", TLEAF= " << TLEAF << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << "; GammaT=" << GammaT << "; KmT=" << KmT << "; J=" << J << "; PPFD=" << PPFD << "; T_Rdark=" << t_Rdark << "; convT=" << convT << endl;
-    }
-
-    return outPhotosyn;
-}
-
-#endif
 
 TROLL_FLOAT_KERNEL_END
 
@@ -1815,7 +1546,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
     float dailyA = 0.0;
     float dailylT = 0.0;
     float dailyR = 0.0; // 4.3.4: leaf day respiration included in dailyA
-    LeafWarmStart ws; // warm start between consecutive half-hour steps (unused if TROLL_WARMSTART == 0)
+    LeafWarmStart ws; // warm start between consecutive sub-daily steps
 
     // cout << "In dailyFluxesLeaf PPFD=" << PPFD << "; T=" << T << "; VPD=" << VPD << "; W=" << W << endl;
 
@@ -1825,7 +1556,6 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
         bool dark = false;
         bool leaf_shaded = false; // 4.3.6
 
-#ifdef FULL_CLIMATE
 
         float ppfd_vardaytimestep = 0.0;
         float ppfd_top_vardaytimestep = 0.0;
@@ -1874,41 +1604,6 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
             cout << "Warning ppfd_vardaytimestep  <=0 in dailyFluxesLeaf !!!" << endl;
         }
 
-#else
-
-        if (ctx.time.iter == -1)
-        {
-            float ppfd_vardaytimestep = PPFD * ctx.climate.varday_light[i];
-            float ppfd_top_vardaytimestep = ctx.climate.WDailyMean_year * ctx.climate.varday_light[i];
-            float t_top_vardaytimestep = ctx.climate.tDailyMean_year * ctx.climate.varday_T[i];
-            float vpd_top_vardaytimestep = ctx.climate.VPDDailyMean_year * ctx.climate.varday_vpd[i];
-            float ppfd_inc_vardaytimestep = PPFDinc * ctx.climate.varday_light[i];
-            float vpd_vardaytimestep = VPD * ctx.climate.varday_vpd[i];
-            float t_vardaytimestep = T * ctx.climate.varday_T[i];
-            float ws_vardaytimestep = W * ctx.climate.varday_WS[i];
-        }
-        else
-        {
-            float ppfd_vardaytimestep = PPFD * ctx.climate.varday_light[i];
-            float ppfd_top_vardaytimestep = ctx.climate.WDailyMean * ctx.climate.varday_light[i];
-            float t_top_vardaytimestep = ctx.climate.tDailyMean * ctx.climate.varday_T[i];
-            float vpd_top_vardaytimestep = ctx.climate.VPDDailyMean * ctx.climate.varday_vpd[i];
-            float ppfd_inc_vardaytimestep = PPFDinc * ctx.climate.varday_light[i];
-            float vpd_vardaytimestep = VPD * ctx.climate.varday_vpd[i];
-            float t_vardaytimestep = T * ctx.climate.varday_T[i];
-            float ws_vardaytimestep = W * ctx.climate.varday_WS[i];
-        }
-
-        if (vpd_vardaytimestep <= 0)
-        {
-            cout << "Warning in dailyFluxesLeaf !!! i=" << i << "; vpd_vardaytimestep=" << vpd_vardaytimestep << "; VPD=" << VPD << "; ctx.climate.varday_vpd[i]=" << ctx.climate.varday_vpd[i] << "; ppfd_vardaytimestep=" << ppfd_vardaytimestep << "; PPFD=" << PPFD << "; ctx.climate.varday_light[i]=" << ctx.climate.varday_light[i] << endl;
-        }
-        if (ppfd_vardaytimestep <= 0)
-        {
-            cout << "Warning ppfd_vardaytimestep  <=0 in dailyFluxesLeaf !!! ppfd_vardaytimestep=" << ppfd_vardaytimestep << "; PPFD=" << PPFD << "; ctx.climate.varday_light[i]=" << ctx.climate.varday_light[i] << endl;
-        }
-
-#endif
 
         leafFluxes fluxes_vardaytimestep;
         const float rday_factor = (snet_vardaytimestep >= ctx.params.Rday_inhibition_Snet) ? ctx.params.Rday_inhibition : 1.0f; // 4.3.6: as in FluxesLeaf
@@ -2115,7 +1810,6 @@ void Tree::CalcLAImax(Context &ctx)
         float absorb_delta = 0.5; // calculate everything, assuming a medium leaf density in the lower canopy, TODO: if the crown has a non-cylindric shape, this should probably be taken as a third of LAImax, or if LAI_gradient is activated, as 25% of LAImax
         int intabsorb = CalcIntabsorb(absorb_prev, absorb_delta);
 
-#ifdef FULL_CLIMATE // if FULL_CLIMATE is defined, then the terms just below should be only the relative attenuation due to the vertical structure of the canopy. Currently, CalcLAImax is defined depending on the climate conditions on the day of birth (see ctx.time.iter, in dailyFluxesLeaf), and not to the climate yearly mean as before. This needs to be rethought and changed.
 
         // get PPFD, VPD, and temperature at each discretisation step
         float PPFD_LAI = ctx.lookup.LookUp_flux_absorption[intabsorb];
@@ -2126,18 +1820,6 @@ void Tree::CalcLAImax(Context &ctx)
         float ExtinctLW_LAI = ctx.lookup.LookUp_ExtinctLW[intincident];
         float PPFD_LAI_inc = ctx.lookup.LookUp_flux[intincident];
 
-#else // FULL_CLIMATE
-
-        // get PPFD, VPD, and temperature at each discretisation step
-        float PPFD_LAI = ctx.climate.WDailyMean_year * ctx.lookup.LookUp_flux_absorption[intabsorb];
-        float VPD_LAI = ctx.climate.VPDDailyMean_year * ctx.lookup.LookUp_VPD[intabsorb];
-        float Tmp_LAI = ctx.climate.tDailyMean_year - ctx.lookup.LookUp_T[intabsorb];
-        int intincident = CalcIntabsorb(absorb_prev);
-        float Wind_LAI = ctx.climate.windDailyMean_year * exp(-0.5 * absorb_prev); // to be thoroughly checked and computed using a look up table as well.
-        float ExtinctLW_LAI = ctx.lookup.LookUp_ExtinctLW[intincident];
-        float PPFD_LAI_inc = ctx.climate.WDailyMean_year * ctx.lookup.LookUp_flux[intincident];
-
-#endif // FULL_CLIMATE
 
         // calculate the GPP
         float wf = 0.0;
@@ -2151,11 +1833,7 @@ void Tree::CalcLAImax(Context &ctx)
         GPP_LAI *= effLA;
 
         // get the night respiration
-#ifdef FULL_CLIMATE
         int convTnight = int(ctx.lookup.iTaccuracy * ctx.climate.tnight);
-#else
-        int convTnight = int(ctx.lookup.iTaccuracy * ctx.climate.Tnight_year);
-#endif
         float Rnight_LAI = t_Rdark * effLA_night * ctx.lookup.LookUp_Rleaf[convTnight];
         if (ctx.climate.full_day) // 4.3.1: dark steps of the mean daily cycle, at their own temperature
             Rnight_LAI = t_Rdark * 0.83f * 15.7788f * ctx.time.timestep * NightRleafHours(ctx, ctx.climate.WDailyMean_all.data(), ctx.climate.tDailyMean_all.data());
@@ -2201,7 +1879,6 @@ void Tree::CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax)
         int row_crowncenter = site_crowncenter / ctx.grid.cols;
         int col_crowncenter = site_crowncenter % ctx.grid.cols;
 
-#ifdef CROWN_UMBRELLA
         // get the PPFD that the tree experiences and the area that is looped
         float ppfd_CA[2] = {0.0, 0.0};
         float noinput = 0.0;
@@ -2213,44 +1890,6 @@ void Tree::CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax)
 
         float ppfd_experienced = ppfd_CA[0];
         float crown_area_looped = ppfd_CA[1];
-#else
-        int height_abovetop = int(t_height) + 1;
-        int crown_intarea = GetCrownIntarea(t_CR);
-
-        float fraction_filled_actual = 0.0;
-        float fraction_filled_target = t_fraction_filled;
-
-        float ppfd_experienced = 0.0;
-        int crown_area_looped = 0;
-
-        // loop over LookUp table, until crown_intarea is reached
-        for (int i = 0; i < crown_intarea; i++)
-        {
-            if (fraction_filled_actual > fraction_filled_target)
-            {
-                fraction_filled_actual = (fraction_filled_actual * float(i)) / (float(i) + 1.0);
-            }
-            else
-            {
-                fraction_filled_actual = (fraction_filled_actual * float(i) + 1.0) / (float(i) + 1.0);
-                int site_relative = ctx.lookup.LookUp_Crown_site[i];
-                int row = row_crowncenter + site_relative / 51 - 25;
-                int col = col_crowncenter + site_relative % 51 - 25;
-
-                if (row >= 0 && row < ctx.grid.rows && col >= 0 && col < ctx.grid.cols)
-                {
-                    int site = col + ctx.grid.cols * row + ctx.grid.SBORD;
-                    // first get voxel field densities
-                    float absorb_prev = ctx.field.LAI3D[height_abovetop][site + ctx.grid.SBORD];
-                    int intabsorb = CalcIntabsorb(absorb_prev);
-
-                    // obtain PPFD for the voxel, and also record the circled area
-                    ppfd_experienced += ctx.climate.WDailyMean * ctx.lookup.LookUp_flux[intabsorb];
-                    crown_area_looped++;
-                }
-            }
-        }
-#endif
         if (crown_area_looped > 0)
         {
             float icrown_area_looped = 1.0 / crown_area_looped;
@@ -2280,14 +1919,6 @@ void Tree::CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax)
     LAmax = fminf(LAmaxphysiology, LAdiff);
     LAmax = fmaxf(0.0, LAmax);
 
-#ifdef TRACK_INDIVIDUALS
-    if (t_month_born >= 0)
-    {
-        t_LAIabove_effavgyear += LAIexperienced_eff * ctx.time.timestep;
-        t_LAIeffcum += LAIexperienced_eff;
-        t_LAIeffsquared_cum += LAIexperienced_eff * LAIexperienced_eff;
-    }
-#endif
 }
 
 // Kikuzawa model for leaf lifespan
@@ -2308,7 +1939,6 @@ float Tree::predLeafLifespanKikuzawa(Context &ctx)
 
     int intabsorb = CalcIntabsorb(absorb_prev, absorb_delta);
 
-#ifdef FULL_CLIMATE
 
     float PPFD = ctx.lookup.LookUp_flux_absorption[intabsorb];
     float VPD = ctx.lookup.LookUp_VPD[intabsorb];
@@ -2322,21 +1952,6 @@ float Tree::predLeafLifespanKikuzawa(Context &ctx)
 
     int convTnight = int(ctx.lookup.iTaccuracy * ctx.climate.tnight);
 
-#else // FULL_CLIMATE
-
-    float PPFD = ctx.climate.WDailyMean_year * ctx.lookup.LookUp_flux_absorption[intabsorb];
-    float VPD = ctx.climate.VPDDailyMean_year * ctx.lookup.LookUp_VPD[intabsorb];
-    float T = ctx.climate.tDailyMean_year - ctx.lookup.LookUp_T[intabsorb];
-    float W = ctx.climate.windDailyMean_year * exp(-0.5 * absorb_prev); // to be thoroughly re-thought, and computed using a look-up table as well -- IM June 2021
-    int intincident = CalcIntabsorb(absorb_prev);
-    float PPFDinc = ctx.climate.WDailyMean_year * ctx.lookup.LookUp_flux_absorption[intincident];
-    float ExtinctLW = ctx.lookup.LookUp_ExtinctLW[intincident];
-    float wf_fc = 0.0;
-    float GPP = Tree::dailyFluxesLeaf(ctx, PPFD, VPD, T, W, ExtinctLW, PPFDinc, wf_fc).carbon_flux;
-
-    int convTnight = int(ctx.lookup.iTaccuracy * ctx.climate.Tnight_year);
-
-#endif // FULL_CLIMATE
     float Rnight = t_Rdark * ctx.lookup.LookUp_Rleaf[convTnight];
 
     float GPP_effective = (GPP - Rtot_by_Rabove * Rtotleaf_by_Rdark * Rnight + (Rtotleaf_by_Rdark - 1) * Rnight);
@@ -2393,13 +2008,6 @@ void Tree::Growth(Context &ctx, const RespGPPResult *precomputed)
         if (t_NPP < 0.0)
         {
             t_NPPneg++;
-#ifdef TRACK_INDIVIDUALS
-            if (t_month_born >= 0)
-            {
-                t_time_carbonstarvation_year++;
-                t_time_carbonstarvation++;
-            }
-#endif
             t_NPP = 0.0;
         }
         else
@@ -2899,18 +2507,6 @@ void Tree::UpdateVolumeDensity()
 void Tree::Death(Context &ctx)
 {
 
-#ifdef TRACK_INDIVIDUALS
-    if (t_timeofyear_born >= 0)
-    {
-        float agb = 1000.0 * CalcAGB(ctx);
-        if (t_dbh >= 0.1)
-        {
-            ctx.out.output_track[1] << t_site << "\t" << t_timeofyear_born << "\t" << ctx.time.iter << "\t" << t_age << "\t" << t_seedsproduced_sumyear << "\t" << t_seedsproduced << "\t" << t_time_carbonstarvation_year << "\t" << t_time_carbonstarvation << "\t" << t_dbh << "\t" << t_dbh - t_dbh_tracked << "\t" << t_height << "\t" << t_height - t_height_tracked << "\t" << t_CR << "\t" << t_CR - t_CR_tracked << "\t" << agb << "\t" << agb - t_agb_tracked << "\t" << t_GPP_sumyear << "\t" << t_GPPsquared_sumyear << "\t" << t_NPP_sumyear << "\t" << t_NPPsquared_sumyear << "\t" << t_Rday_sumyear << "\t" << t_Rnight_sumyear << "\t" << t_Rstem_sumyear << "\t" << t_LAIabove_effavgyear << "\t" << t_carbon_storage_avgyear << endl;
-        }
-
-        ctx.out.output_track[2] << t_site << "\t" << t_timeofyear_born << "\t" << ctx.time.iter << "\t" << t_age << "\t" << t_seedsproduced << "\t" << t_time_carbonstarvation << "\t" << t_dbh << "\t" << t_height << "\t" << t_CR << "\t" << agb << "\t" << t_GPPcum << "\t" << t_NPPcum << "\t" << t_LAIcum << "\t" << t_LAIeffcum << "\t" << t_GPPsquared_cum << "\t" << t_NPPsquared_cum << "\t" << t_LAIsquared_cum << "\t" << t_LAIeffsquared_cum << endl;
-    }
-#endif
 
 #ifdef MIP_Lichstein
     if (ctx.opt._FromInventory || (!ctx.opt._FromInventory && ctx.time.iter >= (ctx.time.nbiter - 100 * ctx.time.iterperyear)))
@@ -3000,13 +2596,6 @@ void Tree::DisperseSeed(Context &ctx)
             int row_dispersal = dist_rows + row_tree;
             FillSeed(ctx, col_dispersal, row_dispersal, t_sp_lab);
         }
-#ifdef TRACK_INDIVIDUALS
-        if (t_month_born >= 0)
-        {
-            t_seedsproduced_sumyear += nbs;
-            t_seedsproduced += nbs;
-        }
-#endif
     }
 }
 
@@ -3229,52 +2818,4 @@ float Tree::GetCrownAreaFilled(float crown_area)
     return (crown_area_filled);
 }
 
-#ifdef TRACK_INDIVIDUALS
-// Diagnostic function to track trees born at a reference year
-//! @param ctx simulation context (all model state)
-void Tree::StartTracking(Context &ctx)
-{
-    // Only tracks trees born in a mature forest at year 501
-    // currently hardcoded
-    if (ctx.time.iter >= 6000 && ctx.time.iter < 6012)
-        t_timeofyear_born = ctx.time.iter % ctx.time.iterperyear;
-    else
-        t_timeofyear_born = -1;
-
-    if (t_timeofyear_born >= 0)
-    {
-        // initialise variables
-        t_seedsproduced = 0;
-        t_seedsproduced_sumyear = 0;
-        t_time_carbonstarvation = 0;
-        t_time_carbonstarvation_year = 0;
-
-        t_GPP_sumyear = 0.0;
-        t_NPP_sumyear = 0.0;
-        t_GPPsquared_sumyear = 0.0; // for standard deviation
-        t_NPPsquared_sumyear = 0.0; // for standard deviation
-        t_Rday_sumyear = 0.0;
-        t_Rnight_sumyear = 0.0;
-        t_Rstem_sumyear = 0.0;
-        t_LAIabove_effavgyear = 0.0;
-        t_carbon_storage_avgyear = 0.0;
-
-        t_LAIcum = 0.0;
-        t_LAIeffcum = 0.0;
-        t_GPPcum = 0.0;
-        t_NPPcum = 0.0;
-        t_LAIsquared_cum = 0.0;
-        t_LAIeffsquared_cum = 0.0;
-        t_GPPsquared_cum = 0.0;
-        t_NPPsquared_cum = 0.0;
-
-        t_dbh_tracked = t_dbh;
-        t_height_tracked = t_height;
-        t_CR_tracked = t_CR;
-        t_agb_tracked = 1000.0 * CalcAGB(ctx);
-
-        ctx.out.output_track[0] << t_site << "\t" << t_timeofyear_born << "\t" << t_site % ctx.grid.cols << "\t" << t_site / ctx.grid.cols << "\t" << t_s->s_name << "\t" << t_dbh << "\t" << t_CR << "\t" << t_height << "\t" << t_agb_tracked << "\t" << t_mult_CR << "\t" << t_mult_height << "\t" << t_wsg << "\t" << t_Nmass << "\t" << t_Pmass << "\t" << t_LMA << "\t" << t_dev_wsg << "\t" << t_mult_N << "\t" << t_mult_P << "\t" << t_mult_LMA << "\t" << t_Vcmax << "\t" << t_Jmax << "\t" << t_Rdark << "\t" << t_LAImax << "\t" << t_leaflifespan << endl;
-    }
-}
-#endif
 
