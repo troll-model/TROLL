@@ -100,6 +100,12 @@ pedotransfer functions (Hodnett & Tomasella 2002; Cosby et al. 1984 for saturate
 Generated from `example/global_inputs.txt` (TROLL 4.1.4): name, example value, unit, and the
 description given in the file. Parameters beginning with `_` are options.
 
+Since 4.3.5, a parameter absent from the file takes its default (the value used in the code's
+parameter registry, equal to the example value for most parameters); TROLL lists these at start-up
+("Parameters not in the input file, set to their default: ..."). Before 4.3.5, absent parameters
+were 0. A value outside the allowed range is also replaced by the default, as before. If the file
+cannot be read, TROLL stops with an error.
+
 | Parameter | Example | Unit | Description |
 | --- | --- | --- | --- |
 | `cols` | 200 | cells (1 cell = 1/NH m) | nb of columns |

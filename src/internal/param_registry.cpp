@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <vector>
 #// ============================================================================
 #// Parameter Registry Implementation
 #// ----------------------------------------------------------------------------
@@ -209,6 +211,7 @@ void RegisterParameters(Context &ctx)
     auto add_int = [&](const std::string &name, int &var,
                        int minv, int maxv, int defv)
     {
+        var = defv; // 4.3.5: the default holds unless the input file gives a valid value
         parameter_registry.emplace(
             name, ParamSpec(ParamSpec::INT, &var, minv, maxv, defv));
     };
@@ -216,6 +219,7 @@ void RegisterParameters(Context &ctx)
     auto add_float = [&](const std::string &name, float &var,
                          float minv, float maxv, float defv)
     {
+        var = defv; // 4.3.5: the default holds unless the input file gives a valid value
         parameter_registry.emplace(
             name, ParamSpec(ParamSpec::FLOAT, &var, minv, maxv, defv));
     };
@@ -223,6 +227,7 @@ void RegisterParameters(Context &ctx)
     auto add_bool = [&](const std::string &name, bool &var,
                         bool minv, bool maxv, bool defv)
     {
+        var = defv; // 4.3.5: the default holds unless the input file gives a valid value
         parameter_registry.emplace(
             name, ParamSpec(ParamSpec::BOOL, &var, minv, maxv, defv));
     };
@@ -339,6 +344,7 @@ void AssignParamFromRegistry(const std::string &name,
         std::cerr << "Warning: Unknown parameter '" << name << "'\n";
         return;
     }
+    it->second.seen = true; // 4.3.5
 
     std::string pname = name;
     std::string pvalue = value;
@@ -379,4 +385,30 @@ void AssignParamFromRegistry(const std::string &name,
         break;
     }
     }
+}
+//! Print, in one line, the global parameters that the input file did not give (4.3.5): since
+//! RegisterParameters sets every parameter to its default, these run with the default, which this
+//! makes visible instead of silent.
+void ReportDefaultParameters()
+{
+    std::vector<std::string> names;
+    for (const auto &kv : parameter_registry)
+        if (!kv.second.seen)
+            names.push_back(kv.first);
+    if (names.empty())
+        return;
+    std::sort(names.begin(), names.end());
+    std::cout << "Parameters not in the input file, set to their default:";
+    for (const auto &n : names)
+    {
+        const ParamSpec &p = parameter_registry.at(n);
+        std::cout << " " << n << "=";
+        if (p.type == ParamSpec::INT)
+            std::cout << int(p.def);
+        else if (p.type == ParamSpec::BOOL)
+            std::cout << (p.def != 0.0 ? 1 : 0);
+        else
+            std::cout << float(p.def);
+    }
+    std::cout << std::endl;
 }

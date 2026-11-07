@@ -123,10 +123,12 @@ void ReadInputGeneral(Context &ctx)
                 In.getline(ctx.fileio.buffer, 256, '\n'); // consume rest of line
                 AssignParamFromRegistry(parameter_name, parameter_value);
             }
+            ReportDefaultParameters(); // 4.3.5
         }
         else
-        {
-            cout << "ERROR. General input file could not be read." << endl;
+        { // 4.3.5: stop, rather than run with default parameters (before: all 0, then a crash)
+            cerr << "ERROR. General input file could not be read: " << ctx.fileio.inputfile << endl;
+            exit(1);
         }
         // update derived parameters
         ctx.grid.sites = ctx.grid.rows * ctx.grid.cols;    // leave global for now
@@ -216,7 +218,9 @@ void ReadInputGeneral(Context &ctx)
     }
     else
     {
-        cout << "ERROR. General input file could not be read." << endl;
+        // 4.3.5: stop, rather than run with default parameters (before: all 0, then a crash)
+        cerr << "ERROR. General input file could not be read: " << ctx.fileio.inputfile << endl;
+        exit(1);
     }
 }
 

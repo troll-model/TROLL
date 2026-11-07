@@ -173,6 +173,7 @@ struct ParamSpec
     double minv;     //!< Minimum allowed value
     double maxv;     //!< Maximum allowed value
     double def;      //!< Default value
+    bool seen = false; //!< 4.3.5: true once the parameter has been read from the input file
 
     //! Registry entry for variable tgt of type t, allowed range [mn, mx], default df
     //! @param t    type of the target variable
@@ -186,7 +187,8 @@ struct ParamSpec
 
 extern std::unordered_map<std::string, ParamSpec> parameter_registry; //!< Global parameters by name, filled by RegisterParameters()
 
-void RegisterParameters(Context &ctx); //!< Register every global parameter of the parameter file, with its range and default
+void RegisterParameters(Context &ctx); //!< Register every global parameter of the parameter file, with its range and default, and set it to that default (4.3.5)
+void ReportDefaultParameters(); //!< 4.3.5: print the global parameters absent from the input file, with the defaults they keep
 
 //! Assign the value read for parameter name, validated against its registry entry
 //! @param name parameter name
