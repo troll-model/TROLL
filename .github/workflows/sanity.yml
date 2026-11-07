@@ -31,11 +31,16 @@ jobs:
       - name: Unit tests (tests/)
         run: cmake --build build --target unit-tests
 
-      - name: Example, 20 days from bare ground (vs sanity/golden)
+      - name: Example, 20 days from bare ground, 24-hour climate (vs sanity/golden)
         run: cmake --build build --target sanity
 
-      - name: Established 1 ha stand, 1 year (vs sanity/golden)
+      - name: Established 1 ha stand, 1 year, 24-hour climate (vs sanity/golden)
         run: cmake --build build --target sanity-stand
+
+      - name: Two-file daytime climate, example 20 days and stand 1 year (vs sanity/golden)
+        run: |
+          cmake --build build --target sanity-daytime
+          cmake --build build --target sanity-stand-daytime
 
       # The OpenMP sections must not change results: 1 and 4 threads, bit-identical
       - name: Thread-count independence (bit-exact)
@@ -61,7 +66,7 @@ jobs:
         run: cmake --build build
       - name: Unit tests under sanitizers
         run: cmake --build build --target unit-tests
-      - name: Run example (20 days) and established stand (30 days)
+      - name: Run example (20 days) and established stand (30 days), both climate formats
         env:
           OMP_NUM_THREADS: 2
           ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
@@ -76,3 +81,5 @@ jobs:
           gunzip -c $F/forest.txt.gz > out/forest.txt
           ./build/TROLL -iout/gi_example.txt -s$E/species.txt -m$E/daily_climate.txt -d$E/halfhourly_climate.txt -p$E/soil.txt -oout/example > out/example.log
           ./build/TROLL -iout/gi_stand.txt -s$E/species.txt -m$E/daily_climate.txt -d$E/halfhourly_climate.txt -p$E/soil.txt -fout/forest.txt -w$F/SWC3D.txt -oout/stand > out/stand.log
+          ./build/TROLL -iout/gi_example.txt -s$E/species.txt -d$E/climate24h.txt -p$E/soil.txt -oout/example24h > out/example24h.log
+          ./build/TROLL -iout/gi_stand.txt -s$E/species.txt -d$E/climate24h.txt -p$E/soil.txt -fout/forest.txt -w$F/SWC3D.txt -oout/stand24h > out/stand24h.log

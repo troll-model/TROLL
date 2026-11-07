@@ -2,7 +2,10 @@
 # ----------------------------------------------------------------------------
 # Time TROLL on the established-stand fixture for several thread counts.
 #
-# Usage: sanity/bench.sh --troll PATH [--nbiter N] [--threads "1 2 4 8"]
+# Usage: sanity/bench.sh --troll PATH [--nbiter N] [--threads "1 2 4 8"] [--climate 24h|daytime]
+#
+# --climate: 24h (default since 4.3.2) uses example/climate24h.txt; daytime uses the two-file
+# daytime format (example/daily_climate.txt + example/halfhourly_climate.txt).
 #
 # Prints wall time, time in the simulation loop (from _info.txt) and start-up
 # + output time per thread count, and checks that outputs are identical to the
@@ -12,17 +15,23 @@ set -euo pipefail
 SANITY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EX="$SANITY_DIR/../example"
 FX="$SANITY_DIR/fixtures/stand_1ha"
-TROLL_EXE=""; NBITER=60; THREADS="1 2 4 8"; STATUS=0
+TROLL_EXE=""; NBITER=60; THREADS="1 2 4 8"; STATUS=0; CLIMATE="24h"
 while [[ $# -gt 0 ]]; do
     case "$1" in
     --troll) TROLL_EXE="$2"; shift 2 ;;
     --nbiter) NBITER="$2"; shift 2 ;;
     --threads) THREADS="$2"; shift 2 ;;
+    --climate) CLIMATE="$2"; shift 2 ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
     esac
 done
 [[ -x "$TROLL_EXE" ]] || { echo "--troll PATH (an executable) is required" >&2; exit 2; }
 
+case "$CLIMATE" in
+24h) CLIM_ARGS=("-d$EX/climate24h.txt") ;;
+daytime) CLIM_ARGS=("-m$EX/daily_climate.txt" "-d$EX/halfhourly_climate.txt") ;;
+*) echo "Unknown climate: $CLIMATE (expected 24h or daytime)" >&2; exit 2 ;;
+esac
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 gunzip -c "$FX/forest.txt.gz" > "$WORK/forest.txt"
 sed -E "s/^nbiter[[:space:]]+[0-9]+/nbiter\t$NBITER/" "$FX/global_inputs.txt" > "$WORK/global_inputs.txt"
@@ -31,8 +40,8 @@ printf "%-8s %10s %10s %14s %s\n" threads "wall (s)" "loop (s)" "startup+io (s)"
 for t in $THREADS; do
     mkdir -p "$WORK/t$t"
     start=$(date +%s.%N)
-    OMP_NUM_THREADS=$t "$TROLL_EXE" -i"$WORK/global_inputs.txt" -s"$EX/species.txt" -m"$EX/daily_climate.txt" \
-        -d"$EX/halfhourly_climate.txt" -p"$EX/soil.txt" -f"$WORK/forest.txt" -w"$FX/SWC3D.txt" -o"$WORK/t$t/run" > "$WORK/t$t.log" 2>&1
+    OMP_NUM_THREADS=$t "$TROLL_EXE" -i"$WORK/global_inputs.txt" -s"$EX/species.txt" "${CLIM_ARGS[@]}" \
+        -p"$EX/soil.txt" -f"$WORK/forest.txt" -w"$FX/SWC3D.txt" -o"$WORK/t$t/run" > "$WORK/t$t.log" 2>&1
     wall=$(python3 -c "import time; print(f'{time.time() - $start:.2f}')")
     loop=$(awk '/Average computation time/ {print $5}' "$WORK/t$t/run_0_info.txt")
     rest=$(python3 -c "print(f'{$wall - $loop:.2f}')")

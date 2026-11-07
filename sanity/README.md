@@ -13,15 +13,24 @@ cmake ..
 make sanity          # example inputs, 4 ha from bare ground, 20 days (~1 min)
 make sanity1000      # same, 1000 days
 make sanity-stand    # established 1 ha stand, 1 year (~2 min)
-make check           # sanity + sanity-stand
+make check           # sanity + sanity-stand + sanity-daytime
+make sanity-daytime        # example, 20 days, two-file daytime climate (-m + -d)
+make sanity-stand-daytime  # stand, 1 year, two-file daytime climate
 ```
+
+Since 4.3.2 the default climate of all cases is the 24-hour file `example/climate24h.txt`
+(ERA5-Land at Paracou, 2004-2005, hourly, with rainfall). The `*-daytime` targets run the same
+cases with the two-file daytime format (`example/daily_climate.txt` +
+`example/halfhourly_climate.txt`, the tower record for the same years), so both readers stay
+tested.
 
 Or call the script directly for other settings:
 
 ```bash
-sanity/check.sh --troll build/TROLL --case stand --nbiter 730
-sanity/check.sh --troll build/TROLL --case example --nbiter 365 --rtol 1e-6
-sanity/check.sh --troll build/TROLL --ref <commit>          # other reference
+sanity/check.sh --troll build/TROLL --case stand --golden golden/stand_n365 --rtol 1e-2 --files "sumstats|water_balance|LAIprofile"
+sanity/check.sh --troll build/TROLL --case example --nbiter 365 --update-golden /tmp/example_n365   # store a new reference
+sanity/check.sh --troll build/TROLL --climate daytime --case example --golden golden/daytime_example_n20   # two-file climate
+sanity/check.sh --troll build/TROLL --climate daytime --ref <commit>  # other reference (daytime only: versions < 4.3.1 cannot read 24-hour files)
 sanity/check.sh --help
 ```
 
@@ -43,9 +52,11 @@ TROLL version and platform that produced them):
 
 | Directory | Case | Target |
 | --- | --- | --- |
-| `golden/example_n20` | example, 20 days | `sanity` |
-| `golden/stand_n365` | established stand, 365 days | `sanity-stand` |
-| `golden/stand_n1000` | established stand, 1000 days | `sanity1000` |
+| `golden/example_n20` | example, 20 days, 24-hour climate | `sanity` |
+| `golden/stand_n365` | established stand, 365 days, 24-hour climate | `sanity-stand` |
+| `golden/stand_n1000` | established stand, 1000 days, 24-hour climate | `sanity1000` |
+| `golden/daytime_example_n20` | example, 20 days, two-file daytime climate | `sanity-daytime` |
+| `golden/daytime_stand_n365` | established stand, 365 days, two-file daytime climate | `sanity-stand-daytime` |
 
 4.1.2 changed results on purpose (Photosyn fix, accurate electron transport), so
 an upstream commit can no longer serve as reference. `check.sh --ref <commit>`
@@ -98,5 +109,5 @@ Lines with CPU time and the random seed are ignored.
 ## Benchmarking
 
 `sanity/bench.sh --troll build/TROLL --threads "1 2 4 8"` times the established
-stand for each thread count and checks that outputs are identical to the
+stand (24-hour climate; `--climate daytime` for the two-file format) for each thread count and checks that outputs are identical to the
 single-thread run (they must be: see the OpenMP notes in `src/simulation.cpp`).

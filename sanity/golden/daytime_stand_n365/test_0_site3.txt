@@ -1,0 +1,1 @@
+iter	site	sp_lab	height	dbh	litter	age	LA	yougLA	matureLA	oldLA	CR	CD	GPP	NPP	Rstem	Rnight	LAI3D_canopy	LAI3D_base_crown	root_depth	phi_root	WSFs	WSFns	transpiration	LAImax	LAmax	root_biomass_0	root_biomass_1	root_biomass_2	root_biomass_3	root_biomass_4	soil_layer_weight_0	soil_layer_weight_1	soil_layer_weight_2	soil_layer_weight_3	soil_layer_weight_4

@@ -79,7 +79,7 @@ How the day is integrated: photosynthesis and transpiration over the lit steps
 stem respiration averaged over all steps; the daily means used for canopy light, soil
 evaporation and the lookup tables (temperature, VPD, wind, light) over the lit steps, as with
 the daytime file. The night temperature of each day (`NightTemperature`) is the mean of its
-dark steps. A converter from ERA5-Land point time series writes this format (`era5land_to_troll.py --hourly24`).
+dark steps. A converter from ERA5-Land point time series writes this format (`era5land_to_troll.py --hourly24`); `example/climate24h.txt` (Paracou 2004-2005, hourly) is an example, and the default climate of the regression and benchmark cases since 4.3.2.
 
 ## Soil file (`-p`)
 

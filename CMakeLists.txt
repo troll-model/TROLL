@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(TROLL VERSION 4.3.1 LANGUAGES C CXX)
+project(TROLL VERSION 4.3.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -117,28 +117,41 @@ set(_troll_tol_long --rtol ${TROLL_SANITY_RTOL_LONG} --atol ${TROLL_SANITY_ATOL}
 
 # 20 days from bare ground on the 4 ha example (fast smoke test)
 add_custom_target(sanity
-    COMMAND ${_troll_check} --case example --nbiter 20 --golden golden/example_n20 ${_troll_tol_example}
+    COMMAND ${_troll_check} --case example --climate 24h --nbiter 20 --golden golden/example_n20 ${_troll_tol_example}
     DEPENDS ${PROJECT_NAME} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
-    COMMENT "Sanity check: example, 20 days" USES_TERMINAL VERBATIM)
+    COMMENT "Sanity check: example, 20 days, 24-hour climate" USES_TERMINAL VERBATIM)
 
 # One year on an established 1 ha stand: adult growth, competition, mortality, treefall
 add_custom_target(sanity-stand
-    COMMAND ${_troll_check} --case stand --nbiter 365 --golden golden/stand_n365 ${_troll_tol_long}
+    COMMAND ${_troll_check} --case stand --climate 24h --nbiter 365 --golden golden/stand_n365 ${_troll_tol_long}
     DEPENDS ${PROJECT_NAME} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
-    COMMENT "Sanity check: established stand, 1 year" USES_TERMINAL VERBATIM)
+    COMMENT "Sanity check: established stand, 1 year, 24-hour climate" USES_TERMINAL VERBATIM)
 
 # 1000 days on the established stand (long-run dynamics; ~4 min single-threaded)
-add_custom_target(sanity1000
-    COMMAND ${_troll_check} --case stand --nbiter 1000 --golden golden/stand_n1000 ${_troll_tol_long}
+# 4.3.2: the same two cases with the two-file daytime climate format (-m + -d), so that its
+# reader stays tested; the default targets above use the 24-hour climate (example/climate24h.txt)
+add_custom_target(sanity-daytime
+    COMMAND ${_troll_check} --case example --climate daytime --nbiter 20 --golden golden/daytime_example_n20 ${_troll_tol_example}
     DEPENDS ${PROJECT_NAME} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
-    COMMENT "Sanity check: established stand, 1000 days" USES_TERMINAL VERBATIM)
+    COMMENT "Regression check: 4 ha example, 20 days, two-file daytime climate, vs sanity/golden" USES_TERMINAL VERBATIM)
+add_custom_target(sanity-stand-daytime
+    COMMAND ${_troll_check} --case stand --climate daytime --nbiter 365 --golden golden/daytime_stand_n365 ${_troll_tol_long}
+    DEPENDS ${PROJECT_NAME} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
+    COMMENT "Regression check: 1 ha stand, 1 year, two-file daytime climate, vs sanity/golden" USES_TERMINAL VERBATIM)
+
+add_custom_target(sanity1000
+    COMMAND ${_troll_check} --case stand --climate 24h --nbiter 1000 --golden golden/stand_n1000 ${_troll_tol_long}
+    DEPENDS ${PROJECT_NAME} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
+    COMMENT "Sanity check: established stand, 1000 days, 24-hour climate" USES_TERMINAL VERBATIM)
 
 # Regenerate the stored reference outputs. Only when results are MEANT to change:
 # review the differences first, then commit the new references on their own.
 add_custom_target(golden
-    COMMAND ${_troll_check} --case example --nbiter 20 --update-golden golden/example_n20
-    COMMAND ${_troll_check} --case stand --nbiter 365 --update-golden golden/stand_n365
-    COMMAND ${_troll_check} --case stand --nbiter 1000 --update-golden golden/stand_n1000
+    COMMAND ${_troll_check} --case example --climate 24h --nbiter 20 --update-golden golden/example_n20
+    COMMAND ${_troll_check} --case stand --climate 24h --nbiter 365 --update-golden golden/stand_n365
+    COMMAND ${_troll_check} --case stand --climate 24h --nbiter 1000 --update-golden golden/stand_n1000
+    COMMAND ${_troll_check} --case example --climate daytime --nbiter 20 --update-golden golden/daytime_example_n20
+    COMMAND ${_troll_check} --case stand --climate daytime --nbiter 365 --update-golden golden/daytime_stand_n365
     DEPENDS ${PROJECT_NAME} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
     COMMENT "Regenerating stored reference outputs in sanity/golden/" USES_TERMINAL VERBATIM)
 
@@ -154,7 +167,7 @@ add_custom_target(unit-tests
     DEPENDS test_quad
     COMMENT "Unit tests: quadratic solvers of the leaf kernel" USES_TERMINAL VERBATIM)
 
-add_custom_target(check DEPENDS unit-tests sanity sanity-stand)
+add_custom_target(check DEPENDS unit-tests sanity sanity-stand sanity-daytime)
 
 # Outputs must be bit-identical whatever the number of OpenMP threads
 add_custom_target(threads-check
