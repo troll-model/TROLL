@@ -339,6 +339,7 @@ void ReadInputSpecies(Context &ctx)
 //! @param ctx simulation context (all model state)
 void ReadInputDailyvar(Context &ctx)
 {
+    long nb_dark_steps = 0; // 4.3.0: steps with Snet < SNET_MIN_PHOTOSYNTHESIS
     // currently very simple reading in, only basic error checking
     cout << endl
          << "Reading in file: " << ctx.fileio.inputfile_daytimevar << endl;
@@ -372,7 +373,12 @@ void ReadInputDailyvar(Context &ctx)
                 cout << "Warning, VPD is <=0.01, on day " << day_current << " at " << starttime_current << "h." << endl;
             }
 
-            if (varday_light_current <= 1)
+            if (varday_light_current < SNET_MIN_PHOTOSYNTHESIS)
+            { // 4.3.0: dark step (night, or no light): kept at 0, photosynthesis is not run for it
+                varday_light_current = 0.0f;
+                nb_dark_steps++;
+            }
+            else if (varday_light_current <= 1)
             {
                 varday_light_current = 1;
                 cout << "Warning, light is <=1, on day " << day_current << " at " << starttime_current << "h." << endl;
@@ -398,6 +404,8 @@ void ReadInputDailyvar(Context &ctx)
         cout << "Read in: " << ctx.time.nbsteps_varday << " timesteps per day, covering " << ctx.time.nbhours_covered << " hours of the day." << endl;
         cout << "Successfully read in daytime variation file" << endl;
         ctx.time.inv_nbsteps_varday = 1.0 / float(ctx.time.nbsteps_varday);
+        if (nb_dark_steps > 0)
+            cout << "Read in: " << nb_dark_steps << " dark steps (Snet < " << SNET_MIN_PHOTOSYNTHESIS << " W m-2), without photosynthesis." << endl;
     }
     else
     {

@@ -17,6 +17,12 @@
 
 // test with positive g0 in stomatal conductance model
 #ifndef TROLL_NO_G0
+//! Shortwave irradiance (Snet, W m-2) below which a sub-daily step is treated as dark (4.3.0):
+//! Tree::dailyFluxesLeaf does not run the leaf energy balance and photosynthesis for it, and the
+//! step contributes leaf day respiration only (no assimilation, no transpiration)
+#ifndef SNET_MIN_PHOTOSYNTHESIS
+#define SNET_MIN_PHOTOSYNTHESIS 0.01f
+#endif
 //! Warm start of the leaf energy-balance iteration (Tree::FluxesLeaf) from the previous half-hour step:
 //! 0 = off (start from air conditions, as in 4.2.0); 1 = previous leaf temperature; 2 = previous
 //! leaf-to-air temperature difference; 3 = as 2, plus CO2 and VPD at the leaf surface. Changes results.

@@ -1790,6 +1790,17 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
 
 TROLL_FLOAT_KERNEL_END
 
+//! Leaf day respiration at temperature T, as subtracted in Tree::Photosyn (Rday): used for the dark
+//! steps of Tree::dailyFluxesLeaf (Snet < SNET_MIN_PHOTOSYNTHESIS), where photosynthesis is not run.
+//! @param ctx  simulation context (lookup tables)
+//! @param T    temperature (degC), the air temperature of the step
+//! @return leaf day respiration (umol CO2 m-2 s-1), positive
+float Tree::LeafDayRespiration(Context &ctx, float T)
+{
+    int convT = int(ctx.lookup.iTaccuracy * T);
+    return t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP_F;
+}
+
 //! - Function Tree::dailyFluxesLeaf
 //! - Returns the *daily* primary productivity (assimilation; computed from Tree::FluxesLeaf) averaged across the daily fluctuations in climatic conditions, per unit leaf area, in micromoles C/ctx.params.m^2/s.
 leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, float W, float ExtinctLW, float PPFDinc, float &wf_1016)
@@ -1802,6 +1813,8 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 
     for (int i = 0; i < ctx.time.nbsteps_varday; i++)
     {
+        float snet_vardaytimestep = 1.0f; // 4.3.0: shortwave irradiance of the step (W m-2)
+        bool dark = false;
 
 #ifdef FULL_CLIMATE
 
@@ -1816,6 +1829,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 
         if (ctx.time.iter == -1)
         {
+            snet_vardaytimestep = ctx.climate.WDailyMean_all[i];
             ppfd_vardaytimestep = PPFD * ctx.climate.WDailyMean_all[i] * ctx.params.SWtoPPFD;
             ppfd_top_vardaytimestep = ctx.climate.WDailyMean_all[i] * ctx.params.SWtoPPFD;
             t_top_vardaytimestep = ctx.climate.tDailyMean_all[i];
@@ -1828,6 +1842,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
         else
         {
             int c = (ctx.time.iter % ctx.time.nbdays) * ctx.time.nbsteps_varday + i;
+            snet_vardaytimestep = ctx.climate.varday_light[c];
             ppfd_vardaytimestep = PPFD * ctx.climate.varday_light[c] * ctx.params.SWtoPPFD;
             ppfd_top_vardaytimestep = ctx.climate.varday_light[c] * ctx.params.SWtoPPFD;
             t_top_vardaytimestep = ctx.climate.varday_T[c];
@@ -1842,7 +1857,8 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
         {
             cout << "Warning in dailyFluxesLeaf !!! vpd_wardaytimestep <=0" << endl;
         }
-        if (ppfd_vardaytimestep <= 0)
+        dark = snet_vardaytimestep < SNET_MIN_PHOTOSYNTHESIS; // 4.3.0
+        if (ppfd_vardaytimestep <= 0 && !dark)
         {
             cout << "Warning ppfd_vardaytimestep  <=0 in dailyFluxesLeaf !!!" << endl;
         }
@@ -1883,7 +1899,15 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 
 #endif
 
-        leafFluxes fluxes_vardaytimestep = FluxesLeaf(ctx, ppfd_vardaytimestep, vpd_vardaytimestep, t_vardaytimestep, ws_vardaytimestep, ExtinctLW, ppfd_top_vardaytimestep, ppfd_inc_vardaytimestep, t_top_vardaytimestep, vpd_top_vardaytimestep, &ws);
+        leafFluxes fluxes_vardaytimestep;
+        if (dark)
+        { // 4.3.0: no light: no energy balance and no photosynthesis; leaf day respiration at air temperature
+            fluxes_vardaytimestep.carbon_flux = -LeafDayRespiration(ctx, t_vardaytimestep);
+            fluxes_vardaytimestep.water_flux = 0.0f;
+            ws = LeafWarmStart(); // the next lit step starts again from air conditions
+        }
+        else
+            fluxes_vardaytimestep = FluxesLeaf(ctx, ppfd_vardaytimestep, vpd_vardaytimestep, t_vardaytimestep, ws_vardaytimestep, ExtinctLW, ppfd_top_vardaytimestep, ppfd_inc_vardaytimestep, t_top_vardaytimestep, vpd_top_vardaytimestep, &ws);
 
         dailyA += fluxes_vardaytimestep.carbon_flux;
         dailylT += fluxes_vardaytimestep.water_flux;

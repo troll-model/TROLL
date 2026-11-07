@@ -225,7 +225,9 @@ public:
     //! @param ws         [in,out] warm-start state of the previous step of this layer (nullptr: start from air conditions)
     //! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: transpiration (umol H2O m-2 s-1)
     leafFluxes FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop, LeafWarmStart *ws = nullptr);
+    float LeafDayRespiration(Context &ctx, float T); //!< Leaf day respiration at temperature T, for dark steps (see the definition for parameters)
     //! Daily mean leaf fluxes of one crown layer: FluxesLeaf over the daytime half-hourly steps.
+    //! Steps with Snet < SNET_MIN_PHOTOSYNTHESIS (dark steps, 4.3.0) skip FluxesLeaf and contribute leaf day respiration only.
     //! The climate arguments are relative to the canopy-top half-hourly series, not absolute values.
     //! @param ctx        simulation context (climate series)
     //! @param PPFD       light at the layer relative to the canopy top (fraction; multiplied by the half-hourly irradiance and SWtoPPFD)
