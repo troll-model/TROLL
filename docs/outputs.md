@@ -63,9 +63,9 @@ entry says so.
 | `ba` | basal area, all trees | m² ha⁻¹ |
 | `ba10` | basal area, trees with DBH ≥ 10 cm | m² ha⁻¹ |
 | `agb` | aboveground biomass | kg ha⁻¹ (the console prints t ha⁻¹) |
-| `gpp` | gross primary production in the timestep | MgC ha⁻¹ per timestep |
+| `gpp` | gross primary production in the timestep (since 4.3.4; before, net of `rday`) | MgC ha⁻¹ per timestep |
 | `npp` | net primary production in the timestep | MgC ha⁻¹ per timestep |
-| `rday` | leaf respiration during daytime | MgC ha⁻¹ per timestep |
+| `rday` | leaf respiration in the light (since 4.3.4; 0 before, as it was included in `gpp`) | MgC ha⁻¹ per timestep |
 | `rnight` | leaf respiration at night | MgC ha⁻¹ per timestep |
 | `rstem` | stem respiration | MgC ha⁻¹ per timestep |
 | `litterfall` | leaf litter | Mg (dry mass) ha⁻¹ per timestep |
@@ -203,7 +203,7 @@ One row per living tree at the beginning, middle and end of the run.
 | `age` | age | years |
 | `LA`, `yougLA`, `matureLA`, `oldLA` | total, young, mature, old leaf area (column name keeps the historical misspelling) | m² |
 | `CR`, `CD` | crown radius, crown depth | m |
-| `GPP`, `NPP`, `Rstem`, `Rnight` | carbon fluxes of the tree in the timestep | gC per timestep |
+| `GPP`, `NPP`, `Rstem`, `Rnight` | carbon fluxes of the tree in the timestep; `GPP` is net of the leaf respiration in the light `Rday` (gross = `GPP` + `Rday`; `Rday` filled since 4.3.4) | gC per timestep |
 | `LAI3D_canopy`, `LAI3D_base_crown` | leaf area index above the crown top and above the crown base | m² m⁻² |
 | `root_depth` | rooting depth | m |
 | `phi_root` | water potential in the root zone | MPa |

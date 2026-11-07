@@ -119,6 +119,8 @@ description given in the file. Parameters beginning with `_` are options.
 | `theta` | 0.7 | — (curvature, Eq. 25) | parameter of the Farquhar model |
 | `g1` | 3.77 | kPa^0.5 | parameter g1 of Medlyn et al ’s stomatal conductance model |
 | `g0` | 5.0 | **mmol H₂O m⁻² s⁻¹** (converted in the code; see note) | minimum leaf conductance to water vapour |
+| `Rday_inhibition` | 0.4 | fraction (0-1) | 4.3.4, optional: leaf respiration in the light as a fraction of dark respiration (light inhibition); 0.4 = 60% inhibition, the value used before 4.3.4; JULES uses 0.7 |
+| `Rday_inhibition_Snet` | 0.01 | W m⁻² | 4.3.4, optional: shortwave irradiance above the canopy from which `Rday_inhibition` applies; lit steps below it respire as in the dark (0.01: every lit step is inhibited; JULES: about 2) |
 | `pheno_a0` | 0.2 | — (a_T,o, GMD Part 2 Eq. 1) | threshold for change in old leaf shedding rate, in proportion of TLP |
 | `pheno_b0` | 0.02 | MPa (b_T,o in GMD Part 2 Eq. 1; the file describes it "in proportion of tree height", see open questions) | threshold for change in old leaf shedding rate, in proportion of tree height |
 | `pheno_delta` | 0.2 | — (δ_o) | amplitude of change in old leaf shedding rate |

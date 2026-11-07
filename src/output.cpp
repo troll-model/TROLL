@@ -617,8 +617,8 @@ void OutputVisual(Context &ctx)
                 output_statistics.push_back(ratio_height_Ct);
 
                 float ratio_NPP_GPP;
-                if (ctx.T[s].t_GPP > 0.0)
-                    ratio_NPP_GPP = ctx.T[s].t_NPP / ctx.T[s].t_GPP;
+                if (ctx.T[s].t_GPP + ctx.T[s].t_Rday > 0.0) // 4.3.4: gross primary production
+                    ratio_NPP_GPP = ctx.T[s].t_NPP / (ctx.T[s].t_GPP + ctx.T[s].t_Rday);
                 else
                     ratio_NPP_GPP = 0.0;
                 output_statistics.push_back(ratio_NPP_GPP);

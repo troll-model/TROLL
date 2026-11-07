@@ -1457,8 +1457,10 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     // exact limit-cycle shortcut: the loop state is (TLEAF, CS, DS); once it repeats bit-for-bit, the
     // remaining iterations replay the cycle, so the result of iteration ITERMAX-1 is already known.
     constexpr int CYCLE_CHECK_FROM = 3, CYCLE_MAXPERIOD = 7;
-    float hT[30], hC[30], hD[30], hA[30], hE[30];
+    float hT[30], hC[30], hD[30], hA[30], hE[30], hR[30];
     PhotosynTerms pt{}; // temperature-dependent terms, recomputed only when the LUT bin changes
+    pt.rday_factor = (PPFDtop >= ctx.params.Rday_inhibition_Snet * ctx.params.SWtoPPFD) ? ctx.params.Rday_inhibition : 1.0f; // 4.3.4
+    float RDAY = 0.0f; // 4.3.4: leaf day respiration of the iteration whose ALEAF is returned
     pt.convT = -1;      // no bin yet: the first iteration always computes them
     for (int ITER = 0; ITER < ITERMAX; ITER++)
     { // Iterative loop:
@@ -1473,6 +1475,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
             {
                 int j = ITER - period + (ITERMAX - 1 - ITER) % period;
                 ALEAF = hA[j];
+                RDAY = hR[j];
                 ET = hE[j];
                 break;
             }
@@ -1488,6 +1491,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
             if (convT != pt.convT) SetPhotosynTerms(ctx, PPFD, convT, pt);
         }
         ps = Photosyn(ctx, pt, CS, DS); // Compute CO2 assimilation rate and stomatal conductance at TLEAF, CS and DS
+        RDAY = pt.Rday;
         ALEAF = ps.carbon_flux;             // in micromolCO2 ctx.params.m-2 s-1
         GSC = ps.water_flux;                // in mol CO2 ctx.params.m-2 s-1 by Photosyn function
 
@@ -1567,7 +1571,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
             ITER = ITERMAX;
 
         } // If Tleaf diff < 0.01°C, stop search // check whether this threshold value is optimal
-        hA[it] = ALEAF; hE[it] = ET;
+        hA[it] = ALEAF; hE[it] = ET; hR[it] = RDAY;
         TLEAF = TLEAF1; // update TLEAF for next iteration // cf. Vezy et al. and discussion with Guerric Lemaire: suggest to make smaller steps at each iteration to ease convergence (TDIFF -> TDIFF/4)
 
         if (isnan(DS) || isnan(ET) || isnan(ALEAF) || ET < 0.0f || TLEAF <= 0.0f || TLEAF > 50.0f || CS < 0 || DS < 0 || CS > 100000)
@@ -1595,6 +1599,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     leafFluxes outFluxes;
     outFluxes.carbon_flux = ALEAF; // in micromol CO2 ctx.params.m-2 s-1
     outFluxes.water_flux = ET;     // in micromol H20 ctx.params.m-2 s-1
+    outFluxes.resp_flux = RDAY;    // 4.3.4: leaf day respiration included in ALEAF
     return outFluxes;
 }
 
@@ -1612,7 +1617,7 @@ void Tree::SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &
     pt.convT = convT;
     pt.KmT = ctx.lookup.LookUp_KmT[convT];
     pt.GammaT = ctx.lookup.LookUp_GammaT[convT];
-    pt.Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP_F;
+    pt.Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * pt.rday_factor; // 4.3.4: Rday_inhibition (was DAYRESP_F) or 1
     pt.VcmaxTW = t_Vcmax * ctx.lookup.LookUp_VcmaxT[convT] * t_WSF_A;
     float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
     float I = ctx.params.alpha * PPFD;
@@ -1724,7 +1729,7 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     int convT = int(ctx.lookup.iTaccuracy * TLEAF);
     float KmT = ctx.lookup.LookUp_KmT[convT];                        // with temperature dependencies
     float GammaT = ctx.lookup.LookUp_GammaT[convT];                  // with temperature dependencies
-    float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP_F; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
+    float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * ctx.params.Rday_inhibition; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
 
     // Model of stomatal conductance for CO2
     float GSDIVA = (1.0f + t_g1 / sqrtf(DS)) / CS; // Medlyn et al. 2011 Global Change Biology. Note that ctx.params.g1 is now a tree class variable that is initiated at tree birth (in Tree::Birth) and updated in Tree::Water_Availability depending on the tree water stress.
@@ -1794,11 +1799,11 @@ TROLL_FLOAT_KERNEL_END
 //! steps of Tree::dailyFluxesLeaf (Snet < SNET_MIN_PHOTOSYNTHESIS), where photosynthesis is not run.
 //! @param ctx  simulation context (lookup tables)
 //! @param T    temperature (degC), the air temperature of the step
-//! @return leaf day respiration (umol CO2 m-2 s-1), positive
+//! @return leaf day respiration (umol CO2 m-2 s-1), positive, with the light inhibition Rday_inhibition (4.3.4)
 float Tree::LeafDayRespiration(Context &ctx, float T)
 {
     int convT = int(ctx.lookup.iTaccuracy * T);
-    return t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP_F;
+    return t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * ctx.params.Rday_inhibition;
 }
 
 //! - Function Tree::dailyFluxesLeaf
@@ -1807,6 +1812,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 {
     float dailyA = 0.0;
     float dailylT = 0.0;
+    float dailyR = 0.0; // 4.3.4: leaf day respiration included in dailyA
     LeafWarmStart ws; // warm start between consecutive half-hour steps (unused if TROLL_WARMSTART == 0)
 
     // cout << "In dailyFluxesLeaf PPFD=" << PPFD << "; T=" << T << "; VPD=" << VPD << "; W=" << W << endl;
@@ -1903,7 +1909,8 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
         if (dark)
         { // 4.3.0: no light: no energy balance and no photosynthesis; leaf day respiration at air temperature.
           // 4.3.1: with 24-hour input, the leaf respiration of dark steps is counted in Rnight instead (ComputeRespGPP)
-            fluxes_vardaytimestep.carbon_flux = ctx.climate.full_day ? 0.0f : -LeafDayRespiration(ctx, t_vardaytimestep);
+            fluxes_vardaytimestep.resp_flux = ctx.climate.full_day ? 0.0f : LeafDayRespiration(ctx, t_vardaytimestep);
+            fluxes_vardaytimestep.carbon_flux = -fluxes_vardaytimestep.resp_flux;
             fluxes_vardaytimestep.water_flux = 0.0f;
             ws = LeafWarmStart(); // the next lit step starts again from air conditions
         }
@@ -1912,6 +1919,7 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 
         dailyA += fluxes_vardaytimestep.carbon_flux;
         dailylT += fluxes_vardaytimestep.water_flux;
+        dailyR += fluxes_vardaytimestep.resp_flux;
         if (ctx.climate.full_day ? (ctx.climate.varday_time[i] >= 10.0f && ctx.climate.varday_time[i] < 16.0f) : (i > 5 && i < 18.5)) // 4.3.1: clock time with 24-hour input
         {
             wf_1016 += fluxes_vardaytimestep.water_flux;
@@ -1928,12 +1936,14 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
     }
     dailyA *= ctx.time.inv_nbsteps_varday;
     dailylT *= ctx.time.inv_nbsteps_varday;
+    dailyR *= ctx.time.inv_nbsteps_varday;
 
     // cout << "In dailyFluxesLeaf, final daily average: dailyA=" << dailyA << "; dailylT=" << dailylT << endl;
 
     leafFluxes dailyF;
     dailyF.carbon_flux = dailyA; // in micromol C02 ctx.params.m-2 s-1
     dailyF.water_flux = dailylT; // in micromol H20 ctx.params.m-2 s-1
+    dailyF.resp_flux = dailyR;   // 4.3.4: leaf day respiration, in micromol C02 m-2 s-1
 
     if (isnan(dailyA) || isnan(dailylT))
     {
@@ -2478,6 +2488,7 @@ RespGPPResult Tree::ComputeRespGPP(Context &ctx)
     {
         // Photosynthesis and respiration, set to zero
         r.GPP = 0.0;
+        r.Rday = 0.0f;
 
         int crown_above_base = int(t_height - t_CD) + 1; // for flux above crown base
         int crown_above_top = int(t_height) + 1;         // for flux above crown top
@@ -2526,6 +2537,7 @@ RespGPPResult Tree::ComputeRespGPP(Context &ctx)
                 float water_flux_1016 = 0.0;
                 leafFluxes dailyF = Tree::dailyFluxesLeaf(ctx, PPFD, VPD, Tmp, W, ExtinctLW, PPFD_incident, water_flux_1016);
                 r.GPP += leafarea_layer * dailyF.carbon_flux;
+                r.Rday += leafarea_layer * dailyF.resp_flux; // 4.3.4
                 r.transpiration += leafarea_layer * dailyF.water_flux;
                 r.transpiration_1016 += leafarea_layer * water_flux_1016;
 
@@ -2552,6 +2564,7 @@ RespGPPResult Tree::ComputeRespGPP(Context &ctx)
             ileafarea_cumulated = 0.0;
 
         r.GPP *= ileafarea_cumulated;
+        r.Rday *= ileafarea_cumulated;
         r.transpiration *= ileafarea_cumulated;
         r.transpiration_1016 *= ileafarea_cumulated;
     }
@@ -2560,6 +2573,7 @@ RespGPPResult Tree::ComputeRespGPP(Context &ctx)
     float effLA_night = (0.75 * t_LA + 0.25 * t_matureLA) * (24.0 - ctx.time.nbhours_covered) * 15.7788 * ctx.time.timestep; // same as during the day, but inverse of hours covered (we assume that non-covered hours are night values), and assuming that respiration of young and old leaves are 75% the one of mature leaves:  Kitajima et al. 2002 found no or small reductions in respiration with leaf age, Reich et al. 2009 did (Rdark/Amax constant), but often respiration declines are less steep than photosynthetic capacity, cf. Villar et al. 1995.
 
     r.GPP *= effLA;
+    r.Rday *= effLA; // 4.3.4: same scaling as GPP (leaf area, daytime hours, units)
 
     float effLAT = (0.75 * t_LA + 0.25 * t_matureLA) * ctx.time.nbhours_covered * 23.652 * 0.000001 * ctx.time.timestep; // assuming that the decline in stomatal conductance of young and old leaves is less than for photosynthetic capacities (cf. ALbert et al. 2018)(75% the one of mature leaves), ie the water use efficiencies is lower of young and old leaves. Note that idally the Farquhar model should be applied to each leaf cohorts separately... 23.652=18.10^-6 * 3600*365, where 18.10^-6 is to convert micromol H20 into g, 3600*365 to convert s into year (as ctx.time.timestep is given in year); and 0.000001 is to convert g in m3.
     r.transpiration *= effLAT;                                                                         // this is the amount of water transpired by the tree during the ctx.time.timestep in m3.  CHECK: from our WILT data of sapflow of several canopy mature trees, and assuming a constant sapwood thickness of 4cm, this can be 5-110 liter/day, ie. 0.005-0.11 m3/day. See also values in Granier et al. 1996 (0.250-0.3 m3/day for a big dominant canopy tree), or Andrade et al. 1998 Oecologia (46-379 kg/day, ie. 0.046-0.379 m3/day). Note, in this version, we never account for nighttime transpiration... to be discussed.
@@ -2594,6 +2608,7 @@ void Tree::ApplyRespGPP(Context &ctx, const RespGPPResult &r)
     ctx.soil.transpiration_1016 += r.transpiration_1016;
     t_Rstem = r.Rstem;
     t_Rnight = r.Rnight;
+    t_Rday = r.Rday; // 4.3.4
 }
 
 //! @param ctx simulation context (all model state)
@@ -3101,7 +3116,7 @@ void Tree::Average(Context &ctx)
             (ctx.S[t_sp_lab].s_sum30)++;
         ctx.S[t_sp_lab].s_ba += t_dbh * ctx.grid.LH * t_dbh * ctx.grid.LH * 3.1415 * 0.25;
         ctx.S[t_sp_lab].s_npp += t_NPP * 1.0e-6;
-        ctx.S[t_sp_lab].s_gpp += t_GPP * 1.0e-6;
+        ctx.S[t_sp_lab].s_gpp += (t_GPP + t_Rday) * 1.0e-6; // 4.3.4: gross primary production (t_GPP is net of t_Rday)
         float agb = CalcAGB(ctx);
         ctx.S[t_sp_lab].s_agb += agb;
         ctx.S[t_sp_lab].s_rday += t_Rday * 1.0e-6;

@@ -14,6 +14,7 @@ struct leafFluxes
 {
     float carbon_flux; //!< Net leaf carbon assimilation (umol CO2 m-2 s-1)
     float water_flux;  //!< Leaf water flux: transpiration from FluxesLeaf (umol H2O m-2 s-1); stomatal conductance to CO2 from Photosyn (mol m-2 s-1)
+    float resp_flux = 0.0f; //!< 4.3.4: leaf day respiration included in carbon_flux (umol CO2 m-2 s-1), from FluxesLeaf and dailyFluxesLeaf; gross assimilation = carbon_flux + resp_flux
 };
 
 //! Daily carbon and water fluxes of one tree, as computed by Tree::ComputeRespGPP().
@@ -21,11 +22,12 @@ struct leafFluxes
 //! for all trees in parallel; Tree::ApplyRespGPP() then stores them in tree order.
 struct RespGPPResult
 {
-    float GPP = 0.0f;                //!< Gross primary production of the tree in the timestep (gC, as Tree::t_GPP)
+    float GPP = 0.0f;                //!< Primary production of the tree in the timestep, net of leaf day respiration (gC, as Tree::t_GPP)
     float transpiration = 0.0f;      //!< Transpiration of the tree in the timestep (as Tree::t_transpiration)
     float transpiration_1016 = 0.0f; //!< contribution to ctx.soil.transpiration_1016
     float Rstem = 0.0f;              //!< Stem respiration of the tree in the timestep (gC)
     float Rnight = 0.0f;             //!< Leaf respiration at night in the timestep (gC)
+    float Rday = 0.0f;               //!< 4.3.4: leaf respiration in the light in the timestep (gC), already subtracted in GPP
 };
 
 // ###########################################
@@ -52,7 +54,7 @@ public:
     float t_CD;        //!< crown depth (m) beware: this scales with NV, the vertical size of voxels, renamed v.3.1 for convenience
     float t_CR;        //!< crown radius (m) beware: this scales with NH, the horizontal size of voxels, renamed v.3.1 for convenience
     float t_Ct;        //!< flexural force threshold, _BASICTREEFALL
-    float t_GPP;       //!< Gross primary productivity of the tree (gC/timestep)
+    float t_GPP;       //!< Primary productivity of the tree, net of leaf day respiration t_Rday (gC/timestep); gross = t_GPP + t_Rday (4.3.4)
     float t_NPP;       //!< Net primary productivity of the tree (gC/timestep)
     float t_Rday;      //!< Daytime leaf respiration of the tree (gC/timestep)
     float t_Rnight;    //!< Nighttime leaf respiration of the tree (gC/timestep)
@@ -250,6 +252,7 @@ public:
         float VcmaxTW; //!< Vcmax at leaf temperature, with water stress (umol CO2 m-2 s-1)
         float VJ;      //!< electron-transport-limited rate J/4 (umol CO2 m-2 s-1)
         float J;       //!< electron transport rate (umol e- m-2 s-1)
+        float rday_factor; //!< 4.3.4: light inhibition of leaf respiration for this step (Rday_inhibition, or 1 below Rday_inhibition_Snet)
     };
     void SetPhotosynTerms(Context &ctx, float PPFD, int convT, PhotosynTerms &pt); //!< Fill PhotosynTerms for one temperature bin (see the definition for parameters)
     leafFluxes Photosyn(Context &ctx, const PhotosynTerms &pt, float CS, float DS);  //!< Leaf photosynthesis and stomatal conductance from precomputed terms (see the definition for parameters)

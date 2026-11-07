@@ -368,6 +368,8 @@ struct SimParams
     float alpha; //!< Apparent quantum yield to electron transport in mol e-/mol photons, equal to the true quantum yield multiplied by leaf absorbance
     float g1; //!< G1 parameter of Medlyn et al's model of stomatal conductance. v230: defined as a global parameter shared by species, instead of a Species class variable. !!!UPDATE A species-specific value of g1 (cf Lin et al. 2015 NCC or Wu et al. 2019 GCB) is needed to simulate functional shift through a regeneration. Different values of g1 across PFT are also used by Xu et al. 2016 New Phytologist using ED2+SPA applied on tropical dry forests
     float g0; //!< Minimum leaf conductance, in mmolH20 m-2 s-1, parameter of stomatal conductance model. Defined as a global parameter shared by species, in absence of a clear variation with other traits (see Duursma et al. 2018 New Phytologist, Slot et al. 2021 New Phytologist, METRADICA data)
+    float Rday_inhibition = 0.4f; //!< 4.3.4: leaf respiration in the light as a fraction of dark respiration (light inhibition, Kok effect); 0.4 = 60% inhibition (Atkin et al. 2000), the DAYRESP of earlier versions
+    float Rday_inhibition_Snet = 0.01f; //!< 4.3.4: shortwave irradiance above the canopy (Snet, W m-2) from which Rday_inhibition applies; lit steps below it respire as in the dark (default 0.01: every lit step is inhibited)
 
     // CO2 / atmosphere
     float Cair; //!< Atmospheric CO_2 concentration (in ppm). If in the future CO_2 is allowed to vary, Cair should have the same status as other climatic variables
