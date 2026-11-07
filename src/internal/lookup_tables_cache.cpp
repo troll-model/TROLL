@@ -74,41 +74,41 @@ bool SaveLookUpTablesToCache(Context &ctx)
 
     // 1) Scalar sizes and bin accuracies (the latter were previously not cached,
     //    so after a cache load every lookup used bin 0)
-    out.write((char *)&ctx.lookup.nbTbins, sizeof(ctx.lookup.nbTbins));
-    out.write((char *)&ctx.lookup.nbVPDbins, sizeof(ctx.lookup.nbVPDbins));
-    out.write((char *)&ctx.lookup.nbHbins, sizeof(ctx.lookup.nbHbins));
-    out.write((char *)&ctx.lookup.iTaccuracy, sizeof(ctx.lookup.iTaccuracy));
-    out.write((char *)&ctx.lookup.iVPDaccuracy, sizeof(ctx.lookup.iVPDaccuracy));
-    out.write((char *)&ctx.lookup.iHaccuracy, sizeof(ctx.lookup.iHaccuracy));
+    out.write(reinterpret_cast<char *>(&ctx.lookup.nbTbins), sizeof(ctx.lookup.nbTbins));
+    out.write(reinterpret_cast<char *>(&ctx.lookup.nbVPDbins), sizeof(ctx.lookup.nbVPDbins));
+    out.write(reinterpret_cast<char *>(&ctx.lookup.nbHbins), sizeof(ctx.lookup.nbHbins));
+    out.write(reinterpret_cast<char *>(&ctx.lookup.iTaccuracy), sizeof(ctx.lookup.iTaccuracy));
+    out.write(reinterpret_cast<char *>(&ctx.lookup.iVPDaccuracy), sizeof(ctx.lookup.iVPDaccuracy));
+    out.write(reinterpret_cast<char *>(&ctx.lookup.iHaccuracy), sizeof(ctx.lookup.iHaccuracy));
 
     // 2) Arrays of size ctx.lookup.nbTbins
-    out.write((char *)ctx.lookup.LookUp_KmT.data(), ctx.lookup.nbTbins * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_GammaT.data(), ctx.lookup.nbTbins * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_VcmaxT.data(), ctx.lookup.nbTbins * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_JmaxT.data(), ctx.lookup.nbTbins * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_Rleaf.data(), ctx.lookup.nbTbins * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_Rstem.data(), ctx.lookup.nbTbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_KmT.data()), ctx.lookup.nbTbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_GammaT.data()), ctx.lookup.nbTbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_VcmaxT.data()), ctx.lookup.nbTbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_JmaxT.data()), ctx.lookup.nbTbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_Rleaf.data()), ctx.lookup.nbTbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_Rstem.data()), ctx.lookup.nbTbins * sizeof(float));
 
     // 3) LUTs of the water model
-    out.write((char *)ctx.lookup.LookUp_SLOPE.data(), ctx.lookup.nbTbins * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_GRADN.data(), ctx.lookup.nbTbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_SLOPE.data()), ctx.lookup.nbTbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_GRADN.data()), ctx.lookup.nbTbins * sizeof(float));
 
     // INLR: ctx.lookup.nbTbins × ctx.lookup.nbVPDbins
     for (int i = 0; i < ctx.lookup.nbTbins; ++i)
-        out.write((char *)ctx.lookup.LookUp_INLR[i].data(), ctx.lookup.nbVPDbins * sizeof(float));
+        out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_INLR[i].data()), ctx.lookup.nbVPDbins * sizeof(float));
 
     // Wind LUT
-    out.write((char *)ctx.lookup.LookUp_Wind.data(), ctx.lookup.nbHbins * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_Wind.data()), ctx.lookup.nbHbins * sizeof(float));
 
     // 4) Flux LUTs: all size 80000
-    out.write((char *)ctx.lookup.LookUp_flux_absorption.data(), 80000 * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_flux.data(), 80000 * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_ExtinctLW.data(), 80000 * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_VPD.data(), 80000 * sizeof(float));
-    out.write((char *)ctx.lookup.LookUp_T.data(), 80000 * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_flux_absorption.data()), 80000 * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_flux.data()), 80000 * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_ExtinctLW.data()), 80000 * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_VPD.data()), 80000 * sizeof(float));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_T.data()), 80000 * sizeof(float));
 
     // 5) Crown site: 2601 ints
-    out.write((char *)ctx.lookup.LookUp_Crown_site, 2601 * sizeof(int));
+    out.write(reinterpret_cast<char *>(ctx.lookup.LookUp_Crown_site), 2601 * sizeof(int));
 
     return out.good();
 }
@@ -130,12 +130,12 @@ bool LoadLookUpTablesFromCache(Context &ctx)
         return false; // missing, old or foreign cache file: recompute
 
     // 1) Scalar sizes and bin accuracies
-    in.read((char *)&ctx.lookup.nbTbins, sizeof(ctx.lookup.nbTbins));
-    in.read((char *)&ctx.lookup.nbVPDbins, sizeof(ctx.lookup.nbVPDbins));
-    in.read((char *)&ctx.lookup.nbHbins, sizeof(ctx.lookup.nbHbins));
-    in.read((char *)&ctx.lookup.iTaccuracy, sizeof(ctx.lookup.iTaccuracy));
-    in.read((char *)&ctx.lookup.iVPDaccuracy, sizeof(ctx.lookup.iVPDaccuracy));
-    in.read((char *)&ctx.lookup.iHaccuracy, sizeof(ctx.lookup.iHaccuracy));
+    in.read(reinterpret_cast<char *>(&ctx.lookup.nbTbins), sizeof(ctx.lookup.nbTbins));
+    in.read(reinterpret_cast<char *>(&ctx.lookup.nbVPDbins), sizeof(ctx.lookup.nbVPDbins));
+    in.read(reinterpret_cast<char *>(&ctx.lookup.nbHbins), sizeof(ctx.lookup.nbHbins));
+    in.read(reinterpret_cast<char *>(&ctx.lookup.iTaccuracy), sizeof(ctx.lookup.iTaccuracy));
+    in.read(reinterpret_cast<char *>(&ctx.lookup.iVPDaccuracy), sizeof(ctx.lookup.iVPDaccuracy));
+    in.read(reinterpret_cast<char *>(&ctx.lookup.iHaccuracy), sizeof(ctx.lookup.iHaccuracy));
     if (!in.good())
         return false;
 
@@ -164,28 +164,28 @@ bool LoadLookUpTablesFromCache(Context &ctx)
     // ctx.lookup.LookUp_Crown_site is a static array; no allocation needed.
 
     // 3) Read back LUT data
-    in.read((char *)ctx.lookup.LookUp_KmT.data(), ctx.lookup.nbTbins * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_GammaT.data(), ctx.lookup.nbTbins * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_VcmaxT.data(), ctx.lookup.nbTbins * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_JmaxT.data(), ctx.lookup.nbTbins * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_Rleaf.data(), ctx.lookup.nbTbins * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_Rstem.data(), ctx.lookup.nbTbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_KmT.data()), ctx.lookup.nbTbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_GammaT.data()), ctx.lookup.nbTbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_VcmaxT.data()), ctx.lookup.nbTbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_JmaxT.data()), ctx.lookup.nbTbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_Rleaf.data()), ctx.lookup.nbTbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_Rstem.data()), ctx.lookup.nbTbins * sizeof(float));
 
-    in.read((char *)ctx.lookup.LookUp_SLOPE.data(), ctx.lookup.nbTbins * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_GRADN.data(), ctx.lookup.nbTbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_SLOPE.data()), ctx.lookup.nbTbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_GRADN.data()), ctx.lookup.nbTbins * sizeof(float));
 
     for (int i = 0; i < ctx.lookup.nbTbins; ++i)
-        in.read((char *)ctx.lookup.LookUp_INLR[i].data(), ctx.lookup.nbVPDbins * sizeof(float));
+        in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_INLR[i].data()), ctx.lookup.nbVPDbins * sizeof(float));
 
-    in.read((char *)ctx.lookup.LookUp_Wind.data(), ctx.lookup.nbHbins * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_Wind.data()), ctx.lookup.nbHbins * sizeof(float));
 
-    in.read((char *)ctx.lookup.LookUp_flux_absorption.data(), 80000 * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_flux.data(), 80000 * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_ExtinctLW.data(), 80000 * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_VPD.data(), 80000 * sizeof(float));
-    in.read((char *)ctx.lookup.LookUp_T.data(), 80000 * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_flux_absorption.data()), 80000 * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_flux.data()), 80000 * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_ExtinctLW.data()), 80000 * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_VPD.data()), 80000 * sizeof(float));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_T.data()), 80000 * sizeof(float));
 
-    in.read((char *)ctx.lookup.LookUp_Crown_site, 2601 * sizeof(int));
+    in.read(reinterpret_cast<char *>(ctx.lookup.LookUp_Crown_site), 2601 * sizeof(int));
 
     return in.good();
 }

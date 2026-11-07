@@ -30,8 +30,13 @@ if(CPPCHECK_PATH)
     # initializers); remove the suppression once they are initialized.
     add_custom_target(lint-static-gate
         COMMAND ${CPPCHECK_PATH}
+        # Newer cppcheck: normalCheckLevelMaxBranches and toomanyconfigs are informational notes about
+        # the depth of the analysis, not findings, but >= 2.18 counts them towards --error-exitcode;
+        # >= 2.22 reports members of structs without a constructor (context.hpp, filled from the
+        # inputs) as uninitMemberVarNoCtor, the variant of the uninitMemberVar already suppressed.
         ARGS --enable=warning,portability --inline-suppr --std=c++17
-             --suppress=uninitMemberVar --suppress=missingIncludeSystem
+             --suppress=uninitMemberVar --suppress=uninitMemberVarNoCtor --suppress=missingIncludeSystem
+             --suppress=normalCheckLevelMaxBranches --suppress=toomanyconfigs
              -I../include -I../include/internal --error-exitcode=1 --quiet ../src/
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Running cppcheck (gating: warnings are errors)"
