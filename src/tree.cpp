@@ -1581,7 +1581,8 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
 leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS)
 {
 
-    float Anet;
+    leafFluxes outPhotosyn;
+    float Agross;
 
     // Parameters for the Farquhar model
     int convT = int(ctx.lookup.iTaccuracy * TLEAF);
@@ -1589,12 +1590,10 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     float GammaT = ctx.lookup.LookUp_GammaT[convT];                  // with temperature dependencies
     float Rday = t_Rdark * ctx.lookup.LookUp_Rleaf[convT] * DAYRESP; // leaf respiration with temperature dependencies and inhibition due to light (DAYRESP).
 
-    ////////////// Model of stomatal conductance for CO2 /////////////
-    float GSDIVA;
-    if (DS < 0.0005)
-        GSDIVA = (1.0 + t_g1 / sqrt(0.0005)) / CS; // VPDMIN in MAESPA/Plantecophys R package
-    else
-        GSDIVA = (1.0 + t_g1 / sqrt(DS)) / CS; // Medlyn et al. 2011 Global Change Biology. Note that ctx.params.g1 is now a tree class variable that is initiated at tree birth (in Tree::Birth) and updated in Tree::Water_Availability depending on the tree water stress.
+    // 1. default case for stomatal conductance and photosynthesis models
+
+    // 1.1 Model of stomatal conductance for CO2 
+    float GSDIVA = (1.0 + t_g1 / sqrt(DS)) / CS; // Medlyn et al. 2011 Global Change Biology. Note that ctx.params.g1 is now a tree class variable that is initiated at tree birth (in Tree::Birth) and updated in Tree::Water_Availability depending on the tree water stress.
     // float GSDIVA = (1.0 + ctx.params.g1/sqrt(VPD))/(CS-GammaT); //Dewar et al. 2018 New Phytologist
     if (GSDIVA <= 0 || isnan(GSDIVA))
     {
@@ -1602,24 +1601,18 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
         cout << "In Photosyn: PPFD=" << PPFD << "; TLEAF=" << TLEAF << "; CS=" << CS << "; DS=" << DS << endl;
     }
 
-    //////////// Farquhar model of photosynthesis //////////
+    // 1.2 Farquhar model of photosynthesis
+    float A, B, C; // polynomial coefficients
 
-    float A, B, C, AC, AJ;
-
-    // Solution when Rubisco activity is limiting
+    // 1.2.1 Solution when Rubisco activity is limiting
     float VcmaxTW = t_Vcmax * ctx.lookup.LookUp_VcmaxT[convT] * t_WSF_A;
     A = ctx.params.g0 + GSDIVA * (VcmaxTW - Rday);
     B = (1.0 - CS * GSDIVA) * (VcmaxTW - Rday) + ctx.params.g0 * (KmT - CS) - GSDIVA * (VcmaxTW * GammaT + KmT * Rday);
     C = -(1.0 - CS * GSDIVA) * (VcmaxTW * GammaT + KmT * Rday) - ctx.params.g0 * KmT * CS;
     float CIC = QUAD(A, B, C, 1); // Finds larger root of quadratic function
-    if ((CIC <= 0.0) || (CIC - CS > 0.01))
-    { // newIM: have replaced CIC>CS by (CIC-CS>0.01) to avoid error due to comparing floats (maybe there would be a best way to fix this...)
-        AC = 0.0;
-    }
-    else
-        AC = VcmaxTW * (CIC - GammaT) / (CIC + KmT);
+    float WC = VcmaxTW * CIC / (CIC + KmT); 
 
-    // Solution when electron transport rate is limiting
+    // 1.2.2 Solution when electron transport rate is limiting
     float JmaxTW = t_Jmax * ctx.lookup.LookUp_JmaxT[convT] * t_WSF_A;
     float I = ctx.params.alpha * PPFD;
     float J = QUAD(ctx.params.theta, -(I + JmaxTW), JmaxTW * I, -1); // ctx.params.theta is the convexity term for electron transport rates (dimensionless, 0–1), here provided in input (default value =0.7, as in von Caemmerer 2000, but a value of 0.85 is used in Duursma' R package
@@ -1628,35 +1621,53 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     B = (1.0 - CS * GSDIVA) * (VJ - Rday) + ctx.params.g0 * (2.0 * GammaT - CS) - GSDIVA * (VJ * GammaT + 2.0 * GammaT * Rday);
     C = -(1.0 - CS * GSDIVA) * GammaT * (VJ + 2.0 * Rday) - ctx.params.g0 * 2.0 * GammaT * CS;
     float CIJ = QUAD(A, B, C, 1); // Finds larger root of quadratic function
-    AJ = VJ * (CIJ - GammaT) / (CIC + 2.0 * GammaT);
-    if ((AJ - Rday) < 1.0e-6)
-    {
-        CIJ = CS; // Below light compensation point
-        AJ = VJ * (CIJ - GammaT) / (CIJ + 2.0 * GammaT);
+    float WJ = VJ * CIJ / (CIJ + 2.0 * GammaT);
+
+    // 1.2.3 Computes co-limitation between either rubisco activity or light
+    if (WC < WJ) {
+        Agross = WC * (1 - GammaT / CIC);
+    } else {
+        Agross = WJ* (1 - GammaT / CIJ); 
     }
-
-    // Co-limitation
-    Anet = fminf(AC, AJ) - Rday; // compute the *net* assimilation rate, in micromol C02 ctx.params.m-2 s-1
-
-    if (isnan(Anet) || isnan(GSDIVA))
-    {
-        cout << "Warning in Photosyn: " << ", Anet= " << Anet << ", GSDIVA=" << GSDIVA << "; Anet*GSDIVA=" << Anet * GSDIVA << ", AC= " << AC << ", AJ= " << AJ << ", Rday=" << Rday << ", CS=" << CS << "; CIC=" << CIC << "; CIJ=" << CIJ << ", DS= " << DS << ", TLEAF= " << TLEAF << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << "; GammaT=" << GammaT << "; KmT=" << KmT << "; J=" << J << "; PPFD=" << PPFD << "; T_Rdark=" << t_Rdark << "; convT=" << convT << endl;
-    }
-
-    if (isnan(Anet * GSDIVA) && Anet == 0.0)
-    { // to solve nan issue when Anet=0 and GSDIVA=inf
-        Anet = 1.0e-5;
-    }
-
-    leafFluxes outPhotosyn;
-    outPhotosyn.carbon_flux = Anet;              // in micromol C02 ctx.params.m-2 s-1
-    outPhotosyn.water_flux = ctx.params.g0 + GSDIVA * Anet; // in mol CO2 ctx.params.m-2 s-1, the conversion to mol H20 is made in function FluxesLeaf.
-    if (outPhotosyn.water_flux < ctx.params.g0)
+    // Anet, the *net* assimilation rate, in micromol C02 ctx.params.m-2 s-1
+    outPhotosyn.carbon_flux = Agross - Rday;
+    // g_sw, stomatal conductance in mol CO2 ctx.params.m-2 s-1, the conversion to mol H20 is made in function FluxesLeaf.
+    outPhotosyn.water_flux = ctx.params.g0 + GSDIVA * Agross; 
+    
+    // 2. Special case when g_sw < g_0 => g_sw = g_0
+    if (outPhotosyn.water_flux < ctx.params.g0) {
+        // 2.1 stomatal conductance for CO2, // g_sw equal to g_0, GSDIVA = 0
         outPhotosyn.water_flux = ctx.params.g0;
+        // 2.2 Farquhar model of photosynthesis,
+        A = ctx.params.g0;
+        // 2.2.1 Rubisco limited
+        B = (VcmaxTW - Rday) + ctx.params.g0 * (KmT - CS);
+        C = (VcmaxTW * GammaT + KmT * Rday) - ctx.params.g0 * KmT * CS;
+        CIC = QUAD(A, B, C, 1);
+        WC = VcmaxTW * CIC / (CIC + KmT);
+        // 2.2.2 light limited
+        B = (VJ - Rday) + ctx.params.g0 * (2.0 * GammaT - CS);
+        C = - GammaT * (VJ + 2.0 * Rday) - ctx.params.g0 * 2.0 * GammaT * CS;
+        CIJ = QUAD(A, B, C, 1);
+        WJ = VJ * CIJ / (CIJ + 2.0 * GammaT);
+        // 2.2.3 Computes co-limitation between either rubisco activity or light
+        if (WC < WJ) {
+            Agross = WC * (1 - GammaT / CIC);
+        } else {
+            Agross = WJ* (1 - GammaT / CIJ); 
+        }
+        // Anet, the *net* assimilation rate, in micromol C02 ctx.params.m-2 s-1
+        outPhotosyn.carbon_flux = Agross - Rday;
+    }
+
+    // 3. Special case when  g_sw > g_smax
+    // @Todo
+    //if (outPhotosyn.water_flux > tx.S[t_sp_lab].s_gsmax) {} // GSMAX must be computed at species initialization ctx.S[t_sp_lab].s_gsmax
+    
 
     if (isnan(outPhotosyn.water_flux) || isnan(outPhotosyn.carbon_flux))
     {
-        cout << "Warning in Photosyn: " << ", Anet= " << Anet << ", AC= " << AC << ", AJ= " << AJ << ", Rday=" << Rday << ", GSDIVA=" << GSDIVA << ", CS=" << CS << "; CIC=" << CIC << "; CIJ=" << CIJ << ", DS= " << DS << ", TLEAF= " << TLEAF << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << "; GammaT=" << GammaT << "; KmT=" << KmT << "; J=" << J << "; PPFD=" << PPFD << "; t_Rdark=" << t_Rdark << "; convT=" << convT << endl;
+        cout << "Warning in Photosyn: " << ", Anet= " << outPhotosyn.carbon_flux << ", AC= " << AC << ", AJ= " << AJ << ", Rday=" << Rday << ", GSDIVA=" << GSDIVA << ", CS=" << CS << "; CIC=" << CIC << "; CIJ=" << CIJ << ", DS= " << DS << ", TLEAF= " << TLEAF << ", t_WSF_A=" << t_WSF_A << ", t_WSF= " << t_WSF << "; GammaT=" << GammaT << "; KmT=" << KmT << "; J=" << J << "; PPFD=" << PPFD << "; t_Rdark=" << t_Rdark << "; convT=" << convT << endl;
     }
 
     return outPhotosyn;
