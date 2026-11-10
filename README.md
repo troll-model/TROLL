@@ -32,35 +32,17 @@ cmake ..
 make
 ```
 
-### Build options
-
-| CMake option | Default | Effect |
-| --- | --- | --- |
-| `-DTROLL_WARNINGS_AS_ERRORS=ON` | `OFF` | `-Werror` (used in CI) |
-| `-DTROLL_EXTRA_WARNINGS=ON` | `OFF` | adds `-Wextra -Wshadow -Wconversion` (advisory) |
-| `-DTROLL_SANITIZE="address;undefined"` | empty | builds with sanitizers (use with `-DCMAKE_BUILD_TYPE=Debug`) |
-| `-DTROLL_OPENMP=OFF` | `ON` | parallel leaf fluxes and LAImax table (OpenMP); results do not depend on the thread count |
-| `-DTROLL_LTO=OFF` | `ON` | link-time optimisation |
-| `-DTROLL_DEFINES="..."` | empty | compile-time model options, see below |
-
-Model options are listed in `include/troll_defines.hpp`. Options that are on by default are switched off with `TROLL_NO_<OPTION>`; options that are off by default are switched on by naming them, e.g. `cmake -DTROLL_DEFINES="LAI_gradient;CACHE_LUT" ..`. CI builds each option; `TROLL_NO_WATER`, `TROLL_NO_CROWN_UMBRELLA`, `TROLL_NO_FULL_CLIMATE`, `Output_ABC` and `TRACK_INDIVIDUALS` currently do not compile.
-
 ### Tests
 
 ```bash
 cd build/
-make unit-tests    # process-level unit tests (tests/)
-make sanity        # 20 days from bare ground, against stored reference outputs
-make sanity-stand  # 1 year on an established 1 ha stand
-make check         # all three
-make sanity1000    # 1000 days on the established stand (~4 min)
-make threads-check # outputs must be bit-identical with 1 and 4 threads
-make golden        # regenerate the stored reference outputs (only when results are meant to change)
+make sanity10      # 10 days from bare ground, against reference outputs
+make sanity100     # 100 days from bare ground, similar to sanity10
+make sanity1000    # 1000 days, similar to sanity10
+make sanity10000   # 10000 days, similar to sanity10
+make test          # triggers sanity100
 ```
-
-The regression checks compare against reference outputs stored in `sanity/golden/`. On Linux x86-64 with GCC 13, results reproduce them bit for bit; the default tolerances (CMake variables `TROLL_SANITY_RTOL_EXAMPLE`, `TROLL_SANITY_RTOL_LONG`, `TROLL_SANITY_ATOL`, `TROLL_SANITY_FILES_LONG`) allow for other compilers and math libraries. See [sanity/README.md](./sanity/README.md).
-
-The leaf kernel (`FluxesLeaf`, `Photosyn`, `QUAD`) is single precision and compiled with `-Wdouble-promotion` as an error (`include/kernel_precision.hpp`): use the `*_F` constants of `constants.hpp` and `f`-suffixed literals there. Building with `-ffast-math` is refused.
+The regression checks compare against reference outputs computed from `main` branch. On Linux x86-64 with GCC 13, results reproduce them bit for bit.
 
 ### Documentation
 

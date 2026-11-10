@@ -41,7 +41,7 @@ entry says so.
 
 ## Run information
 
-### `info.txt`
+### info.txt
 
 | Item | Meaning | Unit |
 | --- | --- | --- |
@@ -52,7 +52,7 @@ entry says so.
 
 ## Stand-level time series
 
-### `sumstats.txt` — stand summary
+### sumstats.txt — stand summary
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ entry says so.
 | `rstem` | stem respiration | MgC ha⁻¹ per timestep |
 | `litterfall` | leaf litter | Mg (dry mass) ha⁻¹ per timestep |
 
-### `sumstats_species.txt` — summary per species
+### sumstats_species.txt — summary per species
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -78,7 +78,7 @@ entry says so.
 | `species` | species name | — |
 | `sum1` ... `litterfall` | as in `sumstats.txt`, for the species | as in `sumstats.txt` |
 
-### `death.txt` — mortality
+### death.txt — mortality
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -87,21 +87,21 @@ entry says so.
 | `nbTreefall1` | trees that fell (treefall) | idem |
 | `nbTreefall10` | same, DBH ≥ 10 cm | idem |
 
-### `LAIdynamics.txt`
+### LAIdynamics.txt
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
 | `iter` | iteration | — |
 | `LAI` | leaf area index at ground level, mean over soil cells | m² m⁻² |
 
-### `LAIyoung.txt`, `LAImature.txt`, `LAIold.txt`
+### LAIyoung.txt, LAImature.txt, LAIold.txt
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
 | `iter` | iteration | — |
 | `h_0`, `h_1`, ... | leaf area density of young / mature / old leaves in each 1 m layer (`h_0` = ground to 1 m), plot mean | m² m⁻² per layer |
 
-### `LAIprofile.txt`
+### LAIprofile.txt
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -109,7 +109,7 @@ entry says so.
 | `height` | height | m |
 | `LAI` | leaf area index at that height | m² m⁻² |
 
-### `water_balance.txt` — plot water balance
+### water_balance.txt — plot water balance
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -131,7 +131,7 @@ Known issues (under review, unchanged since 4.1.3; see [open-questions.md](open-
 | `interception` | computed as the sum over soil cells of interception in mm, × 0.001, divided by the number of *sites* rather than of soil cells: smaller than the plot-mean interception (m) by (soil cells)/(sites), e.g. 16 / 10,000 for the 1 ha example |
 | `throughfall` | computed in mm per soil cell in `simulation.cpp` but commented as m³ in `output.cpp`; check its unit before use |
 
-### `phi_root.txt`
+### phi_root.txt
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -140,7 +140,7 @@ Known issues (under review, unchanged since 4.1.3; see [open-questions.md](open-
 | `abundance_weighted_phi_root_n10` | same, trees with DBH ≥ 10 cm | MPa |
 | `agb_weighted_phi_root` | same, weighted by aboveground biomass | MPa |
 
-### `ppfd0.txt`
+### ppfd0.txt
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -149,7 +149,7 @@ Known issues (under review, unchanged since 4.1.3; see [open-questions.md](open-
 | `value` | value of the diagnostic | depends on `variable` |
 | `residual` | residual of the diagnostic | depends on `variable` |
 
-### `litterfall.txt`
+### litterfall.txt
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
@@ -170,7 +170,7 @@ files, columns `dcell_0 ... dcell_K` are the cells and rows the soil layers.
 
 ## Individual trees
 
-### `final_pattern.txt`, `initial_pattern.txt` — inventories
+### final_pattern.txt, initial_pattern.txt — inventories
 
 One row per living tree at the end (or start) of the run; readable as an initial forest with
 option `-f`.
@@ -191,7 +191,7 @@ option `-f`.
 | DBH, height | tree size | m |
 | other columns | further state variables of the tree | as in `state_*` |
 
-### `state_begin/mid/end.txt` — snapshots
+### state_begin/mid/end.txt — snapshots
 
 One row per living tree at the beginning, middle and end of the run.
 
@@ -212,14 +212,14 @@ One row per living tree at the beginning, middle and end of the run.
 | `LAImax`, `LAmax` | maximum leaf area index and leaf area | m² m⁻², m² |
 | `root_biomass_<l>` | root biomass in soil layer *l* | unit not established from the code |
 
-### `site1.txt` ... `site6.txt`
+### site1.txt ... site6.txt
 
 | Column | Meaning | Unit |
 | --- | --- | --- |
 | `iter` | iteration (one row per iteration while a tree occupies the site) | — |
 | other columns | as in `state_begin/mid/end.txt`, for the tree at one of six fixed sites | as in `state_*` |
 
-### `death_snapshots.txt`, `deathrate.txt`
+### death_snapshots.txt, deathrate.txt
 
 | File | Column | Meaning | Unit |
 | --- | --- | --- | --- |
