@@ -1503,7 +1503,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     float GBHU = 0.003 * sqrt(WIND / t_wleaf) * CMOLAR;        // Boundary ctx.diag.layer conductance to heat transfer by forced convection (single sided) in mol ctx.params.m-2 s-1; Leuning et al (1995) PC&E 18:1183-1200 Eqn E1; Equation A2 in Medlyn et al. 2007
     // Rnetiso = ctx.params.absorptance_leaves*RSOL - ctx.lookup.LookUp_INLR[convTA][convVPDA]; // Calculation of isothermal net radiation (J ctx.params.m-2 s-1; Jones (2013) equation (5.4) p.100)
     Rnetiso = RSOL - ctx.lookup.LookUp_INLR[convTAtop][convVPDAtop] * ExtinctLW; // Calculation of isothermal net radiation (J ctx.params.m-2 s-1; Jones (2013) equation (5.4) p.100). No need of ctx.params.absorptance_leaves, since PPFD provided in argument is already the absorbed flux.
-
+Birth
     // if (ExtinctLW<0.2) {
     //    cout << "Rnetiso=" << Rnetiso << " RSOL=" << RSOL << " INLR=" << ctx.lookup.LookUp_INLR[convTA][convVPDA]  << " INLR_top=" << ctx.lookup.LookUp_INLR[convTAtop][convVPDAtop] << " //ExtinctLW=" << ExtinctLW <<  endl;
     // }

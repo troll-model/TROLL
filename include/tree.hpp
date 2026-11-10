@@ -180,17 +180,13 @@ public:
 #endif
 
     void CalcRespGPP(Context &ctx); //!< Carbon and water fluxes of the tree in the timestep: GPP, transpiration, stem and night-time respiration (WATER: ComputeRespGPP then ApplyRespGPP)
-#ifdef WATER
-    RespGPPResult ComputeRespGPP(Context &ctx); //!< Fluxes for this timestep; modifies neither the tree nor ctx
-    void ApplyRespGPP(Context &ctx, const RespGPPResult &r); //!< Store fluxes in the tree; add to ctx.soil.transpiration_1016
-#endif
     void CalcNPP(Context &ctx); //!< Net primary production of the timestep, from GPP and respiration
     void UpdateLeafDynamics(Context &ctx);
     void UpdateTreeBiometry(Context &ctx);
     void UpdateVolumeDensity(); //!< Crown leaf area index t_LAI: leaf area over the crown area filled with leaves (gaps excluded)
     void DisperseSeed(Context &ctx);
     void Treefall(Context &ctx, float angle);
-    void Update(Context &ctx, bool fluxes_precomputed = false);
+    void Update(Context &ctx);
     void Average(Context &ctx); //!< Add the tree to the per-species sums of its species (sumstats outputs)
     void CalcLAI(Context &ctx);
     void histdbh(Context &ctx); //!< Add the tree to the DBH histogram ctx.diag.nbdbh (1 cm classes, rounded down)

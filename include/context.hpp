@@ -97,7 +97,7 @@ struct Grid
     int linear_nb_dcells; //!< Linear number of dcells
     int sites_per_dcell; //!< Number of sites per dcell
     int nbdcells; //!< Total number of dcells; note that nbdcells = linear_nb_dcells * linear_nb_dcells
-    std::vector<int> site_DCELL; //!< Index of the soil cell (dcell) containing each site; size sites
+     int *site_DCELL = nullptr; //!< Index of the soil cell (dcell) containing each site; size sites
     float i_sites_per_dcell; //!< 1.0/sites_per_dcell, where sites_per_dcell is number of sites per dcell
     int HEIGHT; //!< Maximum height (m)
     int SBORD; //!< Boundary condition, defined as RMAX*cols
@@ -152,10 +152,10 @@ struct Climate
     float windDailyMean_year; //!< Average WindSpeed per year
     float Tnight_year; //!< Average tnight per year
 
-    std::vector<float> WDailyMean_all; //!< Mean daily course of irradiance over the whole climate file, per daytime step; used when iter = -1 (LAImax table)
-    std::vector<float> VPDDailyMean_all; //!< Mean daily course of VPD over the whole climate file, per daytime step; used when iter = -1 (LAImax table)
-    std::vector<float> tDailyMean_all; //!< Mean daily course of air temperature over the whole climate file, per daytime step; used when iter = -1 (LAImax table)
-    std::vector<float> windDailyMean_all; //!< Mean daily course of wind speed over the whole climate file, per daytime step; used when iter = -1 (LAImax table)
+    float *WDailyMean_all = nullptr; //!< Mean daily course of irradiance over the whole climate file, per daytime step; used when iter = -1 (LAImax table)
+    float *VPDDailyMean_all = nullptr; //!< Mean daily course of VPD over the whole climate file, per daytime step; used when iter = -1 (LAImax table)
+    float *tDailyMean_all = nullptr; //!< Mean daily course of air temperature over the whole climate file, per daytime step; used when iter = -1 (LAImax table)
+    float *windDailyMean_all = nullptr; //!< Mean daily course of wind speed over the whole climate file, per daytime step; used when iter = -1 (LAImax table)
 };
 
 //! Precomputed lookup tables: temperature responses (0.1 degC bins), light and longwave extinction, wind profile, crown sites, LAImax
@@ -164,78 +164,75 @@ struct LookupTables
     int nbTbins; //!< Number of bins for the temperature lookup tables
     float iTaccuracy; //!< Inverse of accuracy of a temperature bin (e.g. if Taccuracy is 0.1 or 0.5 °C, then iTaccuracy is 10.0 or 2.0, respectively)
 
-    std::vector<float> LookUp_KmT; //!< Michaelis-Menten constant of Rubisco for CO2, including O2 inhibition, per 0.1 degC temperature bin (von Caemmerer 2000); expressed relative to Cair in one of the two Photosyn variants
-    std::vector<float> LookUp_GammaT; //!< CO2 compensation point in the absence of dark respiration (Gamma*), per 0.1 degC bin (von Caemmerer 2000); relative to Cair in one of the two Photosyn variants
-    std::vector<float> LookUp_VcmaxT; //!< Temperature factor of Vcmax relative to 25 degC, per 0.1 degC bin (Bernacchi et al. 2003; dimensionless)
-    std::vector<float> LookUp_JmaxT; //!< Temperature factor of Jmax relative to 25 degC, per 0.1 degC bin (Bernacchi et al. 2003; dimensionless)
-    std::vector<float> LookUp_Rleaf; //!< Temperature factor of leaf dark respiration relative to 25 degC, per 0.1 degC bin (Atkin et al. 2015, eq. 1; dimensionless)
-    std::vector<float> LookUp_flux_absorption; //!< Mean fraction of top-of-canopy PPFD within a leaf layer, by cumulated LAI above (i) and layer LAI (j), index i + 400 j
-    std::vector<float> LookUp_flux; //!< Fraction of top-of-canopy PPFD reaching a given cumulated LAI, exp(-kpar * LAI); index i + 400 j
-    std::vector<float> LookUp_ExtinctLW; //!< Extinction factor of thermal (longwave) radiation with cumulated LAI, 0.8 exp(-0.8 LAI) (Leuning et al. 1995, eq. D1)
-    std::vector<float> LookUp_VPD; //!< Reduction factor of VPD with cumulated LAI within the canopy (dimensionless)
-    std::vector<float> LookUp_T; //!< Decrease in air temperature with cumulated LAI within the canopy, up to 3 degC at LAI >= 7 (degC)
-    std::vector<float> LookUp_Rstem; //!< Stem maintenance respiration coefficient per timestep at each 0.1 degC bin, Q10 = 2
+    float *LookUp_KmT = nullptr; //!< Michaelis-Menten constant of Rubisco for CO2, including O2 inhibition, per 0.1 degC temperature bin (von Caemmerer 2000); expressed relative to Cair in one of the two Photosyn variants
+    float *LookUp_GammaT = nullptr; //!< CO2 compensation point in the absence of dark respiration (Gamma*), per 0.1 degC bin (von Caemmerer 2000); relative to Cair in one of the two Photosyn variants
+    float *LookUp_VcmaxT = nullptr; //!< Temperature factor of Vcmax relative to 25 degC, per 0.1 degC bin (Bernacchi et al. 2003; dimensionless)
+    float *LookUp_JmaxT = nullptr; //!< Temperature factor of Jmax relative to 25 degC, per 0.1 degC bin (Bernacchi et al. 2003; dimensionless)
+    float *LookUp_Rleaf = nullptr;//!< Temperature factor of leaf dark respiration relative to 25 degC, per 0.1 degC bin (Atkin et al. 2015, eq. 1; dimensionless)
+    float *LookUp_flux_absorption = nullptr; //!< Mean fraction of top-of-canopy PPFD within a leaf layer, by cumulated LAI above (i) and layer LAI (j), index i + 400 j
+    float *LookUp_flux = nullptr; //!< Fraction of top-of-canopy PPFD reaching a given cumulated LAI, exp(-kpar * LAI); index i + 400 j
+    float *LookUp_ExtinctLW = nullptr; //!< Extinction factor of thermal (longwave) radiation with cumulated LAI, 0.8 exp(-0.8 LAI) (Leuning et al. 1995, eq. D1)
+    float *LookUp_VPD = nullptr; //!< Reduction factor of VPD with cumulated LAI within the canopy (dimensionless)
+    float *LookUp_T = nullptr; //!< Decrease in air temperature with cumulated LAI within the canopy, up to 3 degC at LAI >= 7 (degC)
+    float *LookUp_Rstem = nullptr; //!< Stem maintenance respiration coefficient per timestep at each 0.1 degC bin, Q10 = 2
     int LookUp_Crown_site[2601]; //!< new in v.2.4: lookup table to fill crown cylinder sequentially from inside to outside, allowing for smooth crown growth
 
     int nbVPDbins; //!< Number of bins for the VPD lookup tables
     float iVPDaccuracy; //!< Inverse of accuracy of a vpd bin (e.g. if VPDaccuracy is 0.01 kPa, then iVPDaccuracy is 100.0)
-
-    std::vector<std::vector<float>> LookUp_INLR; //!< Isothermal net longwave radiation by temperature bin (0.1 degC) and VPD bin (0.01 kPa), with sky emissivity from Dilley & O'Brien 1998 (W m-2)
-    std::vector<float> LookUp_SLOPE; //!< Slope of saturation vapour pressure versus temperature, per 0.1 degC bin (Pa K-1; Jones 2013, eq. 5.15)
-    std::vector<float> LookUp_GRADN; //!< Radiative conductance 4 emissivity sigma T^3 / (CPAIR AIRMA), per 0.1 degC bin (mol m-2 s-1; Jones 2013, p. 101)
+    
+    float **LookUp_INLR = nullptr; //!< Isothermal net longwave radiation by temperature bin (0.1 degC) and VPD bin (0.01 kPa), with sky emissivity from Dilley & O'Brien 1998 (W m-2)
+    float *LookUp_SLOPE = nullptr; //!< Slope of saturation vapour pressure versus temperature, per 0.1 degC bin (Pa K-1; Jones 2013, eq. 5.15)
+    float *LookUp_GRADN = nullptr; //!< Radiative conductance 4 emissivity sigma T^3 / (CPAIR AIRMA), per 0.1 degC bin (mol m-2 s-1; Jones 2013, p. 101)
 
     int nbHbins; //!< Number of bins for the Wind lookup tables
     float iHaccuracy; //!< Inverse of the height-ratio step of LookUp_Wind (1 / 0.01)
 
-    std::vector<float> LookUp_Wind; //!< Wind speed relative to canopy top, by height ratio h / canopy height in 0.01 steps: logarithmic profile above 0.8 H, exponential (Inoue) below
+    float *LookUp_Wind = nullptr; //!< Wind speed relative to canopy top, by height ratio h / canopy height in 0.01 steps: logarithmic profile above 0.8 H, exponential (Inoue) below
 
-    std::vector<float> LookUpLAImax;      //!< LAImax per (species, intraspecific variant); filled lazily, see GetLAImaxPrecomputed()
-    std::vector<unsigned char> LookUpLAImax_ready; //!< 1 once the matching LookUpLAImax entry has been computed
-    int LookUpLAImax_iter = -1;           //!< ctx.time.iter at initialisation (the entries are defined for these conditions)
-    float LookUpLAImax_tnight = 0.0f;     //!< ctx.climate.tnight at initialisation
+    std::vector<float> LookUpLAImax;      //!< LAImax per (species, intraspecific variant)
 };
 
 //! Soil hydrology: layer properties, water content, potential and fluxes per layer and soil cell (dcell)
 struct Soil
 {
     int nblayers_soil; //!< Number of soil layers (for water module)
-    std::vector<float> layer_depth; //!< Depth of the bottom of each soil layer below the surface (m)
+    float *layer_depth = nullptr; //!< Depth of the bottom of each soil layer below the surface (m)
 
-    std::vector<float> Sat_SWC; //!< Saturated volumetric water content of each soil layer (m3 m-3)
-    std::vector<float> Max_SWC; //!< Maximum water volume of each soil layer in one dcell (m3)
-    std::vector<float> FC_SWC; //!< Water volume at field capacity of each soil layer in one dcell (m3)
-    std::vector<float> Res_SWC; //!< Residual volumetric water content of each soil layer (m3 m-3)
-    std::vector<float> Min_SWC; //!< Minimum (residual) water volume of each soil layer in one dcell (m3)
+    float *Sat_SWC = nullptr; //!< Saturated volumetric water content of each soil layer (m3 m-3)
+    float *Max_SWC = nullptr; //!< Maximum water volume of each soil layer in one dcell (m3)
+    float *FC_SWC = nullptr; //!< Water volume at field capacity of each soil layer in one dcell (m3)
+    float *Res_SWC = nullptr; //!< Residual volumetric water content of each soil layer (m3 m-3)
+    float *Min_SWC = nullptr; //!< Minimum (residual) water volume of each soil layer in one dcell (m3)
 
-    std::vector<float> Ksat; //!< Saturated hydraulic conductivity of each soil layer (mm s-1, i.e. kg m-2 s-1; Cosby et al. 1984)
-    std::vector<float> a_vgm; //!< van Genuchten-Mualem parameter -1/alpha of each soil layer (MPa, so that soil_phi3D is in MPa)
-    std::vector<float> b_vgm; //!< van Genuchten-Mualem parameter 1/m of each soil layer (dimensionless)
-    std::vector<float> c_vgm; //!< van Genuchten-Mualem parameter 1 - m of each soil layer (dimensionless)
-    std::vector<float> m_vgm; //!< van Genuchten-Mualem parameter m = 1 - 1/n of each soil layer (dimensionless)
-    std::vector<float> phi_e; //!< Air-entry water potential of each soil layer, Campbell model (MPa; Tomasella & Hodnett 1998)
-    std::vector<float> b; //!< Exponent of the Campbell water retention curve of each soil layer (dimensionless)
+    float *Ksat = nullptr; //!< Saturated hydraulic conductivity of each soil layer (mm s-1, i.e. kg m-2 s-1; Cosby et al. 1984)
+    float *a_vgm = nullptr; //!< van Genuchten-Mualem parameter -1/alpha of each soil layer (MPa, so that soil_phi3D is in MPa)
+    float *b_vgm = nullptr; //!< van Genuchten-Mualem parameter 1/m of each soil layer (dimensionless)
+    float *c_vgm = nullptr; //!< van Genuchten-Mualem parameter 1 - m of each soil layer (dimensionless)
+    float *m_vgm = nullptr; //!< van Genuchten-Mualem parameter m = 1 - 1/n of each soil layer (dimensionless)
+    float *phi_e = nullptr; //!< Air-entry water potential of each soil layer, Campbell model (MPa; Tomasella & Hodnett 1998)
+    float *b = nullptr; //!< Exponent of the Campbell water retention curve of each soil layer (dimensionless)
 
-    std::vector<std::vector<float>> SWC3D; //!< Soil water content per layer and dcell (m3)
-    std::vector<std::vector<float>> soil_phi3D; //!< Soil water potential per layer and dcell (MPa)
-    std::vector<std::vector<float>> Ks; //!< Soil hydraulic conductivity per layer and dcell at the current water content (mm s-1)
-    std::vector<std::vector<float>> KsPhi; //!< Product of conductivity and water potential (Campbell model) per layer and dcell; used for the water potential in the root zone
-    std::vector<std::vector<float>> Transpiration; //!< Water taken up by transpiration per layer and dcell during the current timestep (same unit as SWC3D)
+    float **SWC3D = nullptr; //!< Soil water content per layer and dcell (m3)
+    float **soil_phi3D = nullptr; //!< Soil water potential per layer and dcell (MPa)
+    float **Ks = nullptr; //!< Soil hydraulic conductivity per layer and dcell at the current water content (mm s-1)
+    float **KsPhi = nullptr; //!< Product of conductivity and water potential (Campbell model) per layer and dcell; used for the water potential in the root zone
+    float **Transpiration = nullptr; //!< Water taken up by transpiration per layer and dcell during the current timestep (same unit as SWC3D)
 
-    std::vector<std::vector<float>> LAI_DCELL; //!< Mean leaf area density per height layer and dcell (m2 m-2 per layer); [0] is the total LAI of the dcell
+    float **LAI_DCELL = nullptr; //!< Mean leaf area density per height layer and dcell (m2 m-2 per layer); [0] is the total LAI of the dcell
 
-    std::vector<float> LAI_young; //!< Plot-mean LAI of young leaves per height layer (m2 m-2)
-    std::vector<float> LAI_mature; //!< Plot-mean LAI of mature leaves per height layer (m2 m-2)
-    std::vector<float> LAI_old; //!< Plot-mean LAI of old leaves per height layer (m2 m-2)
+    float *LAI_young = nullptr; //!< Plot-mean LAI of young leaves per height layer (m2 m-2)
+    float *LAI_mature = nullptr; //!< Plot-mean LAI of mature leaves per height layer (m2 m-2)
+    float *LAI_old = nullptr; //!< Plot-mean LAI of old leaves per height layer (m2 m-2)
 
-    std::vector<float> Canopy_height_DCELL; //!< Mean canopy height of each dcell (m)
-    std::vector<int> HSum_DCELL; //!< Sum of the canopy heights of the sites of each dcell, used to compute Canopy_height_DCELL (m)
-    std::vector<float> TopWindSpeed_DCELL; //!< Wind speed at the top of the canopy of each dcell (m s-1)
+    float *Canopy_height_DCELL = nullptr; //!< Mean canopy height of each dcell (m)
+    int *HSum_DCELL = nullptr; //!< Sum of the canopy heights of the sites of each dcell, used to compute Canopy_height_DCELL (m)
+    float *TopWindSpeed_DCELL = nullptr; //!< Wind speed at the top of the canopy of each dcell (m s-1)
 
-    std::vector<float> Interception; //!< Rainfall intercepted by the canopy of each dcell during the current timestep (mm of rainfall)
-    std::vector<float> Throughfall; //!< Rainfall reaching the soil of each dcell during the current timestep (mm of rainfall)
-    std::vector<float> Runoff; //!< Surface runoff of each dcell during the current timestep (mm of rainfall, as Throughfall)
-    std::vector<float> Leakage; //!< Drainage below the deepest soil layer of each dcell during the current timestep (m3)
-    std::vector<float> Evaporation; //!< Soil evaporation from the top layer of each dcell during the current timestep (m3; note: Interception and Throughfall are in mm)
+    float *Interception = nullptr; //!< Rainfall intercepted by the canopy of each dcell during the current timestep (mm of rainfall)
+    float *Throughfall = nullptr; //!< Rainfall reaching the soil of each dcell during the current timestep (mm of rainfall)
+    float *Runoff = nullptr; //!< Surface runoff of each dcell during the current timestep (mm of rainfall, as Throughfall)
+    float *Leakage = nullptr; //!< Drainage below the deepest soil layer of each dcell during the current timestep (m3)
+    float *Evaporation = nullptr; //!< Soil evaporation from the top layer of each dcell during the current timestep (m3; note: Interception and Throughfall are in mm)
 
     float transpiration_1016; //!< Variable used only to compare with eddy-flux tower data.
     float abund_phi_root; //!< Summary statistic output: abundance-weighted phi-root
@@ -259,8 +256,8 @@ struct Diagnostics
     int nbtrees_carbstarv_n10; //!< Trees in carbon starvation, DBH >= 10 cm
     int nbtrees_carbstarv_n30; //!< Trees in carbon starvation, DBH >= 30 cm
 
-    std::vector<int> nbdbh; //!< Number of trees per 1 cm DBH class, for outputs
-    std::vector<float> layer; //!< Plot sum of LAI3D per height layer, for outputs (m2 m-2 summed over sites)
+    int *nbdbh = nullptr; //!< Number of trees per 1 cm DBH class, for outputs
+    float *layer = nullptr; //!< Plot sum of LAI3D per height layer, for outputs (m2 m-2 summed over sites)
 };
 
 //! Settings of the simulated lidar point clouds
@@ -286,15 +283,15 @@ struct RNGState
 //! Seed rain and recruitment state per site and species
 struct SpeciesState
 {
-    std::vector<std::vector<int>> SPECIES_SEEDS; //!< Seeds per site and species: presence (0/1), or number of seeds with the SEEDTRADEOFF option
-    std::vector<double> p_seed; //!< Probability of each site receiving a seed from the external seed rain (multinomial weights, uniform)
-    std::vector<unsigned int> n_seed; //!< Number of external seeds per site in the current timestep (multinomial draw)
+    int **SPECIES_SEEDS = nullptr; //!< Seeds per site and species: presence (0/1), or number of seeds with the SEEDTRADEOFF option
+    double *p_seed = nullptr; //!< Probability of each site receiving a seed from the external seed rain (multinomial weights, uniform)
+    unsigned int *n_seed = nullptr; //!< Number of external seeds per site in the current timestep (multinomial draw)
 
-    std::vector<double> p_species; //!< Relative frequency of each species in the external seed rain (multinomial weights)
-    std::vector<unsigned int> n_species; //!< Number of external seeds per species in the current timestep (multinomial draw)
+    double *p_species = nullptr; //!< Relative frequency of each species in the external seed rain (multinomial weights)
+    unsigned int *n_species = nullptr; //!< Number of external seeds per species in the current timestep (multinomial draw)
 
-    std::vector<int> SPECIES_GERM; //!< Species with at least one seed at the current site, from which the recruit is drawn
-    std::vector<float> PROB_S; //!< Per-species seed probabilities; allocated but not read by the current code (candidate for removal)
+    int *SPECIES_GERM = nullptr; //!< Species with at least one seed at the current site, from which the recruit is drawn
+    float *PROB_S = nullptr; //!< Per-species seed probabilities; allocated but not read by the current code (candidate for removal)
 };
 
 //! Intraspecific trait variation: standard deviations, correlations and precomputed distributions (10000 variants)
@@ -362,7 +359,7 @@ struct SimParams
     float klight; //!< Light absorption rate or extinction coefficient used in Beer-Lambert law to compute light within the canopy
     float kpar; //!< New in v.2.5: effective light absorption rate or extinction coefficient used in Beer-Lambert law to compute light within the canopy; kpar = klight * absorptance_leaves
     float phi; //!< True quantum yield; previously was apparent quantum yield (in micromol C/micromol photon): quantum yield multiplied by leaf absorptance. Quantum yield is often provided per absorbed light flux, so one should multiply incident PPFD by leaf absorptance (Poorter et al American Journal of Botany). For some authors, it should be species-dependent or environment dependent, but these options are not implemented here (see eg Domingues et al 2014 Plant Ecology & Diversity). As of v2.5: phi is the quantum yield, without multiplication with absorptance (see absorptance_leaves)
-    float theta; //!< Parameter of the Farquhar model set to 0.7 in this version. For some authors, it should be species-dependent or environment dependent, but these options are not implemented here
+    float theta; //!< Parameter of thstd::vector<e Farquhar model set to 0.7 in this version. For some authors, it should be species-dependent or environment dependent, but these options are not implemented here
     float absorptance_leaves; //!< Absorptance of leaves (close to 0.91 for tropical tree species)
     float alpha; //!< Apparent quantum yield to electron transport in mol e-/mol photons, equal to the true quantum yield multiplied by leaf absorbance
     float g1; //!< G1 parameter of Medlyn et al's model of stomatal conductance. v230: defined as a global parameter shared by species, instead of a Species class variable. !!!UPDATE A species-specific value of g1 (cf Lin et al. 2015 NCC or Wu et al. 2019 GCB) is needed to simulate functional shift through a regeneration. Different values of g1 across PFT are also used by Xu et al. 2016 New Phytologist using ED2+SPA applied on tropical dry forests
@@ -406,8 +403,8 @@ struct SimParams
 //! Spatial fields: cumulated leaf area density and treefall damage
 struct SimFields
 {
-    std::vector<std::vector<float>> LAI3D; //!< Leaf area index above each height (cumulated from the canopy top), per height layer and site including a border of SBORD sites (m2 m-2)
-    std::vector<unsigned short> Thurt[3]; //!< Treefall field
+    float **LAI3D = nullptr; //!< Leaf area index above each height (cumulated from the canopy top), per height layer and site including a border of SBORD sites (m2 m-2)
+    unsigned short *Thurt[3]; //!< Treefall field
 };
 
 //! All state of a TROLL simulation, passed by reference to the model functions (replaces the global variables of TROLL 4.0)
@@ -431,9 +428,6 @@ struct Context
     SimFields field; //!< Spatial fields: leaf area density and treefall
     std::vector<Species> S; //!< All species
     std::vector<Tree> T;    //!< All tree sites
-#ifdef WATER
-    std::vector<RespGPPResult> resp_gpp; //!< Per-site fluxes precomputed in parallel each timestep (see Evolution)
-#endif
     OutputConfig out;   // last: large fstream objects, accessed rarely
 };
 
