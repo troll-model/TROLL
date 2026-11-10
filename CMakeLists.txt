@@ -41,21 +41,23 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_compile_options(${PROJECT_NAME} PRIVATE -O3 -Wall)
 target_link_libraries(${PROJECT_NAME} PRIVATE GSL::gsl GSL::gslcblas)
 
-# sanity check
-add_custom_target(sanity
-    COMMAND ${CMAKE_SOURCE_DIR}/sanity/check.sh
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
-    COMMENT "Running sanity check (bit-by-bit comparison)"
+# --- Test target ---
+# check.sh $1 = nombre de pas de temps, défaut 20 dans le script
+foreach(n 10 100 1000 10000)
+    add_custom_target(sanity${n}
+        COMMAND ${CMAKE_SOURCE_DIR}/sanity/check.sh ${n}
+        COMMENT "Running sanity check — ${n} iterations (bit-by-bit comparison)"
+        DEPENDS ${PROJECT_NAME}
+    )
+endforeach()
+
+# Make 'test' depend on 'sanity' with 100 iterations (and any other tests in the future)
+add_custom_target(test DEPENDS sanity100)
+
+# --- Clean target ---
+set_property(DIRECTORY APPEND PROPERTY
+    ADDITIONAL_CLEAN_FILES
+        "${CMAKE_BINARY_DIR}/base_results"
+        "${CMAKE_BINARY_DIR}/test_runs"
 )
-
-# sanity check — 1000 iterations
-add_custom_target(sanity1000
-    COMMAND ${CMAKE_SOURCE_DIR}/sanity/check_1000.sh
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/sanity
-    COMMENT "Running sanity check — 1000 iterations (bit-by-bit comparison)"
-)
-
-# Make 'test' depend on 'sanity' (and any other tests in the future)
-add_custom_target(test DEPENDS sanity)
-
 

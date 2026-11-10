@@ -11,7 +11,9 @@ Same requirements for compiling TROLL, see build [README](../README.md)
 ```bash
 cd build
 cmake ..
-make sanity
+make test # similar to make sanity100
+# make sanity1000 for longer run
+# make sanity10000 for validating long term trends
 ```
 
 ## Expected outputs
