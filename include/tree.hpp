@@ -188,12 +188,8 @@ public:
     void UpdateTreeBiometry(Context &ctx);
     void UpdateVolumeDensity();
 
-    void DisperseSeed(Context &ctx);
     void Treefall(Context &ctx, float angle);
     void Update(Context &ctx);
-    void Average(Context &ctx);
-    void CalcLAI(Context &ctx);
-    void histdbh(Context &ctx);
 
     float CalcJmaxm(Context &ctx);
     float CalcAGB(Context &ctx);
@@ -214,8 +210,6 @@ public:
     leafFluxes FluxesLeaf(Context &ctx, float, float, float, float, float, float, float, float, float);
     leafFluxes dailyFluxesLeaf(Context &ctx, float, float, float, float, float, float, float &);
     leafFluxes Photosyn(Context &ctx, float, float, float, float);
-    void OutputTreeStandard(Context &ctx, std::fstream &output);
-    void OutputTreeStandard(Context &ctx);
 #else
     float DeathRate(Context &ctx, float, float);
     float GPPleaf(Context &ctx, float, float, float);
@@ -228,11 +222,6 @@ public:
     void CalcLAImax(Context &ctx);
     void CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax);
     float predLeafLifespanKikuzawa(Context &ctx);
-    float GetCrownAreaFilled(float crown_area);
-
-#ifdef TRACK_INDIVIDUALS
-    float StartTracking(Context &ctx);
-#endif
 };
 
 #endif
