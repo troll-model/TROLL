@@ -184,12 +184,10 @@ public:
     void UpdateLeafDynamics(Context &ctx);
     void UpdateTreeBiometry(Context &ctx);
     void UpdateVolumeDensity(); //!< Crown leaf area index t_LAI: leaf area over the crown area filled with leaves (gaps excluded)
-    void DisperseSeed(Context &ctx);
+
     void Treefall(Context &ctx, float angle);
     void Update(Context &ctx);
-    void Average(Context &ctx); //!< Add the tree to the per-species sums of its species (sumstats outputs)
-    void CalcLAI(Context &ctx);
-    void histdbh(Context &ctx); //!< Add the tree to the DBH histogram ctx.diag.nbdbh (1 cm classes, rounded down)
+    
     float CalcJmaxm(Context &ctx); //!< Maximum electron transport rate per leaf mass from the tree's leaf traits
     float CalcAGB(Context &ctx); //!< Aboveground biomass of the tree (kg)
     float CalcIncrementDBH(Context &ctx, float delta_agb); //!< DBH increment corresponding to an aboveground biomass increment delta_agb
@@ -232,8 +230,6 @@ public:
     //! @return carbon_flux and water_flux averaged over the daytime steps (units as FluxesLeaf)
     leafFluxes dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, float W, float ExtinctLW, float PPFDinc, float &wf_1016);
     leafFluxes Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS); //!< Leaf photosynthesis and stomatal conductance (see the definition for parameters)
-    void OutputTreeStandard(Context &ctx, std::fstream &output); //!< Write the tree's state to a snapshot or site output stream
-    void OutputTreeStandard(Context &ctx); //!< Write the tree's state to standard output
 #else
     float DeathRate(Context &ctx, float dbh, float carbon_starv); //!< Death rate of the tree per timestep (version without water)
     float GPPleaf(Context &ctx, float, float, float);
@@ -245,10 +241,6 @@ public:
     void CalcLAImax(Context &ctx);
     void CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax);
     float predLeafLifespanKikuzawa(Context &ctx);
-    float GetCrownAreaFilled(float crown_area); //!< Crown area actually filled with leaves, given the crown gap fraction (m2)
-#ifdef TRACK_INDIVIDUALS
-    float StartTracking(Context &ctx);
-#endif
 };
 
 #endif

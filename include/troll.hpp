@@ -225,11 +225,6 @@ void GetPPFDabove(Context &ctx, int height, int site, float noinput, float (&ppf
 //! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area (and with WATER: incident light, longwave extinction)
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[6]); //!< Global function: calculates the canopy environment // RENAMED: dens → dens_layer
 #else
-//! @param ctx simulation context (all model state)
-//! @param height tree height or height layer (m)
-//! @param site site index
-//! @param dens_layer leaf area density of the crown in the layer (m2 m-2 per 1 m layer); [out] for GetDensity*
-//! @param canopy_environment_cumulated [in,out] accumulators over the crown area: light, VPD, temperature decrease, leaf area (and with WATER: incident light, longwave extinction)
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[4]); //!< Global function: calculates the canopy environment // RENAMED: dens → dens_layer
 #endif
 void AddCrownVolumeLayer(Context &ctx, int row_center, int col_center, float height, float CR, float CD, int crownvolume[70]); //!< Global function: calculates packing densities
@@ -238,7 +233,7 @@ void AddCrownVolumeLayer(Context &ctx, int row_center, int col_center, float hei
 //! @param site          site index
 //! @param dens_layer    leaf area density of the crown in the layer (m2 m-2 per 1 m layer)
 //! @param LA_cumulated  [in,out] leaf area added to the LAI3D field so far (m2)
-void UpdateLAI3D(Context &ctx, int height, int site, float dens_layer, float &LA_cumulated);                                    //!< Global function: update of LAI3D field, called by CalcLAI() // RENAMED: dens → dens_layer
+void UpdateLAI3D(Context &ctx, int height, int site, float dens_layer, float &LA_cumulated); //!< Global function: update of LAI3D field, called by CalcLAI() // RENAMED: dens → dens_layer
 #ifdef CHM_SPIKEFREE
 void UpdateCHMvector(int height, int site, float noinput, vector<int> &chm); //!< Global function: remove outliers in canopy height model (CHM); vector option
 void UpdateCHM(int height, int site, float noinput, int *chm);               //!< Global function: remove outliers in canopy height model (CHM)
@@ -319,8 +314,18 @@ void CircleAreaUpdateCrownStatistic_template(Context &ctx, int row_center, int c
 //! @param ModifyCrownStatistic_input   converts the input for each layer (e.g. LAI2dens, KeepFloatAsIs)
 //! @param UpdateCrownStatistic_output  function applied to each site of each layer
 template <typename G, typename I, typename O, typename M, typename F>
-void LoopLayerUpdateCrownStatistic_template(Context &ctx, int row_center, int col_center, float height, float CR, float CD, float fraction_filled_target, int shell_fromtop, G GetRadiusLayer, I CrownStatistic_input, O &CrownStatistic_output, M ModifyCrownStatistic_input, F UpdateCrownStatistic_output)
-{
+void LoopLayerUpdateCrownStatistic_template(
+    Context &ctx, // context (parameters)
+    int row_center, int col_center, // voxel center
+    float height, float CR, float CD, // tree dimensions
+    float fraction_filled_target, 
+    int shell_fromtop, 
+    G GetRadiusLayer, 
+    I CrownStatistic_input, 
+    O &CrownStatistic_output, 
+    M ModifyCrownStatistic_input, 
+    F UpdateCrownStatistic_output
+) {
     int crown_top = int(height);
 
     // we start out with 0 actually filled voxels. As a result, the first voxel will always be filled
@@ -385,6 +390,8 @@ float CalcRdark(float lma, float nmass, float pmass, float vcmax); //!< Returns 
 #ifdef G0
 float QUAD(float A, float B, float C, int ROOT); //!< Returns solution of quadratic equation (larger root of ROOT=1, smaller root if ROOT=-1)
 #endif
+void CalcLAI(Context &ctx, Tree &tree);
+float GetCrownAreaFilled(float crown_area, float fraction_filled_target);
 
 // GLOBAL FUNCTIONS
 void AssignSpeciesParam(Species &S, const std::string &name, const std::string &value); //!< Global function: assign a species parameter by name
@@ -407,17 +414,24 @@ void ReadInputPointcloud(Context &ctx);                             //!< Global 
 void AllocMem(Context &ctx);                                        //!< Global function: Field dynamic memory allocation
 void Evolution(Context &ctx);                                       //!< Global function: Evolution at each timestep
 void UpdateSeeds(Context &ctx);                                     //!< Global function: Compute field Seed
+void DisperseSeed(Context &ctx, Tree &tree);                        //!< Global function: Compute seed dispersal
+void FillSeed(Context &ctx, int col, int row, int spp);             //!< Global function: update SPECIES_SEEDS field; v.2.5
 void UpdateField(Context &ctx);                                     //!< Global function: Update all fields
 void TriggerTreefall(Context &ctx);                                 //!< Global function: Treefall gap formation; v.2.4
 void TriggerTreefallSecondary(Context &ctx);                        //!< Global function: Secondary treefall gap formation
-void FillSeed(Context &ctx, int col, int row, int spp);                           //!< Global function: update SPECIES_SEEDS field; v.2.5
 void RecruitTree(Context &ctx);                                     //!< Global function: tree germination module; v.2.5
-void Average(Context &ctx);                                                        //!< Global function: output of the global averages every timestep
-void OutputField(Context &ctx);                                                    //!< Global function: output of the field variables every timestep
+void Average(Context &ctx);                                         //!< Global function: output of the global averages every timestep
+void OutputField(Context &ctx);                                     //!< Global function: output of the field variables every timestep
 void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit); //!< Global function: output snapshots of the scene at one point in time
-void OutputLAI(Context &ctx, fstream &output_transmLAI3D);                        //!< Global function: writes the whole 3D LAI voxel field to file
-void OutputCHM(Context &ctx, fstream &output_CHM);                                //!< Global function: Outputs CHM
-void OutputVisual(Context &ctx);                                                   //!< Global function: Output function for visualization purposes
+void OutputLAI(Context &ctx, fstream &output_transmLAI3D);          //!< Global function: writes the whole 3D LAI voxel field to file
+void OutputCHM(Context &ctx, fstream &output_CHM);                  //!< Global function: Outputs CHM
+void OutputVisual(Context &ctx);                                    //!< Global function: Output function for visualization purposes
+#ifdef WATER
+void OutputTreeStandard(Context &ctx, Tree &tree, std::ostream &output);          //!< Global function: write tree variables to file 
+void OutputTreeStandard(Context &ctx, Tree &tree);                  //!< Global function: write tree variables to standard output 
+#endif
+void histdbh(Context &ctx, Tree &tree);                             //!< Global function: compute DBH histograms
+void Average(Context &ctx, Tree &tree);                                         //!< Global function: compute average and update species output variables
 void CloseOutputs(Context &ctx);
 void FreeMem(Context &ctx);
 
@@ -472,6 +486,7 @@ void OutputCHM(Context &ctx, fstream &output_CHM);                              
 
 #ifdef TRACK_INDIVIDUALS
 void TrackingData_andOutput(Context &ctx); //!< Global function: tree level tracking of key variables
+float StartTracking(Context &ctx, Tree &tree); //!< Global function: initialize tree tracking variables
 #endif
 
 // Species and Tree class declarations moved to include/species.hpp and include/tree.hpp

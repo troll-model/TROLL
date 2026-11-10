@@ -166,7 +166,7 @@ void Tree::Birth(Context &ctx, int nume, int site0)
         float crown_area = PI * t_CR * t_CR;
         float fraction_filled_general = 1.0 - ctx.crown.crown_gap_fraction;
         t_fraction_filled = fminf(fraction_filled_general / (t_mult_CR * t_mult_CR), 1.0);
-        float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+        float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
 
         if (ctx.opt._LA_regulation > 0)
         {
@@ -232,7 +232,7 @@ void Tree::Birth(Context &ctx, int nume, int site0)
 #endif
 
 #ifdef TRACK_INDIVIDUALS
-        StartTracking(ctx);
+        StartTracking(ctx, *this);
 #endif
 
 #ifdef LCP_alternative
@@ -625,7 +625,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         SetParameter(parameter_name, parameter_value, t_litter, 0.0f, 100000.0f, -1.0f, quiet);
 
         float crown_area = PI * t_CR * t_CR;
-        float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+        float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
 
         /* if(t_LAmax >= 0.0 && t_LA >= 0.0 && t_youngLA >= 0.0 && t_matureLA >= 0.0 && t_oldLA >= 0.0 && t_litter >= 0.0){
             // there could be more consistency checks here (e.g. t_youngLA + t_matureLA + t_oldLA should be approximately t_LA)
@@ -796,7 +796,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         t_dbh_previous = t_dbh; // check whether proper initialisation is needed
 #endif
 #ifdef TRACK_INDIVIDUALS
-        StartTracking(ctx);
+        StartTracking(ctx, *this);
 #endif
     }
     return (success);
@@ -807,7 +807,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
 //    if(t_LA < 0.0){
 //        // 1. determine leaf area and related variables, based on current environment
 //        float crown_area = PI*t_CR*t_CR;
-//        float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+//        float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
 //
 //        if(ctx.opt._LA_regulation > 0){
 //            float LAIexperienced_eff;
@@ -847,96 +847,6 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
 //        }
 //    }
 //}
-
-// ###############################################
-//  Update of the ctx.field.LAI3D field
-//! called by UpdateField
-// #################################################
-//! - modified in v.2.3: additional contribution to voxels that are not fully occupied by the tree crown. !!!: this does not calculate ctx.field.LAI3D directly, this only calculates the density in each voxel belonging to a tree. The final LAI field is calculated outside of the class Tree
-//! - modified in v.2.4 and v.2.5: introducing an alternative crown shape, "umbrella"-like, inspired by previous shell models and similar to the crown shapes in the PPA. If activated, crowns contain three layers of vegetation that, once the crown goes beyond 3m in depth, will bend downwards on the edges with a linear slope. Since v.2.5 all loops (CalcLAI, Fluxh, leafarea_max) are executed through the same template. This allows to implement other crown shapes in the future and ensures that modifications are carried through across the code
-#ifdef CROWN_UMBRELLA
-//! @param ctx simulation context (all model state)
-void Tree::CalcLAI(Context &ctx)
-{
-    if (t_age > 0)
-    {
-        int site_crowncenter = t_site + t_CrownDisplacement;
-        int row_crowncenter = site_crowncenter / ctx.grid.cols;
-        int col_crowncenter = site_crowncenter % ctx.grid.cols;
-
-        float LA_cumulated = 0.0; // Currently, an output variable is required by LoopLayerUpdateCrownStatistic_template, we here use LA_cumulated as control variable
-
-        int crown_top = int(t_height);
-        int crown_base = int(t_height - t_CD);
-        int max_shells = min(crown_top - crown_base + 1, 4); // since the new crown shapes
-        float fraction_filled_target = t_fraction_filled;
-
-        for (int shell_fromtop = 0; shell_fromtop < max_shells; shell_fromtop++)
-        {
-            LoopLayerUpdateCrownStatistic_template(ctx, row_crowncenter, col_crowncenter, t_height, t_CR, t_CD, fraction_filled_target, shell_fromtop, [&ctx](float CR, float e, float p){ return GetRadiusSlope(ctx, CR, e, p); }, t_LAI, LA_cumulated, LAI2dens, [&ctx](int h, int s, float d, float &la){ UpdateLAI3D(ctx, h, s, d, la); });
-        }
-    }
-}
-#else
-//! @param ctx simulation context (all model state)
-void Tree::CalcLAI(Context &ctx)
-{
-    if (t_age > 0)
-    {
-        int crown_base = int(t_height - t_CD),
-            crown_top = int(t_height);
-        int site_crowncenter = t_site + t_CrownDisplacement;
-        int row_crowncenter = site_crowncenter / ctx.grid.cols;
-        int col_crowncenter = site_crowncenter % ctx.grid.cols;
-
-        float fraction_abovetop = t_height - float(crown_top);
-        float fraction_belowbase = float(crown_base + 1) - (t_height - t_CD);
-
-        float crown_area = PI * t_CR * t_CR;      // floor of crown_area to bound area accumulation
-        int crown_intarea = int(crown_area);      // floor of crown_area to bound area accumulation
-        crown_intarea = max(crown_intarea, 1);    // minimum area of crown (1)
-        crown_intarea = min(crown_intarea, 1963); // maximum area of crown (radius 25), int(3.14*25*25), int(3.14*25*25)
-
-        float dens_avg = t_LAI / t_CD;
-        float fraction_filled_target = t_fraction_filled;
-
-        for (int h = crown_base; h <= crown_top; h++)
-        {
-            float fraction_filled_actual = 0.0;
-            float dens_layer;
-
-            dens_layer = dens_avg;
-            if (crown_top == crown_base)
-                dens_layer *= t_CD;
-            else if (h == crown_top)
-                dens_layer *= fraction_abovetop;
-            else if (h == crown_base)
-                dens_layer *= fraction_belowbase;
-
-            for (int i = 0; i < crown_intarea; i++)
-            {
-                if (fraction_filled_actual > fraction_filled_target)
-                {
-                    fraction_filled_actual = (fraction_filled_actual * float(i)) / (float(i) + 1.0);
-                }
-                else
-                {
-                    fraction_filled_actual = (fraction_filled_actual * float(i) + 1.0) / (float(i) + 1.0);
-                    int site_relative = ctx.lookup.LookUp_Crown_site[i];
-                    int row = row_crowncenter + site_relative / 51 - 25;
-                    int col = col_crowncenter + site_relative % 51 - 25;
-
-                    if (row >= 0 && row < ctx.grid.rows && col >= 0 && col < ctx.grid.cols)
-                    {
-                        int site = col + ctx.grid.cols * row + ctx.grid.SBORD;
-                        ctx.field.LAI3D[h][site] += dens_layer;
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
 
 #ifdef WATER
 
@@ -1503,7 +1413,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
     float GBHU = 0.003 * sqrt(WIND / t_wleaf) * CMOLAR;        // Boundary ctx.diag.layer conductance to heat transfer by forced convection (single sided) in mol ctx.params.m-2 s-1; Leuning et al (1995) PC&E 18:1183-1200 Eqn E1; Equation A2 in Medlyn et al. 2007
     // Rnetiso = ctx.params.absorptance_leaves*RSOL - ctx.lookup.LookUp_INLR[convTA][convVPDA]; // Calculation of isothermal net radiation (J ctx.params.m-2 s-1; Jones (2013) equation (5.4) p.100)
     Rnetiso = RSOL - ctx.lookup.LookUp_INLR[convTAtop][convVPDAtop] * ExtinctLW; // Calculation of isothermal net radiation (J ctx.params.m-2 s-1; Jones (2013) equation (5.4) p.100). No need of ctx.params.absorptance_leaves, since PPFD provided in argument is already the absorbed flux.
-    
+
     // if (ExtinctLW<0.2) {
     //    cout << "Rnetiso=" << Rnetiso << " RSOL=" << RSOL << " INLR=" << ctx.lookup.LookUp_INLR[convTA][convVPDA]  << " INLR_top=" << ctx.lookup.LookUp_INLR[convTAtop][convVPDAtop] << " //ExtinctLW=" << ExtinctLW <<  endl;
     // }
@@ -2153,7 +2063,7 @@ void Tree::InitialiseLeafPools(Context &ctx)
 //! - Options: fixed percentage (option ctx.opt._sapwood == 0) or based on tree's leaf area (option ctx.opt._sapwood > 0). In the case ctx.opt._sapwood>0, a tree cannot retroactively convert heartwood into sapwood, just because it could allocate more leaves
 //! - TODO: should there be another limit on leaf area? (i.e. if sapwood cannot grow more than ddbh increment, then leaf area should probably not be allowed to grow beyond what is reasonable through the current sapwood area)
 //! @param ctx simulation context (all model state)
-//! @param ddbh DBH increment of the timestep (m)
+//! @param ddbh DBH increase in m2
 void Tree::UpdateSapwoodArea(Context &ctx, float ddbh)
 {
     if (ctx.opt._sapwood > 0)
@@ -2307,7 +2217,7 @@ void Tree::CalcLAImax(Context &ctx)
 void Tree::CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax)
 {
     float crown_area = PI * t_CR * t_CR;
-    float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+    float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
 
     if (ctx.opt._LA_regulation == 1)
     {
@@ -2582,24 +2492,24 @@ void Tree::Growth(Context &ctx)
 
 #ifdef WATER
     if (ctx.time.iter == (ctx.time.nbiter - 90))
-        OutputTreeStandard(ctx, ctx.out.output[28]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[28]);
     if (ctx.time.iter == (ctx.time.nbiter - 45))
-        OutputTreeStandard(ctx, ctx.out.output[29]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[29]);
     if (ctx.time.iter == (ctx.time.nbiter - 1))
-        OutputTreeStandard(ctx, ctx.out.output[30]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[30]);
 
     if (t_site == 4)
-        OutputTreeStandard(ctx, ctx.out.output[12]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[12]);
     if (t_site == 10380)
-        OutputTreeStandard(ctx, ctx.out.output[13]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[13]);
     if (t_site == 100950)
-        OutputTreeStandard(ctx, ctx.out.output[14]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[14]);
     if (t_site == 12090)
-        OutputTreeStandard(ctx, ctx.out.output[15]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[15]);
     if (t_site == 120090)
-        OutputTreeStandard(ctx, ctx.out.output[16]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[16]);
     if (t_site == 150667)
-        OutputTreeStandard(ctx, ctx.out.output[17]);
+        OutputTreeStandard(ctx, *this, ctx.out.output[17]);
 #endif
 }
 
@@ -2767,28 +2677,26 @@ void Tree::CalcRespGPP(Context &ctx)
 }
 
 #ifdef WATER
-
+//! @param ctx simulation context (all model state)
 void Tree::CalcNPP(Context &ctx)
 {
     t_NPP = 0.7 * (t_GPP - Rtot_by_Rabove * (Rtotleaf_by_Rdark * t_Rnight + t_Rstem) + (Rtotleaf_by_Rdark - 1) * t_Rnight); // t_GPP already accounts for daytime leaf respiration. would be good to go back to total respiration computation whith this new scheme (here is a succession of approximation..)
 }
-
 #else
-
+//! @param ctx simulation context (all model state)
 void Tree::CalcNPP(Context &ctx)
 {
     t_NPP = 0.7 * (t_GPP - Rtot_by_Rabove * (t_Rday + t_Rnight + t_Rstem)); // growth respiration, v. 2.4.1: 0.75 replaced by 0.7. According to Cannell and Thornley 2000, higher values should be used only if other sources of respiration (phloem loading etc.) are explicitly accounted for. For leaf construction, typically even a lower factor is a assumed (cf. Villar & Merino 2001, avg construction costs of 1.52 gC/gC)
     // Rleaf=Rday+Rnight is multiplied by 1.5 to also account for fine root respiration (cf as in Fyllas et al 2014 and Malhi 2012); Rstem is multiplied by 1.5 to account for coarse root respiration (according to the shoot root biomass ratio of 0.2 - Jérôme's paper in prep- and also to branch respiration (Meir & Grace 2002, Cavaleri 2006, Asao 2015).
 }
-
 #endif
-
 
 // ####################################################
 //  Leaf dynamics and C allocation, called by Tree::Growth
 // #####################################################
 //! - NPP allocation to leaves
 //! - In this current scheme of leaf demography and phenology in three leaf age classes: only the old leaves generate litterfall, and the dynamic of leaves cycle is generated by the dynamic of NPP, with a total leaf biomass varying - as opposed to De Weirdt et al 2012 in ORCHIDEE, but as in Wu et al 2016 but importantly without prescribing litterfall-
+//! @param ctx simulation context (all model state)
 void Tree::UpdateLeafDynamics(Context &ctx)
 {
     float SLA = 1.0 / t_LMA; // newIM, but should be added as a tree variable to avoid multiple computation
@@ -3044,7 +2952,7 @@ void Tree::UpdateTreeBiometry(Context &ctx)
 void Tree::UpdateVolumeDensity()
 {
     float crown_area = PI * t_CR * t_CR;
-    float crown_area_nogaps = GetCrownAreaFilled(crown_area);
+    float crown_area_nogaps = GetCrownAreaFilled(crown_area, t_fraction_filled);
     t_LAI = t_LA / crown_area_nogaps;
 }
 
@@ -3130,51 +3038,6 @@ void Tree::Death(Context &ctx)
 #ifdef Output_ABC
     t_dbh_previous = 0.0;
 #endif
-}
-
-// ################################
-//  Seed dispersal, called by UpdateSeeds
-// #################################
-//! - This routine implements the reproduction stage (nbs seeds are produced per tree) and dispersal of the trees
-//! - Dispersal is equiprobable in all direction and normally distributed (for 2D normal distribution, the absolute distance follows a Rayleigh distribution)
-//! - Reproduction only occurs for mature trees
-//! - New v.2.1 threshold of maturity is defined as a size threshold (and not age as before), following Wright et al 2005 JTE
-//! @param ctx simulation context (all model state)
-void Tree::DisperseSeed(Context &ctx)
-{
-    if (t_dbh >= t_dbhmature)
-    {
-        int nbs;
-        if (ctx.opt._SEEDTRADEOFF)
-            nbs = int(t_NPP * 2.0 * ctx.params.falloccanopy * 0.08 * 0.5 * (ctx.S[t_sp_lab].s_iseedmass)); // some multiplications could be avoided in this line.
-        else
-            nbs = ctx.params.nbs0 * t_multiplier_seed;
-        // else nbs=int(t_NPP*2*ctx.params.falloccanopy*0.08*0.5); // test 17/01/2017: use a factor to translate NPP into seeds produced, but not species specific, not linked to mass of grains
-        for (int i = 0; i < nbs; i++)
-        {
-            // Loop over number of produced seeds
-            // float rho = 2.0*((t_s->s_ds)+t_CR)*float(sqrt(fabs(log(genrand2()*iPi))));    //! s_ds is mean seed dispersal distance. Dispersal distance rho: P(rho) = rho*exp(-rho^2)
-            // update 2.5: rho does not seem to correspond to original 1999 paper anymore and in previous version predicted dispersal with a lower cutoff instead of the Rayleigh distribution
-            // here we restore the previous formulation by using the Rayleigh implementation from the gsl library
-            // for the moment, we do not use the crown radius as an additional dispersal kernel. This would lead to a loss of large tree species locally, because they will have much less seeds within the plot
-            float rho = gsl_ran_rayleigh(ctx.rng.gslrand, ctx.S[t_sp_lab].s_ds);
-            float theta_angle = float(twoPi * gsl_rng_uniform(ctx.rng.gslrand)); // Dispersal angle ctx.params.theta
-            int col_tree = t_site % ctx.grid.cols;
-            int row_tree = t_site / ctx.grid.cols;
-            int dist_cols = int(rho * cos(theta_angle));
-            int dist_rows = int(rho * sin(theta_angle));
-            int col_dispersal = dist_cols + col_tree;
-            int row_dispersal = dist_rows + row_tree;
-            FillSeed(ctx, col_dispersal, row_dispersal, t_sp_lab);
-        }
-#ifdef TRACK_INDIVIDUALS
-        if (t_month_born >= 0)
-        {
-            t_seedsproduced_sumyear += nbs;
-            t_seedsproduced += nbs;
-        }
-#endif
-    }
 }
 
 // ##################################
@@ -3286,180 +3149,313 @@ void Tree::Treefall(Context &ctx, float angle)
     Death(ctx);
 }
 
-// ####################################################
-//  Computes Average and OutputField
-// ####################################################
-//  - Short routine that basically only updates the vector s_output_field
-//! @param ctx simulation context (all model state)
-void Tree::Average(Context &ctx)
+// #############################
+//  Global function: tree germination module
+// #############################
+void RecruitTree(Context &ctx)
 {
-    if (t_age > 0)
-    {
-        if (t_dbh * ctx.grid.LH >= 0.1)
+    for (int site = 0; site < ctx.grid.sites; site++)
+    { //**** Local germination ****
+        if (ctx.T[site].t_age == 0)
         {
-            (ctx.S[t_sp_lab].s_sum10)++;
-            ctx.S[t_sp_lab].s_ba10 += t_dbh * ctx.grid.LH * t_dbh * ctx.grid.LH * 3.1415 * 0.25;
-        }
-        if (t_dbh * ctx.grid.LH >= 0.3)
-            (ctx.S[t_sp_lab].s_sum30)++;
-        ctx.S[t_sp_lab].s_ba += t_dbh * ctx.grid.LH * t_dbh * ctx.grid.LH * 3.1415 * 0.25;
-        ctx.S[t_sp_lab].s_npp += t_NPP * 1.0e-6;
-        ctx.S[t_sp_lab].s_gpp += t_GPP * 1.0e-6;
-        float agb = CalcAGB(ctx);
-        ctx.S[t_sp_lab].s_agb += agb;
-        ctx.S[t_sp_lab].s_rday += t_Rday * 1.0e-6;
-        ctx.S[t_sp_lab].s_rnight += t_Rnight * 1.0e-6;
-        ctx.S[t_sp_lab].s_rstem += t_Rstem * 1.0e-6;
-        ctx.S[t_sp_lab].s_litterfall += t_litter * 1.0e-6;
+            int spp_withseeds = 0;
+            for (int spp = 1; spp <= ctx.grid.nbspp; spp++)
+            { // lists all the species with a seed present at given site...
+                if (ctx.species.SPECIES_SEEDS[site][spp] > 0)
+                {
+                    // write species that are present to an extra array
+                    ctx.species.SPECIES_GERM[spp_withseeds] = spp;
+                    spp_withseeds++;
+                }
+            }
+            if (spp_withseeds > 0)
+            { // ... and then randomly select one of these species
+
+                // new in v.2.4.1: for consistency use genrand2() instead of rand(), since v.2.5: use gsl RNG
+                int spp_index = int(gsl_rng_uniform_int(ctx.rng.gslrand, spp_withseeds));
+                int spp = ctx.species.SPECIES_GERM[spp_index];
+                // otherwise all species with seeds present are equiprobable
+
+#ifdef LCP_alternative
 
 #ifdef WATER
-        int crown_top = int(t_height);
-        int crown_base = int(t_height - t_CD);
-        float grad = 1 / float(crown_top - crown_base + 1);
-        for (int l = crown_base; l < (crown_top + 1); l++)
-        {
-            ctx.soil.LAI_young[l] += t_youngLA * grad;
-            ctx.soil.LAI_mature[l] += t_matureLA * grad;
-            ctx.soil.LAI_old[l] += t_oldLA * grad;
-        }
+                if (ctx.soil.soil_phi3D[0][ctx.grid.site_DCELL[site]] > 0.5 * ctx.S[spp].s_tlp)
+                {
+                    ctx.T[site].Birth(ctx, spp, site); // in this version, the light environment is checked within Birth() function
+                }
 
-        ctx.soil.abund_phi_root += t_phi_root;
-        if (t_dbh * ctx.grid.LH >= 0.1)
-            ctx.soil.abund10_phi_root += t_phi_root;
-        ctx.soil.agb_phi_root += agb * t_phi_root;
+#else
+                ctx.T[site].Birth(ctx, spp, site); // in this version, the light environment is checked within Birth() function
+
 #endif
 
-#ifdef MIP_Lichstein
-        if (ctx.time.iter % ctx.time.iterperyear == 364 && (ctx.opt._FromInventory || (!ctx.opt._FromInventory && ctx.time.iter >= (ctx.time.nbiter - 100 * ctx.time.iterperyear))))
-        {
-            if (t_dbh * ctx.grid.LH >= 0.01)
-            {
-                t_inInventory = 1;
-                ctx.out.output_MIP_ind << ctx.time.iter << "\t" << ctx.S[t_sp_lab].s_name << "\t" << -9999 << "\t" << 1.0 << "\t" << 0.0 << "\t" << t_dbh * 100 << "\t" << t_height << "\t" << -9999 << "\t" << 0.5 * agb << "\t" << 1000 * t_wsg << "\t" << 1000 / t_LMA << "\t" << t_Nmass << "\t" << t_Pmass << "\t" << t_dbhmax << "\t" << t_tlp << "\t" << t_leafarea << endl;
+#else // LCP_alternative
+
+                float flux = ctx.climate.WDailyMean * exp(-fmaxf(ctx.field.LAI3D[0][site + ctx.grid.SBORD], 0.0) * ctx.params.kpar);
+#ifdef WATER
+                if (flux > (ctx.S[spp].s_LCP) && ctx.soil.soil_phi3D[0][ctx.grid.site_DCELL[site]] > 0.5 * ctx.S[spp].s_tlp)
+                {
+                    ctx.T[site].Birth(ctx, spp, site);
+                    ctx.species.SPECIES_SEEDS[site][spp] = 0; // newIM nov2021, to adjust to the yearly update of Species_seeds
+                }
+                // in addition to a condition of light availability- hence light demanding species may not be able to grow in deep sahde conditions in understorey -, a condition on water availability is added - hence drought-intolerant species may not be recruited in water-stressd conditions
+#else
+                // If enough light, germination, initialization of NPP (LCP is the species light compensation point
+                // here, light is the sole environmental resources tested as a limiting factor for germination, but we should think about adding nutrients (N,P) and water conditions...
+                if (flux > (ctx.S[spp].s_LCP))
+                {
+                    ctx.T[site].Birth(ctx, spp, site);
+                    ctx.species.SPECIES_SEEDS[site][spp] = 0; // newIM nov2021, to adjust to the yearly update of Species_seeds
+                }
+#endif // WATER
+#endif // LCP_alternative
             }
         }
-#endif
     }
 }
 
-// Computation of dbh histograms
-//! @param ctx simulation context (all model state)
-void Tree::histdbh(Context &ctx)
-{
-    if (t_age)
-        ctx.diag.nbdbh[int(100. * t_dbh * ctx.grid.LH)]++;
-    // where dbh is in cm (it is in number of horizontal cells throughout the code)
-    // values are always rounded down (so ctx.diag.nbdbh[30] gives you trees with more than 30 cm dbh, and less than 31))
-}
 
-#ifdef WATER
-// Standard outputs during the simulation -- written to file
-//! @param ctx simulation context (all model state)
-//! @param output output stream (snapshot or site file)
-void Tree::OutputTreeStandard(Context &ctx, std::fstream &output)
+// #############################
+//  Global function: Treefall gap formation
+// #############################
+//! change in v.2.4: resetting ctx.field.Thurt[0] field is done in TriggerSecondaryTreefall() at the beginning of each iteration. Further changes: rewriting of Tree::FallTree() which is now Tree::Treefall(angle). t_hurt can now persist longer, so new treefall events are added to older damages (that, in turn are decaying)
+void TriggerTreefall(Context &ctx)
 {
-    output << ctx.time.iter << "\t" << t_site << "\t" << t_sp_lab << "\t" << t_height << "\t" << t_dbh << "\t" << t_litter << "\t" << t_age << "\t" << t_LA << "\t" << t_youngLA << "\t" << t_matureLA << "\t" << t_oldLA << "\t" << t_CR << "\t" << t_CD << "\t" << t_GPP << "\t" << t_NPP << "\t" << t_Rstem << "\t" << t_Rnight << "\t" << ctx.field.LAI3D[int(t_height)][t_site + ctx.grid.SBORD] << "\t" << ctx.field.LAI3D[int(t_height - t_CD) + 1][t_site + ctx.grid.SBORD] << "\t" << t_root_depth << "\t" << t_phi_root << "\t" << t_WSF << "\t" << t_WSF_A << "\t" << t_transpiration << "\t" << t_LAImax << "\t" << t_LAmax;
-    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        output << "\t" << t_root_biomass[l];
-    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        output << "\t" << t_soil_layer_weight[l];
-    output << endl;
-}
-// Standard outputs during the simulation -- written to screen in real time
-//! @param ctx simulation context (all model state)
-void Tree::OutputTreeStandard(Context &ctx)
-{
-    cout << ctx.time.iter << "\t" << t_site << "\t" << t_sp_lab << "\t" << t_height << "\t" << t_dbh << "\t" << t_litter << "\t" << t_age << "\t" << t_LA << "\t" << t_youngLA << "\t" << t_matureLA << "\t" << t_oldLA << "\t" << t_CR << "\t" << t_CD << "\t" << t_GPP << "\t" << t_NPP << "\t" << t_Rstem << "\t" << t_Rday << "\t" << t_Rnight << "\t" << ctx.field.LAI3D[int(t_height)][t_site + ctx.grid.SBORD] << "\t" << ctx.field.LAI3D[int(t_height - t_CD) + 1][t_site + ctx.grid.SBORD] << "\t" << t_root_depth << "\t" << t_phi_root << "\t" << t_WSF;
-    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        cout << "\t" << t_root_biomass[l];
-    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        cout << "\t" << t_soil_layer_weight[l];
-    cout << endl;
-}
+    for (int site = 0; site < ctx.grid.sites; site++)
+        if (ctx.T[site].t_age)
+        {
+            // treefall is triggered given a certain flexural force
+            // ctx.opt._BASICTREEFALL: just dependent on height threshold + random uniform distribution
+            float angle = 0.0, c_forceflex = 0.0;
+            if (ctx.opt._BASICTREEFALL)
+            {
+                c_forceflex = (1 - (1 - gsl_rng_uniform(ctx.rng.gslrand)) / (12 * ctx.time.timestep)) * ctx.T[site].t_height; // probability of treefall per month = 1-t_Ct/t_height , compare to genrand2(), if ctx.time.timestep=1/12: genrand2() < 1 - t_Ct/t_height, or: genrand2() > t_Ct/t_height
+                angle = float(twoPi * gsl_rng_uniform(ctx.rng.gslrand));                                         // random angle
+            }
+            // above a given stress threshold the tree falls
+            if (c_forceflex > ctx.T[site].t_Ct)
+            {
+                ctx.T[site].Treefall(ctx, angle);
+            }
+        }
+#ifdef MPI
+    // Treefall field passed to the n.n. procs
+    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
 #endif
+    for (int site = 0; site < ctx.grid.sites; site++)
+    {
+        // Update of Field hurt
+        if (ctx.T[site].t_age)
+        {
+            ctx.T[site].t_hurt = max(ctx.field.Thurt[0][site + ctx.grid.sites], ctx.T[site].t_hurt); // NEW in v.2.4: addition of damages, alternative: max()
+#ifdef MPI
+            if (mpi_rank)
+                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[1][site]); // ? v.2.4: Update needed, ctx.field.Thurt[1], why max?
+            if (mpi_rank < mpi_size - 1)
+                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[2][site]);
+#endif
+        }
+    }
+}
 
-// Calculate the crown area filled by leaves (only relevant for crown gap fractions > 0.0)
-//! @param crown_area crown area (m2)
-float Tree::GetCrownAreaFilled(float crown_area)
+// #############################
+//  Global function: Secondary treefall gap formation
+// #############################
+//! - NEW in v.2.4: TriggerSecondaryTreefall(), called at the beginning of each iteration
+//! - translates damages from previous round into tree deaths, partly treefalls, partly removing them only (e.g. splintering)
+//! - in the limit of ctx.params.p_tfsecondary = 0.0, this is equivalent to the previous computation
+void TriggerTreefallSecondary(Context &ctx)
 {
-    // for now calculated explicitly. Ideally, we would replace the loop by an equation that expresses the underlying logic
+    ctx.diag.nbTreefall1 = 0;
+    ctx.diag.nbTreefall10 = 0;
+    ctx.diag.nbTreefall30 = 0;
+#ifdef Output_ABC
+    nbTreefall10_abc = 0;
+#endif
+    for (int site = 0; site < ctx.grid.sites; site++)
+    {
+        ctx.field.Thurt[0][site] = ctx.field.Thurt[0][site + 2 * ctx.grid.sites] = 0;
+        ctx.field.Thurt[0][site + ctx.grid.sites] = 0;
+    }
+    for (int site = 0; site < ctx.grid.sites; site++)
+    {
+        if (ctx.T[site].t_age)
+        {
+            float height_threshold = ctx.T[site].t_height / ctx.T[site].t_mult_height; // since 2.5: a tree's stability is defined by its species' average height, i.e. we divide by the intraspecific height multiplier to account for lower stability in quickly growing trees; otherwise slender, faster growing trees would be treated preferentially and experience less secondary treefall than more heavily built trees
+            if (2.0 * ctx.T[site].t_hurt * (1 - (1 - gsl_rng_uniform(ctx.rng.gslrand)) / (12 * ctx.time.timestep)) > height_threshold)
+            { // check whether tree dies: probability of death per month is 1.0-0.5*t_height/t_hurt, so, when ctx.time.timestep=1/12, ctx.rng.gslrand <= 1.0 - 0.5 * t_height/t_hurt, or ctx.rng.gslrand > 0.5 * t_height/t_hurt; modified in v.2.5: probability of death is 1.0 - 0.5*t_height/(t_mult_height * t_hurt), so the larger the height deviation (more slender), the higher the risk of being thrown by another tree
+                if (ctx.params.p_tfsecondary > gsl_rng_uniform(ctx.rng.gslrand))
+                {                                                          // check whether tree falls or dies otherwise
+                    float angle = float(twoPi * gsl_rng_uniform(ctx.rng.gslrand)); // random angle
+                    ctx.T[site].Treefall(ctx, angle);
+                }
+                else
+                {
+                    ctx.T[site].Death(ctx);
+                }
+            }
+            else
+            {
+                ctx.T[site].t_hurt = short(ctx.params.hurt_decay * float(ctx.T[site].t_hurt)); // reduction of t_hurt according to ctx.params.hurt_decay, could be moved to Tree::Growth() function and made dependent on the tree's carbon gain
+            }
+        }
+    }
+
+#ifdef MPI
+    //! Treefall field passed to the n.n. procs
+    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
+#endif
+}
+
+float CalcHeightBaseline(float &ah, float &hmax, float &dbh)
+{
+    // height allometry
+    float height = hmax * dbh / (dbh + ah);
+    return (height);
+}
+
+float CalcCRBaseline(Context &ctx, float &dbh)
+{
+    // crown radius allometry
+    float CR;
+    if (!ctx.opt._CROWN_MM)
+    {
+        CR = exp(ctx.params.CR_a + ctx.params.CR_b * log(dbh)); // power law, the default
+    }
+    else
+        CR = ctx.params.CR_b * dbh / (dbh + ctx.params.CR_a); // Michaelis Menten type allometry !!!: requires ctx.params.CR_b to be the CR_max parameter and ctx.params.CR_a the initial increase */
+    // for reference, two crown allometries that are reasonable in French Guiana
+    // t_CR = t_mult_CR * exp(1.9472 + 0.5925*log(t_dbh)); // crown allometry deduced from Piste Saint-Elie */
+    // t_CR = t_mult_CR * exp(1.8814 + 0.5869*log(t_dbh)); // this is crown allometry derived from data set compiled by Jucker et al. 2016 (Global Change Biology)
+    return (CR);
+}
+
+float CalcCDBaseline(Context &ctx, float &height)
+{
+    // crown depth allometry
+    // since v.2.5, simplification of the computation of the crown depth, in accordance with the Canopy Constructor algorithm
+    float CD = (ctx.params.CD_a + ctx.params.CD_b * height);
+    return (CD);
+}
+
+//! Global functions to compute Vcmax (on a mass basis) and leaf dark respiration (on a leaf area basis)
+// newIM : to avoid repeating same functions in Tree and Species class. Was needed for the Species class to correctly initialise Rdark and compute LCP
+
+float CalcVcmaxm(float LMA, float Nmass, float Pmass)
+{
+    float SLA = 10000.0 / LMA;                                                                                                                               // in cm2 g-1
+    float Vcmaxm = pow(10.0, fminf((-1.56 + 0.43 * log10(Nmass * 1000.0) + 0.37 * log10(SLA)), (-0.80 + 0.45 * log10(Pmass * 1000.0) + 0.25 * log10(SLA)))); // this is equation 2 in Domingues et al 2010 PCE (coefficients from fig7) which made better fits than equation 1 (without LMA). Nmass and Pmass are given in g g-1, but should be in mg g-1 in equ 2 in Domingues et al. 2010, hence the mutiplication by 1000.
+    return (Vcmaxm);                                                                                                                                         //  in micromol C g-1 s-1
+}
+float CalcRdark(float LMA, float Nmass, float Pmass, float Vcmax)
+{
+    float Parea = Pmass * LMA;                                                                         // in g ctx.params.m-2
+    float Narea = Nmass * LMA;                                                                         // in g ctx.params.m-2
+    float Rdark = (1.3893 + (0.0728 * Narea) + (0.0015 * Parea) + (0.0095 * Vcmax) - (0.0358 * 26.2)); // in micromolC ctx.params.m-2 s-1 //since v.2.5: correction of Atkin et al. 2015 New phytologist formula. The original formula was based on mean-centered values (cf. Atkin et al. 2015, and the clarification/correction published afterwards), unfortunately only one formula (PFT-specific formula) with absolute values is provided and this is the one used here, cf. corrigendum TableS4): https://nph.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2Fnph.13253&file=nph13253-sup-0001-SupInfo.pdf Warning: Vcmax should be provided on an area basis.
+    return (Rdark);
+}
+
+#ifdef CROWN_UMBRELLA
+
+// Global function: linear decrease of crown radius
+float GetRadiusSlope(Context &ctx, float CR, float crown_extent, float crown_position)
+{
+    float crown_slope = CR * (1.0 - ctx.crown.shape_crown) / crown_extent;
+    float radius = CR - crown_slope * float(crown_position);
+    return (radius);
+}
+
+// Global function: not currently used, but returns the input radius
+float GetRadiusCylinder(float CR, float crown_extent, float crown_position)
+{
+    return (CR);
+}
+
+// Global function: converts floating point crown area into integer value, imposing lower and upper limits
+int GetCrownIntarea(float crown_radius)
+{
+    // crown area
+    float crown_area = PI * crown_radius * crown_radius;
     int crown_intarea = int(crown_area);      // floor of crown_area to bound area accumulation
     crown_intarea = max(crown_intarea, 1);    // minimum area of crown (1)
     crown_intarea = min(crown_intarea, 1963); // maximum area of crown (radius 25), int(3.14*25*25)
-
-    int crown_intarea_gaps = 0;
-    float fraction_filled_target = t_fraction_filled;
-    float fraction_filled_actual = 0.0;
-
-    for (int i = 0; i < crown_intarea; i++)
-    {
-        if (fraction_filled_actual > fraction_filled_target)
-        {
-            fraction_filled_actual = (fraction_filled_actual * float(i)) / (float(i) + 1.0);
-            crown_intarea_gaps++;
-        }
-        else
-            fraction_filled_actual = (fraction_filled_actual * float(i) + 1.0) / (float(i) + 1.0);
-    }
-
-    // now determine crown_area_filled, depending on whether the next voxel is filled or not filled
-    float crown_area_filled;
-    if (fraction_filled_actual > fraction_filled_target)
-    {
-        crown_area_filled = float(crown_intarea - crown_intarea_gaps);
-    }
-    else
-        crown_area_filled = crown_area - float(crown_intarea_gaps);
-
-    return (crown_area_filled);
+    return (crown_intarea);
 }
 
-#ifdef TRACK_INDIVIDUALS
-// Diagnostic function to track trees born at a reference year
-//! @param ctx simulation context (all model state)
-float Tree::StartTracking(Context &ctx)
+// Global function: deduces within-crown densities from LAI with a gradient from 50% in top ctx.diag.layer to 25% in belowtop and 25% in all shells underneath (1 ctx.diag.layer for umbrella-like shape)
+void GetDensitiesGradient(float LAI, float CD, float &dens_top, float &dens_belowtop, float &dens_layer) // RENAMED: ctx.params.dens → dens_layer (was shadowing global ctx.params.dens/ctx.params.ctx.params.dens)
 {
-    // Only tracks trees born in a mature forest at year 501
-    // currently hardcoded
-    if (ctx.time.iter >= 6000 && ctx.time.iter < 6012)
-        t_timeofyear_born = ctx.time.iter % ctx.time.iterperyear;
-    else
-        t_timeofyear_born = -1;
-
-    if (t_timeofyear_born >= 0)
+    if (CD < 2.0)
     {
-        // initialise variables
-        t_seedsproduced = 0;
-        t_seedsproduced_sumyear = 0;
-        t_time_carbonstarvation = 0;
-        t_time_carbonstarvation_year = 0;
-
-        t_GPP_sumyear = 0.0;
-        t_NPP_sumyear = 0.0;
-        t_GPPsquared_sumyear = 0.0; // for standard deviation
-        t_NPPsquared_sumyear = 0.0; // for standard deviation
-        t_Rday_sumyear = 0.0;
-        t_Rnight_sumyear = 0.0;
-        t_Rstem_sumyear = 0.0;
-        t_LAIabove_effavgyear = 0.0;
-        t_carbon_storage_avgyear = 0.0;
-
-        t_LAIcum = 0.0;
-        t_LAIeffcum = 0.0;
-        t_GPPcum = 0.0;
-        t_NPPcum = 0.0;
-        t_LAIsquared_cum = 0.0;
-        t_LAIeffsquared_cum = 0.0;
-        t_GPPsquared_cum = 0.0;
-        t_NPPsquared_cum = 0.0;
-
-        t_dbh_tracked = t_dbh;
-        t_height_tracked = t_height;
-        t_CR_tracked = t_CR;
-        t_agb_tracked = 1000.0 * CalcAGB(ctx);
-
-        ctx.out.output_track[0] << t_site << "\t" << t_timeofyear_born << "\t" << t_site % ctx.grid.cols << "\t" << t_site / ctx.grid.cols << "\t" << t_s->s_name << "\t" << t_dbh << "\t" << t_CR << "\t" << t_height << "\t" << t_agb_tracked << "\t" << t_mult_CR << "\t" << t_mult_height << "\t" << t_wsg << "\t" << t_Nmass << "\t" << t_Pmass << "\t" << t_LMA << "\t" << t_dev_wsg << "\t" << t_mult_N << "\t" << t_mult_P << "\t" << t_mult_LMA << "\t" << t_Vcmax << "\t" << t_Jmax << "\t" << t_Rdark << "\t" << t_LAImax << "\t" << t_leaflifespan << endl;
+        dens_top = dens_belowtop = dens_layer = LAI / CD;
+    }
+    else if (CD < 3.0)
+    {
+        dens_top = 0.5 * LAI;
+        dens_belowtop = dens_layer = 0.5 * LAI / (CD - 1.0);
+    }
+    else
+    {
+        dens_top = 0.5 * LAI;
+        dens_belowtop = 0.25 * LAI;
+#ifdef CROWN_UMBRELLA
+        dens_layer = 0.25 * LAI;
+#else
+        dens_layer = 0.25 * LAI / (CD - 2.0);
+#endif
     }
 }
+
+// Global function: deduces within-crown density from LAI, assuming uniform leaf distribution
+void GetDensityUniform(float LAI, float CD, float &dens_layer) // RENAMED: ctx.params.dens → dens_layer
+{
+#ifdef CROWN_UMBRELLA
+    float crownshells_limit = fminf(CD, 3.0);
+    dens_layer = LAI / crownshells_limit;
+#else
+    dens_layer = LAI / CD;
 #endif
+}
+
+// Global function: dummy function when no modification is needed
+void KeepFloatAsIs(float input, float &output, float CD, float height, int layer_fromtop)
+{
+    output = input;
+}
+
+void KeepIntAsIs(int input, int &output, float CD, float height, int layer_fromtop)
+{
+    output = input;
+}
+
+#endif //CROWN_UMBRELLA
+
+#ifdef G0
+
+// Solves the quadratic equation. ROOT: finds smaller (-1), larger (1) root.
+float QUAD(float A, float B, float C, int ROOT)
+{
+    float quad = 0.0;
+    float discriminant = B * B - 4.0 * A * C;
+    // ROOT=-1: smaller root; ROOT=1: larger root
+    if (discriminant < 0)
+    {
+        cerr << "IMAGINARY ROOTS IN QUADRATIC" << endl;
+        quad = 0.0;
+    }
+    if (A == 0.0)
+    {
+        if (B == 0.0)
+            quad = 0.0;
+        else
+            quad = -C / B;
+    }
+    else
+        quad = (-B + ROOT * sqrt(discriminant)) / (2.0 * A);
+    return quad;
+}
+
+#endif
+
+
 

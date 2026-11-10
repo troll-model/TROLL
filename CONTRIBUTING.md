@@ -1,48 +1,14 @@
-# Contributing to TROLL
+Évaluation sur le présent de l'indicatif (3 groupes) + remédiation types de phrases pour les élèves volontaires# Contrinbuting
 
-## Build and test
+TROLL is a scientific code where precisely identifying versions is crucial. Contributions follow the [Gitflow](https://nvie.com/posts/a-successful-git-branching-model/) model.
 
-```bash
-cd build
-cmake .. -DTROLL_WARNINGS_AS_ERRORS=ON
-make            # TROLL executable
-make check      # unit tests + regression checks (about 2 minutes)
-make threads-check   # results must be identical with 1 and 4 threads
-make docs-check      # documentation: coverage report, fails on documentation errors
-```
-
-Every pull request runs these in CI (`.github/workflows/`).
-
-## Changes that must not change results
-
-Refactoring, performance work and documentation must leave outputs **bit-identical**. On
-Linux x86-64 with GCC 13, check against the stored reference outputs with no tolerance:
-
-```bash
-sanity/check.sh --troll build/TROLL --case stand --nbiter 365 --golden golden/stand_n365 --rtol 0 --atol 0
-```
-
-## Changes that are meant to change results
-
-Bug fixes and new science change outputs. Then:
-
-1. verify the change on its own (what changes, by how much, why);
-2. regenerate the stored references with `make golden`, review `git diff sanity/golden`;
-3. commit the new references in their own commit, and describe the change in `NEWS.md`;
-4. for changes to model behaviour, validate long-run statistics over several seeds.
-
-Never regenerate the references to make a failing refactoring pass.
-
-## Leaf kernel precision rules
-
-`FluxesLeaf`, `Photosyn`, `QUAD` and `ElectronTransportRate` compute in single precision and are
-compiled with `-Wdouble-promotion` as an error (`include/kernel_precision.hpp`). Use the `*_F`
-constants of `constants.hpp` and `f`-suffixed literals there. Do not build with `-ffast-math`.
-
-## Documentation rules
-
-- Document every new function (`//!` before it, `@param` for each parameter) and data member (`//!<`).
-- Give the **unit** of every physical quantity, and the **source** of every equation or constant
-  (GMD Part 1 equation number, or the literature reference).
-- Input and output files: update `docs/inputs.md` and `docs/outputs.md`.
-- Discrepancies you cannot resolve go to `docs/open-questions.md`, not into silent fixes.
+- `dev` is the default working branch.  
+- `main` is protected (no direct commits). It only receives **merge commits** and **annotated tags** (`v3.9`, `v4.0`, `v4.0.1`, ...). Each minor release is documented in the `NEWS.md`.
+- Everything starts with an **issue**, labeled as a `new feature`, `bug fix` or `hot fix`. Each issue gets a dedicated branch, named after the issue.
+  - `new feature` and `bug fix` issues: branch from `dev`.
+  - `hot fix` issues (unexpected bug in a released version): branch from `main`. 
+- Branches are merged through **pull-requests** (from a fork or the same repository), which allows for review and CI/CD checks. Pull-requests targeting `dev` are merged when the issue is solved; those targeting `main` are merged when a release is ready.
+- Long-term planning occurs in **milestones** named after upcoming minor versions (e.g. `3.9`, `4.0`).
+- When a milestone is completed, `dev` is merged into `main` through a pull-request, and the minor version is tagged with an annotated tag (e.g. `v4.1`).
+- Hot fixes are merged into `main` through a pull-request, tagged as a **patch version** (e.g. `v4.0.1`), **and merged back into `dev`**.
+- Core team members work on branches directly in the TROLL repository, while external contributors work on a **fork** and open a pull-request from their fork. In both cases, pull-requests target `dev` (or `main` for hot fixes only).

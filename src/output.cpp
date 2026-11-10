@@ -42,7 +42,7 @@ void Average(Context &ctx)
             ctx.S[spp].s_sum10 = ctx.S[spp].s_sum30 = ctx.S[spp].s_ba = ctx.S[spp].s_ba10 = ctx.S[spp].s_agb = ctx.S[spp].s_gpp = ctx.S[spp].s_npp = ctx.S[spp].s_rday = ctx.S[spp].s_rnight = ctx.S[spp].s_rstem = ctx.S[spp].s_litterfall = 0;
 
         for (site = 0; site < ctx.grid.sites; site++)
-            ctx.T[site].Average(ctx);
+            Average(ctx, ctx.T[site]);
 
         for (spp = 1; spp <= ctx.grid.nbspp; spp++)
         {
@@ -432,8 +432,9 @@ void OutputField(Context &ctx)
         int d;
         for (d = 0; d < ctx.grid.dbhmaxincm; d++)
             ctx.diag.nbdbh[d] = 0;
+
         for (site = 0; site < ctx.grid.sites; site++)
-            ctx.T[site].histdbh(ctx);
+            histdbh(ctx, ctx.T[site]);
 
         for (h = 0; h < (ctx.grid.HEIGHT + 1); h++)
         {
@@ -510,7 +511,7 @@ void OutputSnapshot(Context &ctx, fstream &output, bool header, float dbh_limit)
 
     for (int site = 0; site < ctx.grid.sites; site++)
     { // Each tree contribues to ctx.field.LAI3D
-        ctx.T[site].CalcLAI(ctx);
+        CalcLAI(ctx, ctx.T[site]);
     }
 
     for (int h = ctx.grid.HEIGHT; h > 0; h--)
@@ -1230,7 +1231,184 @@ void TrackingData_andOutput(Context &ctx)
         }
     }
 }
+
+// Function to track trees born at a reference year
+float StartTracking(Context &ctx, Tree &tree)
+{
+    // Only tracks trees born in a mature forest at year 501
+    // currently hardcoded
+    if (ctx.time.iter >= 6000 && ctx.time.iter < 6012)
+        tree.t_timeofyear_born = ctx.time.iter % ctx.time.iterperyear;
+    else
+        tree.t_timeofyear_born = -1;
+
+    if (tree.t_timeofyear_born >= 0)
+    {
+        // initialise variables
+        tree.t_seedsproduced = 0;
+        tree.t_seedsproduced_sumyear = 0;
+        tree.t_time_carbonstarvation = 0;
+        tree.t_time_carbonstarvation_year = 0;
+
+        tree.t_GPP_sumyear = 0.0;
+        tree.t_NPP_sumyear = 0.0;
+        tree.t_GPPsquared_sumyear = 0.0; // for standard deviation
+        tree.t_NPPsquared_sumyear = 0.0; // for standard deviation
+        tree.t_Rday_sumyear = 0.0;
+        tree.t_Rnight_sumyear = 0.0;
+        tree.t_Rstem_sumyear = 0.0;
+        tree.t_LAIabove_effavgyear = 0.0;
+        tree.t_carbon_storage_avgyear = 0.0;
+
+        tree.t_LAIcum = 0.0;
+        tree.t_LAIeffcum = 0.0;
+        tree.t_GPPcum = 0.0;
+        tree.t_NPPcum = 0.0;
+        tree.t_LAIsquared_cum = 0.0;
+        tree.t_LAIeffsquared_cum = 0.0;
+        tree.t_GPPsquared_cum = 0.0;
+        tree.t_NPPsquared_cum = 0.0;
+
+        tree.t_dbh_tracked = tree.t_dbh;
+        tree.t_height_tracked = tree.t_height;
+        tree.t_CR_tracked = tree.t_CR;
+        tree.t_agb_tracked = 1000.0 * CalcAGB(ctx);
+
+        ctx.out.output_track[0] << tree.t_site << "\t" << tree.t_timeofyear_born << "\t" << tree.t_site % ctx.grid.cols << "\t" << tree.t_site / ctx.grid.cols << "\t" << tree.t_s->tree.s_name << "\t" << tree.t_dbh << "\t" << tree.t_CR << "\t" << tree.t_height << "\t" << tree.t_agb_tracked << "\t" << tree.t_mult_CR << "\t" << tree.t_mult_height << "\t" << tree.t_wsg << "\t" << tree.t_Nmass << "\t" << tree.t_Pmass << "\t" << tree.t_LMA << "\t" << tree.t_dev_wsg << "\t" << tree.t_mult_N << "\t" << tree.t_mult_P << "\t" << tree.t_mult_LMA << "\t" << tree.t_Vcmax << "\t" << tree.t_Jmax << "\t" << tree.t_Rdark << "\t" << tree.t_LAImax << "\t" << tree.t_leaflifespan << endl;
+    }
+}
 #endif
+
+#ifdef WATER
+// help function to extract LAI values in given vertical layer
+static double lai3d(const Context &ctx, const Tree &tree, int z)
+{
+    return ctx.field.LAI3D[z][tree.t_site + ctx.grid.SBORD];
+}
+
+// Standard outputs during the simulation -- written to file
+void OutputTreeStandard(Context &ctx, Tree &tree, std::ostream &output)
+{
+    output << ctx.time.iter 
+           << "\t" << tree.t_site 
+           << "\t" << tree.t_sp_lab 
+           << "\t" << tree.t_height
+           << "\t" << tree.t_dbh
+           << "\t" << tree.t_litter
+           << "\t" << tree.t_age 
+           << "\t" << tree.t_LA
+           << "\t" << tree.t_youngLA
+           << "\t" << tree.t_matureLA
+           << "\t" << tree.t_oldLA
+           << "\t" << tree.t_CR 
+           << "\t" << tree.t_CD 
+           << "\t" << tree.t_GPP
+           << "\t" << tree.t_NPP
+           << "\t" << tree.t_Rstem
+           << "\t" << tree.t_Rnight
+           << "\t" << lai3d(ctx, tree, tree.t_height)
+           << "\t" << lai3d(ctx, tree, tree.t_height - tree.t_CD + 1)
+           << "\t" << tree.t_root_depth
+           << "\t" << tree.t_phi_root
+           << "\t" << tree.t_WSF
+           << "\t" << tree.t_WSF_A 
+           << "\t" << tree.t_transpiration
+           << "\t" << tree.t_LAImax
+           << "\t" << tree.t_LAmax;
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+        output
+           << "\t" << tree.t_root_biomass[l];
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+        output
+           << "\t" << tree.t_soil_layer_weight[l];
+    output << endl;
+}
+// Standard outputs during the simulation -- written to screen in real time
+void OutputTreeStandard(Context &ctx, Tree &tree)
+{
+   OutputTreeStandard(ctx, tree, cout);
+}
+#endif
+
+// Computation of dbh histograms
+void histdbh(Context &ctx, Tree &tree)
+{
+    if (tree.t_age)
+        ctx.diag.nbdbh[int(100. * tree.t_dbh * ctx.grid.LH)]++;
+    // where dbh is in cm (it is in number of horizontal cells throughout the code)
+    // values are always rounded down (so ctx.diag.nbdbh[30] gives you trees with more than 30 cm dbh, and less than 31))
+}
+
+// ####################################################
+//  Computes Average and OutputField
+// ####################################################
+//  - Short routine that basically only updates the vector s_output_field
+void Average(Context &ctx, Tree &tree)
+{
+    if (tree.t_age > 0)
+    {
+        if (tree.t_dbh * ctx.grid.LH >= 0.1)
+        {
+            (ctx.S[tree.t_sp_lab].s_sum10)++;
+            ctx.S[tree.t_sp_lab].s_ba10 += tree.t_dbh * ctx.grid.LH * tree.t_dbh * ctx.grid.LH * 3.1415 * 0.25;
+        }
+        if (tree.t_dbh * ctx.grid.LH >= 0.3)
+            (ctx.S[tree.t_sp_lab].s_sum30)++;
+        ctx.S[tree.t_sp_lab].s_ba += tree.t_dbh * ctx.grid.LH * tree.t_dbh * ctx.grid.LH * 3.1415 * 0.25;
+        ctx.S[tree.t_sp_lab].s_npp += tree.t_NPP * 1.0e-6;
+        ctx.S[tree.t_sp_lab].s_gpp += tree.t_GPP * 1.0e-6;
+        float agb = tree.CalcAGB(ctx);
+        ctx.S[tree.t_sp_lab].s_agb += agb;
+        ctx.S[tree.t_sp_lab].s_rday += tree.t_Rday * 1.0e-6;
+        ctx.S[tree.t_sp_lab].s_rnight += tree.t_Rnight * 1.0e-6;
+        ctx.S[tree.t_sp_lab].s_rstem += tree.t_Rstem * 1.0e-6;
+        ctx.S[tree.t_sp_lab].s_litterfall += tree.t_litter * 1.0e-6;
+
+#ifdef WATER
+        int crown_top = int(tree.t_height);
+        int crown_base = int(tree.t_height - tree.t_CD);
+        float grad = 1 / float(crown_top - crown_base + 1);
+        for (int l = crown_base; l < (crown_top + 1); l++)
+        {
+            ctx.soil.LAI_young[l] += tree.t_youngLA * grad;
+            ctx.soil.LAI_mature[l] += tree.t_matureLA * grad;
+            ctx.soil.LAI_old[l] += tree.t_oldLA * grad;
+        }
+
+        ctx.soil.abund_phi_root += tree.t_phi_root;
+        if (tree.t_dbh * ctx.grid.LH >= 0.1)
+            ctx.soil.abund10_phi_root += tree.t_phi_root;
+        ctx.soil.agb_phi_root += agb * tree.t_phi_root;
+#endif
+
+#ifdef MIP_Lichstein
+        if (ctx.time.iter % ctx.time.iterperyear == 364 && (ctx.opt._FromInventory || (!ctx.opt._FromInventory && ctx.time.iter >= (ctx.time.nbiter - 100 * ctx.time.iterperyear))))
+        {
+            if (tree.t_dbh * ctx.grid.LH >= 0.01)
+            {
+                tree.t_inInventory = 1;
+                ctx.out.output_MIP_ind << ctx.time.iter 
+                << "\t" << ctx.S[tree.t_sp_lab].s_name 
+                << "\t" << -9999 
+                << "\t" << 1.0 
+                << "\t" << 0.0 
+                << "\t" << tree.t_dbh * 100 
+                << "\t" << tree.t_height 
+                << "\t" << -9999 
+                << "\t" << 0.5 * agb 
+                << "\t" << 1000 * tree.t_wsg 
+                << "\t" << 1000 / tree.t_LMA 
+                << "\t" << tree.t_Nmass 
+                << "\t" << tree.t_Pmass 
+                << "\t" << tree.t_dbhmax 
+                << "\t" << tree.t_tlp 
+                << "\t" << tree.t_leafarea 
+                << endl;
+            }
+        }
+#endif
+    }
+}
 
 #ifdef Output_ABC
 // ##############################################
@@ -3077,81 +3255,6 @@ void OutputABC_transmittance(Context &ctx, fstream &output_transmittance, fstrea
 }
 #endif
 
-#ifdef MPI
-// MPI Routines
-
-// ##############################################
-//  Global MPI function: Communication of border fields in the parallel version of the code
-// ##############################################
-//! - Only if the MPI option has been enabled
-void MPI_ShareSeed(unsigned char **c, int n)
-{
-
-    MPI_Status status;
-
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, size - 2, 0, c[3], n, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, &status);
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, size - 1, 0, c[3], n, MPI_UNSIGNED_CHAR, 1, 0, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, p_rank - 1, 0, c[3], n, MPI_UNSIGNED_CHAR, p_rank + 1, 0, MPI_COMM_WORLD, &status);
-
-    if (p_rank == 0)
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, 1, 1, c[2], n, MPI_UNSIGNED_CHAR, size - 1, 1, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, 0, 1, c[2], n, MPI_UNSIGNED_CHAR, size - 2, 1, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, p_rank + 1, 1, c[2], n, MPI_UNSIGNED_CHAR, p_rank - 1, 1, MPI_COMM_WORLD, &status);
-}
-
-// ##############################################
-//  Global MPI function: Communication of fields
-// ##############################################
-void MPI_ShareField(Context &ctx, unsigned short **cl, unsigned short ***cp, int n)
-{
-
-    MPI_Status status;
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-    {
-        if (p_rank == 0)
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, size - 1, h, cp[1][h], n, MPI_UNSIGNED_SHORT, 1, h, MPI_COMM_WORLD, &status);
-        if (p_rank == size - 1)
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, size - 2, h, cp[1][h], n, MPI_UNSIGNED_SHORT, 0, h, MPI_COMM_WORLD, &status);
-        if ((p_rank) && (p_rank < size - 1))
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, p_rank - 1, h, cp[1][h], n, MPI_UNSIGNED_SHORT, p_rank + 1, h, MPI_COMM_WORLD, &status);
-
-        if (p_rank == 0)
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, 1, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, size - 1, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-        if (p_rank == size - 1)
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, 0, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, size - 2, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-        if ((p_rank) && (p_rank < size - 1))
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, p_rank + 1, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, p_rank - 1, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-    }
-}
-
-// ##############################################
-//  Global MPI function: Communication of treefalls
-// ##############################################
-void MPI_ShareTreefall(unsigned short **c, int n)
-{
-
-    MPI_Status status;
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, size - 1, 0, c[2], n, MPI_UNSIGNED_SHORT, 1, 0, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, size - 2, 0, c[2], n, MPI_UNSIGNED_SHORT, 0, 0, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, p_rank - 1, 0, c[2], n, MPI_UNSIGNED_SHORT, p_rank + 1, 0, MPI_COMM_WORLD, &status);
-
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, 1, 1, c[1], n, MPI_UNSIGNED_SHORT, size - 1, 1, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, 0, 1, c[1], n, MPI_UNSIGNED_SHORT, size - 2, 1, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, p_rank + 1, 1, c[1], n, MPI_UNSIGNED_SHORT, p_rank - 1, 1, MPI_COMM_WORLD, &status);
-}
-#endif
-
 //! Close outputs
 void CloseOutputs(Context &ctx)
 {
@@ -3203,3 +3306,20 @@ void CloseOutputs(Context &ctx)
     }
 #endif
 }
+
+void OutputCrownSliced(Context &ctx, int height, int site, int row_slice, vector<float> &output_statistics)
+{
+    int row_current = site / ctx.grid.cols;
+    int col_current = site % ctx.grid.cols;
+    if (row_current == row_slice && col_current >= ctx.crown.mincol_visual && col_current < ctx.crown.maxcol_visual)
+    {
+        ctx.out.output_visual[1] << ctx.time.iter << "\t" << row_current << "\t" << col_current << "\t" << height;
+        for (int i = 0; i < output_statistics.size(); i++)
+        {
+            ctx.out.output_visual[1] << "\t" << output_statistics[i];
+        } // we only output tree parts that fall in the current slice extent
+        ctx.out.output_visual[1] << endl;
+    }
+};
+
+

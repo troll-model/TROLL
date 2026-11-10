@@ -428,7 +428,7 @@ struct Context
     SimFields field; //!< Spatial fields: leaf area density and treefall
     std::vector<Species> S; //!< All species
     std::vector<Tree> T;    //!< All tree sites
-    OutputConfig out;   // last: large fstream objects, accessed rarely
+    OutputConfig out;   //!< All fstream objects for writing output variables
 };
 
 #endif
