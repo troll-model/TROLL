@@ -49,10 +49,6 @@ Tree::Tree(Context &ctx)
 // #############################################
 //  Tree birth
 // #############################################
-//! Actions needed at birth for a tree (precisely, at time when a stem enters the > 1 cm trunk diameter class)
-//! @param ctx simulation context (all model state)
-//! @param nume species index of the recruit
-//! @param site0 site where the tree is recruited
 void Tree::Birth(Context &ctx, int nume, int site0)
 {
 
@@ -244,13 +240,6 @@ void Tree::Birth(Context &ctx, int nume, int site0)
 // #############################################
 //  Tree initialisation from field data
 // ##############################################
-//! - Modelled for compatibility with Tree::Birth. For comments cf. Tree::Birth
-//! - For comments regarding allometries and t_LA cf. Tree::Growth.
-//! @param ctx simulation context (all model state)
-//! @param site site of the tree
-//! @param parameter_names column names of the inventory file
-//! @param parameter_values values of this tree's row
-//! @param nb_speciesrandom [in,out] number of trees whose species was not found and was drawn at random
 int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_names, vector<string> &parameter_values, int &nb_speciesrandom)
 {
     int success = 0;
@@ -853,11 +842,6 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
 // ##################################################
 //  Computation of the tree water availability in the root zone
 // ####################################################
-//! - Tree::Water_availability could be divided into two functions:
-//! -# Water_availability: the equivalent of Tree::Fluxh but for water, ie compute the tree water conditions, and which updates t_phi_root and t_WSF
-//! -# another function that could be called UpdateRootDistribution, similar to UpdateLeafDynamics and UpdateTreeBiometry, that would update t_root_depth and t_soil_layer_weight and t_root_biomass, at the end of Tree::Growth (and in Tree::Birth)
-//! The current use of one function was chosen for simplicity's sake, but we could shift to a version with 2 functions if we prefer similarity to what has been already done
-//! @param ctx simulation context (all model state)
 void Tree::Water_availability(Context &ctx)
 {
 
@@ -1080,9 +1064,6 @@ void Tree::Water_availability(Context &ctx)
 // ###################################################################
 //  Contribution of trees to the stand ctx.soil.Transpiration field. Called by UpdateField
 // ####################################################################
-//! - Adds up each tree contribution to the stand ctx.soil.Transpiration field, that is the water removed from the soil through all tree transpiration.
-//! - Similar to CalcLAI, that adds up each tree contribution to ctx.field.LAI3D field.
-//! @param ctx simulation context (all model state)
 void Tree::Water_uptake(Context &ctx)
 {
     if (t_age > 0.0)
@@ -1111,29 +1092,11 @@ void Tree::Water_uptake(Context &ctx)
 // ##################################################
 //  Computation of PPFD right above the tree -- called by Tree::Birth and Tree::Growth
 // ####################################################
-//! Mean light flux received by the tree crown ctx.diag.layer at height h new version (PPFD symmetrical with T and VPD); PPFD, VPD, T and leafarea of a ctx.diag.layer are now local variables (not tree variables); v2.3.0, updated in v.2.5
-//! - v.2.3.: Tree::Fluxh() computes the average light flux received by a tree crown ctx.diag.layer at height h , and also the average VPD and T (modified 1/02/2016)
-//! - modified in v.2.4: weighting of each ctx.diag.layer's GPP by the leafarea in the ctx.diag.layer, this is also computed here
-//! - modified in v.2.4 and v.2.5: introducing an alternative crown shape, "umbrella"-like, inspired by previous shell models and similar to the crown shapes in the PPA. If activated, crowns contain three layers of vegetation that, once the crown goes beyond 3m in depth, will bend downwards on the edges with a linear slope. Since v.2.5 all loops (CalcLAI, Fluxh, leafarea_max) are executed through the same template. This allows to implement other crown shapes in the future and ensures that modifications are carried through across the code
 #ifdef CROWN_UMBRELLA
 #ifdef WATER
-//! @param ctx simulation context (all model state)
-//! @param h height layer (m)
-//! @param PPFD [out] light at the layer relative to the canopy top (fraction)
-//! @param VPD [out] VPD at the layer relative to the canopy top (factor)
-//! @param Tmp [out] decrease in air temperature from the canopy top (degC)
-//! @param leafarea_layer [out] leaf area of the crown in the layer (m2)
-//! @param PPFD_incident [out] light incident on the layer relative to the canopy top (fraction)
-//! @param ExtinctLW [out] extinction factor of net longwave radiation (dimensionless)
 void Tree::Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float &leafarea_layer, float &PPFD_incident, float &ExtinctLW)
 {
 #else
-//! @param ctx simulation context (all model state)
-//! @param h height layer (m)
-//! @param PPFD [out] light at the layer relative to the canopy top (fraction)
-//! @param VPD [out] VPD at the layer relative to the canopy top (factor)
-//! @param Tmp [out] decrease in air temperature from the canopy top (degC)
-//! @param leafarea_layer [out] leaf area of the crown in the layer (m2)
 void Tree::Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float &leafarea_layer)
 {
 #endif
@@ -1174,12 +1137,6 @@ void Tree::Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float
 }
 
 #else
-//! @param ctx simulation context (all model state)
-//! @param h height layer (m)
-//! @param PPFD [out] light at the layer relative to the canopy top (fraction)
-//! @param VPD [out] VPD at the layer relative to the canopy top (factor)
-//! @param Tmp [out] decrease in air temperature from the canopy top (degC)
-//! @param leafarea_layer [out] leaf area of the crown in the layer (m2)
 void Tree::Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float &leafarea_layer)
 {
 
@@ -1268,7 +1225,6 @@ void Tree::Fluxh(Context &ctx, int h, float &PPFD, float &VPD, float &Tmp, float
 //  Empirical functions (traits)
 // #############################
 
-//! @param ctx simulation context (all model state)
 float Tree::CalcJmaxm(Context &ctx)
 {
     float SLA = 10000.0 / t_LMA;                                                                                                                                // in cm2 g-1
@@ -1279,10 +1235,6 @@ float Tree::CalcJmaxm(Context &ctx)
 // #######################
 //  Death rate calculation
 // #######################
-//! @param ctx simulation context (all model state)
-//! @param dbh diameter at breast height (m)
-//! @param carbon_starv number of timesteps with carbon starvation
-//! @param ndd negative density dependence index of the tree's neighbourhood
 float Tree::DeathRateNDD(Context &ctx, float dbh, float carbon_starv, float ndd)
 {
     float dr = 0;
@@ -1306,10 +1258,6 @@ float Tree::DeathRateNDD(Context &ctx, float dbh, float carbon_starv, float ndd)
 }
 
 #ifdef WATER
-//! @param ctx simulation context (all model state)
-//! @param dbh diameter at breast height (m)
-//! @param carbon_starv number of timesteps with carbon starvation
-//! @param phi_root water potential in the root zone (MPa)
 float Tree::DeathRate(Context &ctx, float dbh, float carbon_starv, float phi_root)
 {
     float dr = 0;
@@ -1340,9 +1288,6 @@ float Tree::DeathRate(Context &ctx, float dbh, float carbon_starv, float phi_roo
     return dr * ctx.time.timestep;
 }
 #else
-//! @param ctx simulation context (all model state)
-//! @param dbh diameter at breast height (m)
-//! @param carbon_starv number of timesteps with carbon starvation
 float Tree::DeathRate(Context &ctx, float dbh, float carbon_starv)
 {
     float dr = 0.0;
@@ -1369,17 +1314,6 @@ float Tree::DeathRate(Context &ctx, float dbh, float carbon_starv)
 // ###############################################################
 
 #ifdef WATER
-//! - Function Tree::GPPleaf when the WATER option is off, Tree::FluxesLeaf when WATER option is on
-//! - Includes the Farquhar model of photosynthesis and Medlyn et al. 2011 model of stomatal conductance -- see also Prentice et al 2014 Ecology Letters, Lin et al 2015 Nature Climate Change, Dewar et al. 2018 New phytologist; min added in order to prevent ci:ca bigger than 1 (even though Ehleringer et al 1986 reported some values above 1 (Fig3)
-//! - Tree::FluxesLeaf iterates on the leaf conditions (Tl, Cs and Dleaf) and calls another function Tree::Photosyn, which itself implements the models of photosynthsis and stomatal conductance.
-//! - When WATER option is on, the stomatal conductance parameter (ctx.params.g1) and photosynthetic capacities are reduced under water stressed conditions: stomatal and non-stomatal responses to water stress (see Egea et al. 2011 AFM, Zhou et al. 2013 AFM, Zhou et al. 2014 PCE, etc.). This is done by multipliying the values of ctx.params.g1 and of Vcmax and Jmax in absence of water stress by water stress factors (WSF and WSF_A respectively).
-//! - Returns the primary productivity (assimilation) per unit leaf area, i.e. in micromoles C ctx.params.m-2 s-1, and water fluxes (transpiration) in micromol H20 ctx.params.m-2 s-1.
-//! - It is converted into gC per ctx.params.m^2 of leaf per ctx.time.timestep by "ctx.time.nbhours_covered*15.7788*ctx.time.timestep" where 15.7788 = 3600*365.25*12/1000000 and ctx.time.nbhours_covered is the duration read in the daily variation file
-//! - NB1: 12 is the molar mass of carbon NB2: ctx.time.timestep is given as fraction of a year, so what is computed is actually the full assimilation per year which, in turn, is multiplied by the fraction per year that is under consideration.
-//! - BEWARE: slight inconsistency through use of 365.25 when daily ctx.time.timestep is likely to be given as 365, but not incorrect.
-//! - It uses lookup tables for acceleration of computation of T dependencies. cf. Bernacchi et al 2003 PCE; von Caemmerer 2000
-
-//!  the function Tree::FluxesLeaf implements an iterative algorithm to determine the leaf temperature, and CO2 concentration and VPD at the leaf surface, ie the ones that should be taken as arguments of the Farquhar and stomatal conductance models. The latters are themeselves implemented within the function Tree::Photosyn (analogy with the MAESTRA/MAESPA code from which this iterative scheme has been inspired, see Medlyn et al. 2007 Tree physiology). At each iteration, Tree::FluxesLeaf computes carbon and water fluxes at the leaf level using the Farqhuar model and the Penman-Monteith equation, and updates T, CO2 and VPD accordingly. Starting by assuming that leaf T, CO2 and VPD equal the ones of the surrounding air, the iterative scheme stops when the difference in leaf T between two consecutive iterations is negligble. The corresponding carbon assimilation and water transpiration are then retained and provided as outputs of Tree::FluxesLeaf.
 leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, float WIND, float ExtinctLW, float PPFDtop, float PPFDinc, float Tatop, float VPDatop)
 {
 
@@ -1532,14 +1466,6 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
 
 #ifdef G0
 
-//! Farquhar-von Caemmerer-Berry photosynthesis coupled with Medlyn stomatal conductance at the
-//! leaf surface (GMD Part 1, Sect. 2.5.1, Eqs. 24-25).
-//! @param ctx    simulation context
-//! @param PPFD   photosynthetic photon flux density on the leaf (umol photons m-2 s-1)
-//! @param TLEAF  leaf temperature (degC)
-//! @param CS     CO2 concentration at the leaf surface (umol mol-1)
-//! @param DS     vapour pressure deficit at the leaf surface (kPa)
-//! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: stomatal conductance to CO2 (mol m-2 s-1)
 leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS)
 {
 
@@ -1626,14 +1552,6 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
 
 #else
 
-//! Farquhar-von Caemmerer-Berry photosynthesis coupled with Medlyn stomatal conductance at the
-//! leaf surface (GMD Part 1, Sect. 2.5.1, Eqs. 24-25).
-//! @param ctx    simulation context
-//! @param PPFD   photosynthetic photon flux density on the leaf (umol photons m-2 s-1)
-//! @param TLEAF  leaf temperature (degC)
-//! @param CS     CO2 concentration at the leaf surface (umol mol-1)
-//! @param DS     vapour pressure deficit at the leaf surface (kPa)
-//! @return carbon_flux: net assimilation (umol CO2 m-2 s-1); water_flux: stomatal conductance to CO2 (mol m-2 s-1)
 leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float DS)
 {
 
@@ -1707,8 +1625,6 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
 
 #endif
 
-//! - Function Tree::dailyGPPleaf when the WATER option is off, Tree::dailyFluxesLeaf when WATER option is on
-//! - Returns the *daily* primary productivity (assimilation; computed from Tree::GPPleaf, or Tree::FluxesLeaf) averaged across the daily fluctuations in climatic conditions, per unit leaf area, in micromoles C/ctx.params.m^2/s.
 leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, float W, float ExtinctLW, float PPFDinc, float &wf_1016)
 {
     float dailyA = 0.0;
@@ -1836,17 +1752,6 @@ leafFluxes Tree::dailyFluxesLeaf(Context &ctx, float PPFD, float VPD, float T, f
 
 #else
 
-//! - Function Tree::GPPleaf when the WATER option is off, Tree::FluxesLeaf when WATER option is on
-//! - Includes the Farquhar model of photosynthesis and Medlyn et al. 2011 model of stomatal conductance: formula for s_fci (ci/ca) -- see also Prentice et al 2014 Ecology Letters and Lin et al 2015 Nature Climate Change; min added in order to prevent ci:ca bigger than 1 (even though Ehleringer et al 1986 reported some values above 1 (Fig3)
-//! - Returns the primary productivity (assimilation) per unit leaf area, i.e. in micromoles C/ctx.params.m^2/s.
-//! - It is converted into gC per ctx.params.m^2 of leaf per ctx.time.timestep by "ctx.time.nbhours_covered*15.7788*ctx.time.timestep" where 15.7788 = 3600*365.25*12/1000000 and ctx.time.nbhours_covered is the duration read in the daily variation file
-//! - NB1: 12 is the molar mass of carbon NB2: ctx.time.timestep is given as fraction of a year, so what is computed is actually the full assimilation per year which, in turn, is multiplied by the fraction per year that is under consideration.
-//! - BEWARE: slight inconsistency through use of 365.25 when daily ctx.time.timestep is likely to be given as 365, but not incorrect. Commented version below was in use prior to version 2.3.0
-//! lookup tables for acceleration of T dependence. cf. Bernacchi et al 2003 PCE; von Caemmerer 2000
-//! @param ctx simulation context (all model state)
-//! @param PPFD light on the leaf (non-WATER version)
-//! @param VPD vapour pressure deficit (kPa)
-//! @param T air temperature (degC)
 float Tree::GPPleaf(Context &ctx, float PPFD, float VPD, float T)
 {
     // v.2.3.0: ctx.params.theta defined as a global variable
@@ -1875,13 +1780,6 @@ float Tree::GPPleaf(Context &ctx, float PPFD, float VPD, float T)
     return A;
 }
 
-//! - Function Tree::dailyGPPleaf when the WATER option is off, Tree::dailyFluxesLeaf when WATER option is on
-//! - Includes Medlyn et al. 2011 model of stomatal conductance: formula for s_fci (ci/ca) -- see also Prentice et al 2014 Ecology Letters and Lin et al 2015 Nature Climate Change; min added in order to prevent ci:ca bigger than 1 (even though Ehleringer et al 1986 reported some values above 1 (Fig3)
-//! - Returns the *daily* primary productivity (assimilation; computed from Tree::GPPleaf)averaged across the daily fluctuations in climatic conditions, per unit leaf area, in micromoles C/ctx.params.m^2/s.
-//! @param ctx simulation context (all model state)
-//! @param PPFD light on the leaf, relative to the canopy top (non-WATER version)
-//! @param VPD VPD relative to the canopy top
-//! @param T temperature decrease from the canopy top (degC)
 float Tree::dailyGPPleaf(Context &ctx, float PPFD, float VPD, float T)
 {
     float dailyA = 0.0;
@@ -1910,13 +1808,6 @@ float Tree::dailyGPPleaf(Context &ctx, float PPFD, float VPD, float T)
     return dailyA;
 }
 
-//! - Function Tree::dailyGPPcrown similar to Tree::dailyGPPleaf
-//! Faster, whole crown GPP calculation
-//! @param ctx simulation context (all model state)
-//! @param PPFD light on the crown, relative to the canopy top (non-WATER version)
-//! @param VPD VPD relative to the canopy top
-//! @param T temperature decrease from the canopy top (degC)
-//! @param LAI leaf area index of the crown (m2 m-2)
 float Tree::dailyGPPcrown(Context &ctx, float PPFD, float VPD, float T, float LAI)
 {
     float ppfde, dailyA = 0.0;
@@ -1948,17 +1839,11 @@ float Tree::dailyGPPcrown(Context &ctx, float PPFD, float VPD, float T, float LA
 
 #endif
 
-//! NEW in v. 2.4.0: Separate function for calculation of Rday
-//! separation necessitates extra function calls, but allows for decoupling of photosynthesis and leaf respiration in special cases (i.e. no photosynthesis at very low ppfd, but still respiration
-//! at low light levels, should leaf respiration not be closer to dark respiration than to respiration in full sunlight, i.e. should we not lose the factor 0.4 then?
-
 #ifdef WATER
 // Function Rdayleaf has not been modified when WATER is defined: there is no clear consensus on the effect of water shortage on respiration and how to implement such potential effect in models, but I have to further check this and it could be modified. IM 4 dec 2019.
 // Rdayleaf is actually not used anymore when WATER is activated
 #endif
 
-//! @param ctx simulation context (all model state)
-//! @param T leaf temperature (degC)
 float Tree::Rdayleaf(Context &ctx, float T)
 {
     int convT = int(ctx.lookup.iTaccuracy * T);
@@ -1967,8 +1852,6 @@ float Tree::Rdayleaf(Context &ctx, float T)
     return Rday_leaf;
 }
 
-//! @param ctx simulation context (all model state)
-//! @param T factor applied to the half-hourly temperatures varday_T (as written in the code)
 float Tree::dailyRdayleaf(Context &ctx, float T)
 {
     float Rdayleaf_daily = 0.0;
@@ -1980,7 +1863,6 @@ float Tree::dailyRdayleaf(Context &ctx, float T)
 
 // Calculation of above ground biomass (in kg)
 //  !!!: if updated, also update CalcIncrementDBH, cf. below
-//! @param ctx simulation context (all model state)
 float Tree::CalcAGB(Context &ctx)
 {
     // allometric equations from Chave et al. 2014 Global Change Biology to compute above ground biomass (conversion from dbh^2 in cm2 to m2, ie. factor e4)
@@ -1990,8 +1872,6 @@ float Tree::CalcAGB(Context &ctx)
 }
 
 // Calculation of the increment of dbh from assimilated carbon/biomass (in ctx.params.m)
-//! @param ctx simulation context (all model state)
-//! @param delta_agb aboveground biomass increment (kg)
 float Tree::CalcIncrementDBH(Context &ctx, float delta_agb)
 {
     float ddbh = fmaxf((delta_agb / (0.559 * t_wsg * 1.0e6 * t_dbh * ctx.grid.LH * t_height * ctx.grid.LV * (3.0 - t_dbh / (t_dbh + t_ah)))), 0.0) * ctx.grid.NH;
@@ -1999,7 +1879,6 @@ float Tree::CalcIncrementDBH(Context &ctx, float delta_agb)
 }
 
 // Calculation of the maximum amount of carbon stored in a tree
-//! @param ctx simulation context (all model state)
 float Tree::CalcCarbonStorageMax(Context &ctx)
 {
     // we assume non-structural carbohydrates (NSC) is around 10% of the whole tree's carbon. We assume that only half of NSC (i.e. 5% of whole tree carbon) can be remobilized, since NSC has important metabolic functions or can be stored in tissues that are no longer accessible (heartwood). So NSC for remobilization should never exceed 0.05 * above ground biomass (in units of carbon). Cf. Martínez-Vilalta 2016, Ecological Monographs
@@ -2011,7 +1890,6 @@ float Tree::CalcCarbonStorageMax(Context &ctx)
 
 // Calculation of the treefall threshold, if ctx.opt._BASICTREEFALL is activated
 // Slightly updated in v.3.1
-//! @param ctx simulation context (all model state)
 float Tree::CalcCt(Context &ctx)
 {
     float dbhrealmax = t_dbhmax * 1.5;
@@ -2022,7 +1900,6 @@ float Tree::CalcCt(Context &ctx)
 }
 
 // Determines leaf life span, either from empirical function or from Kikuzawa model
-//! @param ctx simulation context (all model state)
 void Tree::CalcLeafLifespan(Context &ctx)
 {
     if (ctx.opt._LL_parameterization == 0)
@@ -2050,7 +1927,6 @@ void Tree::CalcLeafLifespan(Context &ctx)
     t_lambda_old = 1.0 / time_old;
 }
 
-//! @param ctx simulation context (all model state)
 void Tree::InitialiseLeafPools(Context &ctx)
 {
     t_youngLA = t_LA / (t_lambda_young * t_leaflifespan);
@@ -2060,10 +1936,6 @@ void Tree::InitialiseLeafPools(Context &ctx)
 }
 
 // Determine sapwood area, limited by increase in dbh (ddbh) (in m2)
-//! - Options: fixed percentage (option ctx.opt._sapwood == 0) or based on tree's leaf area (option ctx.opt._sapwood > 0). In the case ctx.opt._sapwood>0, a tree cannot retroactively convert heartwood into sapwood, just because it could allocate more leaves
-//! - TODO: should there be another limit on leaf area? (i.e. if sapwood cannot grow more than ddbh increment, then leaf area should probably not be allowed to grow beyond what is reasonable through the current sapwood area)
-//! @param ctx simulation context (all model state)
-//! @param ddbh DBH increase in m2
 void Tree::UpdateSapwoodArea(Context &ctx, float ddbh)
 {
     if (ctx.opt._sapwood > 0)
@@ -2090,7 +1962,6 @@ void Tree::UpdateSapwoodArea(Context &ctx, float ddbh)
 }
 
 // Updates t_height, based on t_dbh
-//! @param ctx simulation context (all model state)
 void Tree::UpdateHeight(Context &ctx)
 {
     float height_baseline = CalcHeightBaseline(t_ah, t_hmax, t_dbh);
@@ -2098,7 +1969,6 @@ void Tree::UpdateHeight(Context &ctx)
 }
 
 // Updates t_CR, based on t_dbh
-//! @param ctx simulation context (all model state)
 void Tree::UpdateCR(Context &ctx)
 {
     t_CR = CalcCRBaseline(ctx, t_dbh) * t_mult_CR;
@@ -2106,7 +1976,6 @@ void Tree::UpdateCR(Context &ctx)
 }
 
 // Updates t_CD based on t_height
-//! @param ctx simulation context (all model state)
 void Tree::UpdateCD(Context &ctx)
 {
     // Since v.2.5, simplification of the computation of the crown depth, in accordance with the Canopy Constructor algorithm
@@ -2115,10 +1984,6 @@ void Tree::UpdateCD(Context &ctx)
 }
 
 // Determines the maximum LAI that the tree should reach, given the Farquhar model, at a theoretical average day, up to which point leaves can be allocated and until which the costs (self-shading) are lower than the benefits (additional assimilation)
-//! - LAImax (maximum LAI) is assumed to lie between 0 and 10, and is such that adding more leaves results in net loss of carbon
-//! - Range of LAImax is narrowed down by bisection (sequentially halving the possible range)
-//! - Uses actually absorbed PPFD instead of incident PPFD, since leaves are not perfectly illuminated, but often in the lower canopy layers
-//! @param ctx simulation context (all model state)
 void Tree::CalcLAImax(Context &ctx)
 {
     float LAI_lowerbound = 0.0;
@@ -2209,11 +2074,6 @@ void Tree::CalcLAImax(Context &ctx)
 }
 
 // Determines the maximum LAI that the tree should reach, similar to CalcLAImax, but it directly calculates the maximum leafarea for the current light environment the tree experiences rather than for theoretical day
-//! - the idea is to compute the LAI that the tree experiences at the crown top and compare it to its maximum LAI, then the tree adjusts its LAI or leaf area accordingly
-//! - importantly, since PPFD is an exponential function of leaf density (nonlinear), averaging LAI across the whole crown would not correspond to the LAI experienced by the tree. A heterogeneous environment with a mixture of light specks and dense spots above the crown will contribute considerably more PPFD (and have a lower effective LAI) than a homogeneously filled crown. We calculate the effective LAI instead of the real LAI above the crown top by first calculating average PPFD and then converting back to LAI
-//! @param ctx simulation context (all model state)
-//! @param LAIexperienced_eff [out] effective leaf area index experienced at the crown top (m2 m-2)
-//! @param LAmax [out] maximum leaf area of the tree (m2)
 void Tree::CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax)
 {
     float crown_area = PI * t_CR * t_CR;
@@ -2320,11 +2180,6 @@ void Tree::CalcLAmax(Context &ctx, float &LAIexperienced_eff, float &LAmax)
 }
 
 // Kikuzawa model for leaf lifespan
-//! - based on Kikuzawa, K. (1991). A cost-benefit analysis of leaf habit and leaf longevity of trees and their geographical pattern. The American Naturalist, 138(5), 1250-1263.
-//! - the model assumes that the daily photosynthesis of leaves declines (linearly) with leaf age, then calculates the optimal leaf lifespan, i.e. the one that maximizes lifetime carbon gain for a leaf
-//! - this model is here implemented by calculating the LAI that the tree could have under optimal conditions (i.e. no leaf area above, and a LAI equivalent to LAImax), then calculating the effective daily assimilation (GPP) per unit leaf area (i.e. excluding stem respiration), and solving the model equation for leaf lifespan
-//! - there are a few caveats/things to consider in further developing/exploring this model a) A crucial parameter is the leaf age when carbon assimilation would reach 0, often denoted as b. This parameter has been shown to correlate with LMA in Xu et al. 2017, but, like LL-SLA relations, the relation comes with a lot of unexplained variation (on log scales, so multiplicative), and when I (FF) looked at their data, I obtained a better fit with Vcmax_25_mass, which we calculate anyways in TROLL, so it seemed to be internally consistent to use this relation. However, variation is still enormous (exp(0.6)), and this is clearly far from mechanistic. So while the Kikuzawa model partially solves the problem of deriving LL from LMA and the large uncertainties as well as potentially misleading inferences (i.e. very short leaf lifespans), part of the problem with large variation and weak correlations still remains and is now just shifted onto the derivation of b! Any more research on b and how to derive it for trees would thus be important  b) A second, crucial question is, what exactly the costs are that should be considered in the cost-benefit analysis. While leaf construction cost is uncontroversial (here taken to be LMA, i.e. mass per unit leaf area * 1.5 gC/gC to account for additional respiration in construction), there is a host of other costs that could be considered. We here also consider costs for leaf maintenance and for fine roots transpiration, but do not account for other cost such as building of support structures (Kikuzawa and Ackerly 2002, https://esj-journals.onlinelibrary.wiley.com/doi/abs/10.1046/j.1442-1984.1999.00005.x). Conversely, some papers, discount any respiration (e.g. Wang et al. 2021, https://www.biorxiv.org/content/10.1101/2021.02.07.430028v1.full). This is fundamentally about how modular/interconnected a tree is, and whether leaves could be modelled, at least as a first order approximation, as isolated. c) There is a choice to be made about what kind of environment should be supposed for leaf life span calculations. Are tree leaves optimized for an optimal light environment or the light environment when they are produced?  d) Finally, a minor point: I simply transferred the linear model of decline in leaf photosynthesis from Kikuzawa, etc. into TROLL. But this should probably be checked again, since we have an alternative way of simulating decline in leaf photosynthesis through young, mature and old leaves
-//! @param ctx simulation context (all model state)
 float Tree::predLeafLifespanKikuzawa(Context &ctx)
 {
 
@@ -2400,7 +2255,6 @@ float Tree::predLeafLifespanKikuzawa(Context &ctx)
 // #############################################
 //  Tree growth
 // #############################################
-//! @param ctx simulation context (all model state)
 void Tree::Growth(Context &ctx)
 {
     // update age
@@ -2516,9 +2370,6 @@ void Tree::Growth(Context &ctx)
 // ###################################################
 //  GPP and respiration calculation, called by Tree::Growth
 // #####################################################
-//! - new v.2.4: t_GPP and t_Rday are updated in separate function (thus adaptable for different modules)
-//! - but this is not the case when WATER is activated: indeed Rday is now computed within Photosyn and FluxesLeaf functions and thus included in GPP computation.
-//! @param ctx simulation context (all model state)
 void Tree::CalcRespGPP(Context &ctx)
 {
 
@@ -2677,13 +2528,11 @@ void Tree::CalcRespGPP(Context &ctx)
 }
 
 #ifdef WATER
-//! @param ctx simulation context (all model state)
 void Tree::CalcNPP(Context &ctx)
 {
     t_NPP = 0.7 * (t_GPP - Rtot_by_Rabove * (Rtotleaf_by_Rdark * t_Rnight + t_Rstem) + (Rtotleaf_by_Rdark - 1) * t_Rnight); // t_GPP already accounts for daytime leaf respiration. would be good to go back to total respiration computation whith this new scheme (here is a succession of approximation..)
 }
 #else
-//! @param ctx simulation context (all model state)
 void Tree::CalcNPP(Context &ctx)
 {
     t_NPP = 0.7 * (t_GPP - Rtot_by_Rabove * (t_Rday + t_Rnight + t_Rstem)); // growth respiration, v. 2.4.1: 0.75 replaced by 0.7. According to Cannell and Thornley 2000, higher values should be used only if other sources of respiration (phloem loading etc.) are explicitly accounted for. For leaf construction, typically even a lower factor is a assumed (cf. Villar & Merino 2001, avg construction costs of 1.52 gC/gC)
@@ -2694,9 +2543,6 @@ void Tree::CalcNPP(Context &ctx)
 // ####################################################
 //  Leaf dynamics and C allocation, called by Tree::Growth
 // #####################################################
-//! - NPP allocation to leaves
-//! - In this current scheme of leaf demography and phenology in three leaf age classes: only the old leaves generate litterfall, and the dynamic of leaves cycle is generated by the dynamic of NPP, with a total leaf biomass varying - as opposed to De Weirdt et al 2012 in ORCHIDEE, but as in Wu et al 2016 but importantly without prescribing litterfall-
-//! @param ctx simulation context (all model state)
 void Tree::UpdateLeafDynamics(Context &ctx)
 {
     float SLA = 1.0 / t_LMA; // newIM, but should be added as a tree variable to avoid multiple computation
@@ -2906,9 +2752,6 @@ void Tree::UpdateLeafDynamics(Context &ctx)
 }
 
 // Compute biometric relations, including allometry
-//! - New standalone function in v.2.3.0
-//! - volume in ctx.params.m^3: the first factor of 2 is to convert C into biomass. the 1/s_ wsg to convert biomass into volume (g/cm^3). the 1e-6 term converts cm^3 into ctx.params.m^3 (the sole metric unit in the model). ctx.params.fallocwood is the fraction of biomass allocated to aboveground wood (stem + branches) growth. For the time being, we shall assume that a fixed proportion of NPP is allocated into AGB production. Currently, 0.20=%biomasse allocated to stem increment could be a global variable, even though this % allocation could in fact vary with resouce variation/co-limitation
-//! @param ctx simulation context (all model state)
 void Tree::UpdateTreeBiometry(Context &ctx)
 {
 
@@ -2959,9 +2802,6 @@ void Tree::UpdateVolumeDensity()
 // ####################################################
 //  Tree death, called by Tree::Update
 // ####################################################
-//! - This function records basic properties of a tree that has died and empties the variables at the tree site.
-//! - It does not, however, apply the destructor to the tree object
-//! @param ctx simulation context (all model state)
 void Tree::Death(Context &ctx)
 {
 
@@ -3043,8 +2883,6 @@ void Tree::Death(Context &ctx)
 // ##################################
 //  Tree death and growth
 // ##################################
-//! - This routine calls the appropriate DeathRate modules; if the death condition is met, function Tree::Death() is called, otherwise function Tree::Growth is called
-//! @param ctx simulation context (all model state)
 void Tree::Update(Context &ctx)
 {
     int death;
@@ -3088,11 +2926,6 @@ void Tree::Update(Context &ctx)
 // ####################################
 //  Tree falling function, called by TriggerTreefall
 // ####################################
-//! - Tree falling routine, formerly FallTree(),  ctx.opt._BASICTREEFALL, changed in v.2.4.0
-//! - Creates a treefall (but no longer treefall probability). Takes angle as argument and can now be used for primary, secondary treefalls, forestry, or other disturbances
-//! - NEW in TROLL v.2.4: FallTree() function has become Treefall() function, calculation of angle and treefall outside of function, and damages are now added up from several treefalls
-//! @param ctx simulation context (all model state)
-//! @param angle direction of the fall (radians)
 void Tree::Treefall(Context &ctx, float angle)
 {
     // treefall statistics
@@ -3218,7 +3051,7 @@ void RecruitTree(Context &ctx)
 // #############################
 //  Global function: Treefall gap formation
 // #############################
-//! change in v.2.4: resetting ctx.field.Thurt[0] field is done in TriggerSecondaryTreefall() at the beginning of each iteration. Further changes: rewriting of Tree::FallTree() which is now Tree::Treefall(angle). t_hurt can now persist longer, so new treefall events are added to older damages (that, in turn are decaying)
+// change in v.2.4: resetting ctx.field.Thurt[0] field is done in TriggerSecondaryTreefall() at the beginning of each iteration. Further changes: rewriting of Tree::FallTree() which is now Tree::Treefall(angle). t_hurt can now persist longer, so new treefall events are added to older damages (that, in turn are decaying)
 void TriggerTreefall(Context &ctx)
 {
     for (int site = 0; site < ctx.grid.sites; site++)
@@ -3261,9 +3094,9 @@ void TriggerTreefall(Context &ctx)
 // #############################
 //  Global function: Secondary treefall gap formation
 // #############################
-//! - NEW in v.2.4: TriggerSecondaryTreefall(), called at the beginning of each iteration
-//! - translates damages from previous round into tree deaths, partly treefalls, partly removing them only (e.g. splintering)
-//! - in the limit of ctx.params.p_tfsecondary = 0.0, this is equivalent to the previous computation
+// - NEW in v.2.4: TriggerSecondaryTreefall(), called at the beginning of each iteration
+// - translates damages from previous round into tree deaths, partly treefalls, partly removing them only (e.g. splintering)
+// - in the limit of ctx.params.p_tfsecondary = 0.0, this is equivalent to the previous computation
 void TriggerTreefallSecondary(Context &ctx)
 {
     ctx.diag.nbTreefall1 = 0;
@@ -3338,7 +3171,7 @@ float CalcCDBaseline(Context &ctx, float &height)
     return (CD);
 }
 
-//! Global functions to compute Vcmax (on a mass basis) and leaf dark respiration (on a leaf area basis)
+// Global functions to compute Vcmax (on a mass basis) and leaf dark respiration (on a leaf area basis)
 // newIM : to avoid repeating same functions in Tree and Species class. Was needed for the Species class to correctly initialise Rdark and compute LCP
 
 float CalcVcmaxm(float LMA, float Nmass, float Pmass)
