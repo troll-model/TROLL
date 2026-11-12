@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
     gsl_rng_set(ctx.rng.gslrand, seed);
 
     cout << "RNG seed: " << seed << endl;
-    sprintf(ctx.fileio.outputinfo, "%s_0_info.txt", ctx.buffers.buf);
+    sprintf(ctx.fileio.outputinfo, "%s_info.txt", ctx.buffers.buf);
     ctx.out.output_info.open(ctx.fileio.outputinfo, ios::out);
     if (!ctx.out.output_info)
         cerr << "ERROR with info file" << endl;
