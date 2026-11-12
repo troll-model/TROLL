@@ -3140,22 +3140,13 @@ void TriggerTreefall(Context &ctx)
                 ctx.T[site].Treefall(ctx, angle);
             }
         }
-#ifdef MPI
-    // Treefall field passed to the n.n. procs
-    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
-#endif
+
     for (int site = 0; site < ctx.grid.sites; site++)
     {
         // Update of Field hurt
         if (ctx.T[site].t_age)
         {
             ctx.T[site].t_hurt = max(ctx.field.Thurt[0][site + ctx.grid.sites], ctx.T[site].t_hurt); // NEW in v.2.4: addition of damages, alternative: max()
-#ifdef MPI
-            if (mpi_rank)
-                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[1][site]); // ? v.2.4: Update needed, ctx.field.Thurt[1], why max?
-            if (mpi_rank < mpi_size - 1)
-                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[2][site]);
-#endif
         }
     }
 }
@@ -3202,11 +3193,6 @@ void TriggerTreefallSecondary(Context &ctx)
             }
         }
     }
-
-#ifdef MPI
-    //! Treefall field passed to the n.n. procs
-    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
-#endif
 }
 
 float CalcHeightBaseline(float &ah, float &hmax, float &dbh)
