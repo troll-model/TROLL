@@ -114,7 +114,8 @@ count=0
 
 for f in $(ls -1 "$TEST"/test_*); do
     filename=$(basename "$f")
-    ref="$BASE/$filename"
+    suffix=${filename#*test_}
+    ref=$(find $BASE -type f -name "*$suffix" -print)
 
     if [[ ! -f "$ref" ]]; then
         echo -e "$filename [${RED}MISSING REF${NC}]"
@@ -128,8 +129,8 @@ for f in $(ls -1 "$TEST"/test_*); do
         echo -e "$filename [${GREEN}OK${NC}]"
     else
         echo -e "$filename [${RED}DIFF${NC}]"
-        diff -u <(grep -Ev "Average computation time" "$ref") \
-                <(grep -Ev "Average computation time" "$f")
+#        diff -u <(grep -Ev "Average computation time" "$ref") \
+#                <(grep -Ev "Average computation time" "$f")
         fail=1
     fi
 
