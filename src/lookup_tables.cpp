@@ -2,7 +2,6 @@
 #include "constants.hpp"
 #include "context.hpp"
 
-//! @param ctx simulation context (all model state)
 void InitialiseIntraspecific(Context &ctx)
 {
     float max_intraspecific_height = 0.0, min_intraspecific_height = 1000.0,
@@ -181,11 +180,6 @@ void InitialiseLookUpLAImax(Context &ctx)
 }
 #endif
 
-//! Global function: initialise lookup tables
-//! - this contains a number of empirical functions including:
-//! -# temperature dependence on Farquhar model parameters (following von Caemmerer 2000 and Bernacchi et al. 2003 PCE)
-//! -# flux averaging with the canopy
-//! -# ctx.grid.sites within a crown in order of distance from the center
 void InitialiseLookUpTables(Context &ctx)
 {
 

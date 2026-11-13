@@ -5,8 +5,6 @@
 // #################################
 //  Global function: Update all fields
 // #################################
-//! - This is an important function for TROLL -- Includes many of the operations
-//! - set the iteration environment -- nb: the current structure of code suppose that environment is periodic (a period = a year), if one wants to input a variable climate, with interannual variation and climate change along the simulation, a full climatic input needs to be input (ie number of columns=ctx.time.iter and not ctx.time.iterperyear) and change ctx.time.iterperyear by ctx.time.nbiter here.
 void UpdateField(Context &ctx)
 {
 
@@ -455,10 +453,6 @@ void UpdateSeeds(Context &ctx)
 // ################################
 //  Seed dispersal, called by UpdateSeeds
 // #################################
-//! - This routine implements the reproduction stage (nbs seeds are produced per tree) and dispersal of the trees
-//! - Dispersal is equiprobable in all direction and normally distributed (for 2D normal distribution, the absolute distance follows a Rayleigh distribution)
-//! - Reproduction only occurs for mature trees
-//! - New v.2.1 threshold of maturity is defined as a size threshold (and not age as before), following Wright et al 2005 JTE
 void DisperseSeed(Context &ctx, Tree &tree)
 {
     if (tree.t_dbh >= tree.t_dbhmature)
@@ -552,7 +546,6 @@ float GetCrownAreaFilled(float crown_area, float fraction_filled_target)
     return (crown_area_filled);
 }
 
-//! - upper bound on LAI within one voxel and above voxel (beyond 9.95 and 19.95, none of the environmental variables should change), needed for LookUp tables
 int CalcIntabsorb(float absorb_prev, float absorb_delta)
 {
     absorb_delta = fminf(absorb_delta, 9.95);
@@ -561,7 +554,6 @@ int CalcIntabsorb(float absorb_prev, float absorb_delta)
     return (intabsorb);
 }
 // Helper function
-//! - upper bound on LAI within one voxel and above voxel, needed for LookUp tables, for cases where there won't be any absorption within the voxel (absorb_delta = 0.0)
 int CalcIntabsorb(float absorb_prev)
 {
     absorb_prev = fminf(absorb_prev, 19.95);
@@ -570,8 +562,6 @@ int CalcIntabsorb(float absorb_prev)
 }
 
 // Global function: a modifying function that converts LAI to the density of a specific ctx.diag.layer, using the GetDensity functions
-//! - modifier for GPP calculation where we need the leaves per ctx.diag.layer to weight our results
-//! - LAI is the input, dens_layer the output
 void LAI2dens_cumulated(float LAI, float &dens_layer, float CD, float height, int layer_fromtop)
 {
     int crown_top = int(height);
@@ -607,8 +597,6 @@ void LAI2dens_cumulated(float LAI, float &dens_layer, float CD, float height, in
 }
 
 // Global function: a modifying function that converts LAI to the density of a specific ctx.diag.layer, using the GetDensity functions
-//! - modifier for GPP calculation where we need the leaves per ctx.diag.layer to weight our results
-//! - LAI is the input, dens_layer the output
 void LAI2dens(float LAI, float &dens_layer, float CD, float height, int layer_fromtop)
 {
 
@@ -682,8 +670,6 @@ void GetPPFDabove(Context &ctx, int height, int site, float noinput, float (&ppf
 }
 
 // Global function: calculates the canopy environment
-//! - this function adds to the environmental variables provided in canopy_environment_cumulated
-//! - the PPFD, VPD, Tmp and leafarea_layer retrieval function for Fluxh()
 #ifdef WATER
 void GetCanopyEnvironment(Context &ctx, int height, int site, float dens_layer, float (&canopy_environment_cumulated)[6]) // RENAMED: ctx.params.dens → dens_layer
 {
@@ -784,12 +770,7 @@ void AddCrownVolumeLayer(Context &ctx, int row_center, int col_center, float hei
 
 // ###############################################
 //  Update of the ctx.field.LAI3D field
-//! called by UpdateField
 // #################################################
-//! - modified in v.2.3: additional contribution to voxels that are not fully occupied by the tree crown. !!!: this does not calculate ctx.field.LAI3D directly, this only calculates the density in each voxel belonging to a tree. The final LAI field is calculated outside of the class Tree
-//! - modified in v.2.4 and v.2.5: introducing an alternative crown shape, "umbrella"-like, inspired by previous shell models and similar to the crown shapes in the PPA. If activated, crowns contain three layers of vegetation that, once the crown goes beyond 3m in depth, will bend downwards on the edges with a linear slope. Since v.2.5 all loops (CalcLAI, Fluxh, leafarea_max) are executed through the same template. This allows to implement other crown shapes in the future and ensures that modifications are carried through across the code
-//! @param ctx simulation context (all model state)
-//! @param tree reference to tree object
 #ifdef CROWN_UMBRELLA
 void CalcLAI(Context &ctx, Tree &tree)
 {
@@ -887,7 +868,6 @@ void CalcLAI(Context &ctx, Tree &tree)
 // ##############################################
 //  Global MPI function: Communication of border fields in the parallel version of the code
 // ##############################################
-//! - Only if the MPI option has been enabled
 void MPI_ShareSeed(unsigned char **c, int n)
 {
 

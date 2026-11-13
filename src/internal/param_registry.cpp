@@ -200,7 +200,6 @@ std::unordered_map<std::string, ParamSpec> parameter_registry;
 // ============================================================================
 //   RegisterParameters()
 // ============================================================================
-//! @param ctx simulation context (all model state)
 void RegisterParameters(Context &ctx)
 {
     parameter_registry.clear();

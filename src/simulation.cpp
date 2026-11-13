@@ -6,7 +6,6 @@
 // ######################################
 //  Global function: Evolution at each ctx.time.timestep
 // ######################################
-//! @param ctx simulation context (all model state)
 void Evolution(Context &ctx)
 {
 #ifdef CHECK_CARBON
@@ -60,7 +59,6 @@ void Evolution(Context &ctx)
 }
 
 // Helper function
-//! @param ctx simulation context (all model state)
 int GetTimeofyear(Context &ctx)
 {
     // new function to derive time of year, extended to negative iterations (-1 would be treated as last iteration of previous year)
