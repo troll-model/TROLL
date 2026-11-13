@@ -134,7 +134,7 @@ void ReadInputGeneral(Context &ctx)
         ctx.grid.i_sites_per_dcell = 1.0 / float(ctx.grid.sites_per_dcell);
         ctx.params.PPFDtoSW = 1 / ctx.params.SWtoPPFD;
 #ifdef G0
-        ctx.params.g0 *= 0.001 * GSVGSC; // ctx.params.g0 is provided in mmolH20 ctx.params.m-2 s-1, but will be used in Photosyn function for stomatal conductance to CO2 in molCO2 ctx.params.m-2 s-1 (and then converted back to flux of H20 in FluxesLeaf)
+        ctx.params.g0 *= 0.001 * GSVGSC; // ctx.params.g0 is provided in mmolH20 ctx.params.m-2 s-1, but will be used in Photosyn function for stomatal conductance to CO2 in molCO2 ctx.params.m-2 s-1 (and then converted back to flux of H20 in FluxesLeaf). Note that, here GSVGSC (=1.57) is used to convert g0 from fluxes of H20 into fluxes of CO2, but the ratio of CO2 to H20 conductance is not the same across the cuticule or across the stomata, so this will have to be updated when we will clarify the relative contribution of these two pathways in g0. See Marquez et al. 2021 Nature Plants and reference therein. Comments updated.
 #endif
 #endif
         ctx.grid.LV = 1.0 / ctx.grid.NV;

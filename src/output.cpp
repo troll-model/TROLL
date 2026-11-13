@@ -194,7 +194,7 @@ void Average(Context &ctx)
     runoff *= isites;               // in ctx.params.m
     leak *= isites;                 // in ctx.params.m
     throughfall *= isites;          // in ctx.params.m
-    interception *= isites * 0.001; // in ctx.params.m
+    interception *= isites * 0.001; // in ctx.params.m // multiplied by 0.001 to covert from mm to m.
     lai *= icells;
     ctx.soil.transpiration_1016 *= isites;
 
