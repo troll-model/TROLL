@@ -180,11 +180,6 @@ void InitialiseLookUpLAImax(Context &ctx)
 }
 #endif
 
-//! Global function: initialise lookup tables
-//! - this contains a number of empirical functions including:
-//! -# temperature dependence on Farquhar model parameters (following von Caemmerer 2000 and Bernacchi et al. 2003 PCE)
-//! -# flux averaging with the canopy
-//! -# ctx.grid.sites within a crown in order of distance from the center
 void InitialiseLookUpTables(Context &ctx)
 {
 

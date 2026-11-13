@@ -128,8 +128,8 @@ for f in $(ls -1 "$TEST"/test_*); do
         echo -e "$filename [${GREEN}OK${NC}]"
     else
         echo -e "$filename [${RED}DIFF${NC}]"
-        diff -u <(grep -Ev "Average computation time" "$ref") \
-                <(grep -Ev "Average computation time" "$f")
+#        diff -u <(grep -Ev "Average computation time" "$ref") \
+#                <(grep -Ev "Average computation time" "$f")
         fail=1
     fi
 

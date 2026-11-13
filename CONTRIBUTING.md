@@ -1,4 +1,4 @@
-# Contrinbuting
+Évaluation sur le présent de l'indicatif (3 groupes) + remédiation types de phrases pour les élèves volontaires# Contrinbuting
 
 TROLL is a scientific code where precisely identifying versions is crucial. Contributions follow the [Gitflow](https://nvie.com/posts/a-successful-git-branching-model/) model.
 

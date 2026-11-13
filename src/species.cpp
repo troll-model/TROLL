@@ -13,8 +13,8 @@ Species::Species()
 };
 
 // ######################################
-//! Species class function:
-//! Initialise Species vector
+// Species class function:
+// Initialise Species vector
 // ######################################
 
 void Species::Init(Context &ctx)

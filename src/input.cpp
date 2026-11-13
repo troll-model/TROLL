@@ -4,12 +4,13 @@
 #include "internal/param_registry.hpp"
 #include <functional>
 
-//! Global function: This function provides limits and defaults for species-specific parameters
+// Global function: This function provides limits and defaults for species-specific parameters
 // ============================================================================
 //   Species parameter registry (replaces AssignSpeciesParam if/else chain)
 // ============================================================================
 static std::unordered_map<std::string, std::function<void(Species &, std::string, std::string)>> species_param_registry;
 
+// Register the species-file columns (name, type, allowed range) used to read species parameters
 static void BuildSpeciesRegistry()
 {
     species_param_registry["s_name"] = [](Species &S, std::string n, std::string v) {
@@ -92,10 +93,6 @@ void AssignValuePointcloud(Context &ctx, string parameter_name, string parameter
     }
 }
 
-//! Global function: This function reads inputs from the general input file
-//! - Also sets up initial values for some parameters computed from input parameters
-//! - !!!: TO IMPLEMENT: automatic stop of program under error to avoid running empty simulations on cluster etc.
-//! - !!!: TO IMPLEMENT: separate error messages (i.e. no input file provided, empty input file, etc.)
 void ReadInputGeneral(Context &ctx)
 {
     fstream In(ctx.fileio.inputfile, ios::in);
@@ -218,7 +215,6 @@ void ReadInputGeneral(Context &ctx)
     }
 }
 
-//! Global function: This function reads inputs from the species input file
 void ReadInputSpecies(Context &ctx)
 {
     cout << endl
@@ -332,7 +328,6 @@ void ReadInputSpecies(Context &ctx)
 
 #ifdef FULL_CLIMATE
 
-//! Global function: This function reads inputs from the environmental daily variation input file
 void ReadInputDailyvar(Context &ctx)
 {
     // currently very simple reading in, only basic error checking
@@ -465,8 +460,6 @@ void ReadInputDailyvar(Context &ctx)
     ctx.climate.VPDDailyMean = ctx.climate.DailyMeanVapourPressureDeficit[0];
 }
 
-//! Global function: This function reads inputs from the environmental variation input file
-//! - v.3.0 of the code suppose that environment is periodic (a period = a year), if one want to make climate vary, with interannual variation and climate change along the simulation, one just need to provide the full climate input of the whole simulation (ie number of columns=ctx.time.iter and not ctx.time.iterperyear) and change ctx.time.iterperyear by ctx.time.nbiter here.
 void ReadInputClimate(Context &ctx)
 {
     cout << endl
@@ -525,7 +518,6 @@ void ReadInputClimate(Context &ctx)
 
 #else // FULL_CLIMATE
 
-//! Global function: This function reads inputs from the environmental daily variation input file
 void ReadInputDailyvar(Context &ctx)
 {
     // currently very simple reading in, only basic error checking
@@ -585,8 +577,6 @@ void ReadInputDailyvar(Context &ctx)
     }
 }
 
-//! Global function: This function reads inputs from the environmental variation input file
-//! - v.3.0 of the code suppose that environment is periodic (a period = a year), if one want to make climate vary, with interannual variation and climate change along the simulation, one just need to provide the full climate input of the whole simulation (ie number of columns=ctx.time.iter and not ctx.time.iterperyear) and change ctx.time.iterperyear by ctx.time.nbiter here.
 void ReadInputClimate(Context &ctx)
 {
     cout << endl
@@ -668,9 +658,6 @@ void ReadInputClimate(Context &ctx)
 #endif // FULL_CLIMATE
 
 #ifdef WATER
-//! Global function: This function reads inputs from the soil input file
-//! - in v.3.0, all soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) are computed from soil texture data (%clay, %silt, %sand) provided in input for each ctx.diag.layer. If additional information is available from the field (soil pH, organic content, dry bulk density, cation exchange capacity), this could be also provided in input and used to refine the computation of these soil parameters (see Table 2 in Marthews et al. 2014 Geoscientific Model Development and Hodnett & Tomasella 2002 Geoderma -- for tropical soils). Alternatively, if no local field soil data is available, these soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) should be drawn from global maps and databases --see Marthews et al. 2014, and directly provided in input. ==> ccl: to standardize the input file, the soil parameters (ctx.soil.Sat_SWC, ctx.soil.Res_SWC) should probably be provided in input, and the computation of those properties from the available local data (here %clay, %silt, %sand) made using a new function of RconTROLL (and not here)
-//! - ctx.soil.Sat_SWC and ctx.soil.Res_SWC are here computed according Tomasella & Hodnett 1998 from soil texture information (see Table 2 in Marthews et al. 2014)
 void ReadInputSoil(Context &ctx)
 {
     cout << endl
