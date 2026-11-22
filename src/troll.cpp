@@ -73,22 +73,22 @@ int main(int argc, char *argv[])
     }
 
     // input files
-    sprintf(ctx.fileio.inputfile, "%s", ctx.buffers.bufi);
-    sprintf(ctx.fileio.inputfile_daytimevar, "%s", ctx.buffers.bufi_daytimevar);
-    sprintf(ctx.fileio.inputfile_climate, "%s", ctx.buffers.bufi_climate);
-    sprintf(ctx.fileio.inputfile_soil, "%s", ctx.buffers.bufi_soil);
-    sprintf(ctx.fileio.inputfile_species, "%s", ctx.buffers.bufi_species);
+    snprintf(ctx.fileio.inputfile, sizeof(ctx.fileio.inputfile), "%s", ctx.buffers.bufi);
+    snprintf(ctx.fileio.inputfile_daytimevar, sizeof(ctx.fileio.inputfile_daytimevar), "%s", ctx.buffers.bufi_daytimevar);
+    snprintf(ctx.fileio.inputfile_climate, sizeof(ctx.fileio.inputfile_climate), "%s", ctx.buffers.bufi_climate);
+    snprintf(ctx.fileio.inputfile_soil, sizeof(ctx.fileio.inputfile_soil), "%s", ctx.buffers.bufi_soil);
+    snprintf(ctx.fileio.inputfile_species, sizeof(ctx.fileio.inputfile_species), "%s", ctx.buffers.bufi_species);
 
     if (ctx.opt._OUTPUT_pointcloud)
     {
-        sprintf(ctx.fileio.inputfile_pointcloud, "%s", ctx.buffers.bufi_pointcloud); // v.3.1.6
+        snprintf(ctx.fileio.inputfile_pointcloud, sizeof(ctx.fileio.inputfile_pointcloud), "%s", ctx.buffers.bufi_pointcloud); // v.3.1.6
     }
 
     if (ctx.opt._FromInventory)
     {
-        sprintf(ctx.fileio.inputfile_inventory, "%s", ctx.buffers.bufi_data);
+        snprintf(ctx.fileio.inputfile_inventory, sizeof(ctx.fileio.inputfile_inventory), "%s", ctx.buffers.bufi_data);
 #ifdef WATER
-        sprintf(ctx.fileio.inputfile_SWC, "%s", ctx.buffers.bufi_dataSWC);
+        snprintf(ctx.fileio.inputfile_SWC, sizeof(ctx.fileio.inputfile_SWC), "%s", ctx.buffers.bufi_dataSWC);
 #endif
     }
     // Registers parameters (used by AssignParamFromRegistry, the AssignValueGlobal replacement)
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     gsl_rng_set(ctx.rng.gslrand, seed);
 
     cout << "On proc #" << easympi_rank << " seed: " << seed << endl;
-    sprintf(ctx.fileio.outputinfo, "%s_%i_info.txt", ctx.buffers.buf, easympi_rank);
+    snprintf(ctx.fileio.outputinfo, sizeof(ctx.fileio.outputinfo), "%s_%i_info.txt", ctx.buffers.buf, easympi_rank);
     ctx.out.output_info.open(ctx.fileio.outputinfo, ios::out);
     if (!ctx.out.output_info)
         cerr << "ERROR with info file" << endl;
