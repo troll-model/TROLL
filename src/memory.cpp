@@ -1,4 +1,5 @@
 #include "troll.hpp"
+#include <stdexcept>
 #include "constants.hpp"
 #include "context.hpp"
 
@@ -897,13 +898,11 @@ void AllocMem(Context &ctx)
         if (ctx.grid.RMAX > ctx.grid.rows)
         {
             // Consistency tests
-            cerr << "Error : ctx.grid.RMAX > ctx.grid.rows \n";
-            exit(-1);
+            throw std::runtime_error("ctx.grid.RMAX > ctx.grid.rows (the grid is smaller than the maximal crown radius)");
         }
         if (ctx.grid.HEIGHT > ctx.grid.rows)
         {
-            cerr << "Error : ctx.grid.HEIGHT > ctx.grid.rows \n";
-            exit(-1);
+            throw std::runtime_error("ctx.grid.HEIGHT > ctx.grid.rows (the grid is smaller than the maximal tree height)");
         }
     }
 
@@ -1176,8 +1175,73 @@ void FreeMem(Context &ctx)
     // delete [] LookUp_Rnight; //newIM: no redundancy anymore between LookUp_Rday and ctx.lookup.LookUp_Rleaf
     delete[] ctx.lookup.LookUp_VcmaxT;
 #ifdef WATER
+    for (int i = 0; i < ctx.lookup.nbTbins; i++)
+        delete[] ctx.lookup.LookUp_INLR[i]; // rows allocated in InitialiseLookUpTables (delete[] of nullptr is a no-op)
     delete[] ctx.lookup.LookUp_INLR;
     delete[] ctx.lookup.LookUp_SLOPE;
     delete[] ctx.lookup.LookUp_GRADN;
 #endif
+    delete[] ctx.lookup.LookUp_Wind;
+
+    // Daily climate (ReadInputDailyvar)
+    delete[] ctx.climate.WDailyMean_all;
+    delete[] ctx.climate.tDailyMean_all;
+    delete[] ctx.climate.VPDDailyMean_all;
+    delete[] ctx.climate.windDailyMean_all;
+
+#ifdef WATER
+    // Soil layer properties (ReadInputSoil); only one of the two water retention models is allocated,
+    // the other pointers stay nullptr (delete[] of nullptr is a no-op)
+    delete[] ctx.soil.layer_depth;
+    delete[] ctx.soil.Sat_SWC;
+    delete[] ctx.soil.Max_SWC;
+    delete[] ctx.soil.FC_SWC;
+    delete[] ctx.soil.Res_SWC;
+    delete[] ctx.soil.Min_SWC;
+    delete[] ctx.soil.Ksat;
+    delete[] ctx.soil.a_vgm;
+    delete[] ctx.soil.b_vgm;
+    delete[] ctx.soil.c_vgm;
+    delete[] ctx.soil.m_vgm;
+    delete[] ctx.soil.phi_e;
+    delete[] ctx.soil.b;
+
+    // Soil water fields (AllocMem): one row per soil layer
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+    {
+        if (ctx.soil.SWC3D) delete[] ctx.soil.SWC3D[l];
+        if (ctx.soil.soil_phi3D) delete[] ctx.soil.soil_phi3D[l];
+        if (ctx.soil.Ks) delete[] ctx.soil.Ks[l];
+        if (ctx.soil.KsPhi) delete[] ctx.soil.KsPhi[l];
+        if (ctx.soil.Transpiration) delete[] ctx.soil.Transpiration[l];
+    }
+    delete[] ctx.soil.SWC3D;
+    delete[] ctx.soil.soil_phi3D;
+    delete[] ctx.soil.Ks;
+    delete[] ctx.soil.KsPhi;
+    delete[] ctx.soil.Transpiration;
+
+    // Leaf area and water fluxes per soil cell (AllocMem): one row per height layer
+    if (ctx.soil.LAI_DCELL)
+        for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
+            delete[] ctx.soil.LAI_DCELL[h];
+    delete[] ctx.soil.LAI_DCELL;
+    delete[] ctx.soil.LAI_young;
+    delete[] ctx.soil.LAI_mature;
+    delete[] ctx.soil.LAI_old;
+    delete[] ctx.soil.Canopy_height_DCELL;
+    delete[] ctx.soil.TopWindSpeed_DCELL;
+    delete[] ctx.soil.HSum_DCELL;
+    delete[] ctx.soil.Interception;
+    delete[] ctx.soil.Throughfall;
+    delete[] ctx.soil.Runoff;
+    delete[] ctx.soil.Leakage;
+    delete[] ctx.soil.Evaporation;
+#endif
+
+    // GSL objects (random number generator; intraspecific trait covariance, ReadInputGeneral)
+    if (ctx.rng.mcov_N_P_LMA) gsl_matrix_free(ctx.rng.mcov_N_P_LMA);
+    if (ctx.rng.mu_N_P_LMA) gsl_vector_free(ctx.rng.mu_N_P_LMA);
+    if (ctx.rng.variation_N_P_LMA) gsl_vector_free(ctx.rng.variation_N_P_LMA);
+    if (ctx.rng.gslrand) gsl_rng_free(ctx.rng.gslrand);
 }

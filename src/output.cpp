@@ -3268,6 +3268,13 @@ void CloseOutputs(Context &ctx)
         }
     }
 
+    if (ctx.out.output_pointcloud.is_open())
+        ctx.out.output_pointcloud.close();
+#ifdef MIP_Lichstein
+    ctx.out.output_MIP_eco.close();
+    ctx.out.output_MIP_ind.close();
+#endif
+
 #ifdef Output_ABC
     for (int i = 0; i < 11; i++)
     {

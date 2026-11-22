@@ -1,4 +1,5 @@
 #include "troll.hpp"
+#include <stdexcept>
 #include "constants.hpp"
 #include "context.hpp"
 #include "internal/lookup_tables_cache.hpp"
@@ -14,7 +15,9 @@ int easympi_rank = 0;
 // ###########################################
 // ###########################################
 
-int main(int argc, char *argv[])
+// The simulation itself. It is called by main(), which catches fatal errors (std::exception),
+// so that files are flushed and memory is released when a run stops early.
+static int RunTROLL(int argc, char *argv[])
 {
     Context ctx{};
 
@@ -294,5 +297,18 @@ int main(int argc, char *argv[])
 #ifdef easyMPI
     MPI::Finalize();
 #endif
-    exit(0);
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    try
+    {
+        return RunTROLL(argc, argv);
+    }
+    catch (const std::exception &e)
+    {
+        cerr << "TROLL stopped: " << e.what() << endl;
+        return 1;
+    }
 }
