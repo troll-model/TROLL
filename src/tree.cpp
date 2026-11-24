@@ -1458,7 +1458,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
         // float TLEAF1 = Ta + (Rnetiso - lambdaET)/HDIVT; // Leaf temperature inferred from Jones (2013) equation (9.7), p.225. Note : in Vezy et al. 2018 they accounted for the rate of evaporation of water at the leaf sufarce when the leaf is wet in addition to the one of tranpiration. To do so they use Penman-Monteith with an "infinitly" large stomatal conductance to water vapor and use a weighted mean of both PM values...
 
         float TDIFF = (Rnetiso - lambdaET) / HDIVT;
-        float TLEAF1 = Ta + 0.25 * TDIFF; // divide by 4 to slow down convergence and avoid big changes -- taken from code from Vezy et al. 2018 -- cf. discussion with Guerric Le Maire
+        float TLEAF1 = Ta + 0.25 * TDIFF; // following an advice from Guerric Le Maire et Remi Vezy (see code from Vezy et al. 2018), we divide by 4 to slow down convergence and avoid big changes. Test to be performed if this actually reduce the number of iteration.
         if (abs(TLEAF - TLEAF1) < 0.01)
         {
             // itmax=ITER;
