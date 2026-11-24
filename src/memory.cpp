@@ -7,321 +7,319 @@
 void InitialiseOutputStreams(Context &ctx)
 {
     char nnn[200];
-    if (!mpi_rank)
-    {
-        sprintf(nnn, "%s_%i_sumstats.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_basic[0].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_initial_pattern.txt", ctx.buffers.buf, easympi_rank); // previously "state" output, but not used anymore, overwritten for initial pattern
-        ctx.out.output_basic[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_final_pattern.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_basic[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_final_SWC3D.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_basic[3].open(nnn, ios::out);
 
-        // write headers for files
-        ctx.out.output_basic[0] << "iter\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
-        // headers for initial and final patterns are written automatically
+    sprintf(nnn, "%s_sumstats.txt", ctx.buffers.buf);
+    ctx.out.output_basic[0].open(nnn, ios::out);
+    sprintf(nnn, "%s_initial_pattern.txt", ctx.buffers.buf); // previously "state" output, but not used anymore, overwritten for initial pattern
+    ctx.out.output_basic[1].open(nnn, ios::out);
+    sprintf(nnn, "%s_final_pattern.txt", ctx.buffers.buf);
+    ctx.out.output_basic[2].open(nnn, ios::out);
+    sprintf(nnn, "%s_final_SWC3D.txt", ctx.buffers.buf);
+    ctx.out.output_basic[3].open(nnn, ios::out);
 
-        sprintf(nnn, "%s_%i_sumstats_species.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_extended[0].open(nnn, ios::out);
-        ctx.out.output_extended[0] << "iter\tspecies\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
+    // write headers for files
+    ctx.out.output_basic[0] << "iter\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
+    // headers for initial and final patterns are written automatically
+
+    sprintf(nnn, "%s_sumstats_species.txt", ctx.buffers.buf);
+    ctx.out.output_extended[0].open(nnn, ios::out);
+    ctx.out.output_extended[0] << "iter\tspecies\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
 
 #ifdef MIP_Lichstein
-        sprintf(nnn, "%s_%i_MIP_eco.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_MIP_eco.open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_MIP_ind.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_MIP_ind.open(nnn, ios::out);
+    sprintf(nnn, "%s_MIP_eco.txt", ctx.buffers.buf);
+    ctx.out.output_MIP_eco.open(nnn, ios::out);
+    sprintf(nnn, "%s_MIP_ind.txt", ctx.buffers.buf);
+    ctx.out.output_MIP_ind.open(nnn, ios::out);
 
-        ctx.out.output_MIP_eco << "YEAR\tMONTH\tDAY\tGPP\tNPP\tET\tLAI\tLFLIT\tSW1\tSW2\tSW3\tSW4" << endl;
-        ctx.out.output_MIP_ind << "YEAR\tSP\tID\tNLIVE\tNDEAD\tDBH\tHT\tTB\tAGB\tWD\tSLA\tNMASS\tPMASS\tDBHMAX\tTLP\tLA" << endl;
+    ctx.out.output_MIP_eco << "YEAR\tMONTH\tDAY\tGPP\tNPP\tET\tLAI\tLFLIT\tSW1\tSW2\tSW3\tSW4" << endl;
+    ctx.out.output_MIP_ind << "YEAR\tSP\tID\tNLIVE\tNDEAD\tDBH\tHT\tTB\tAGB\tWD\tSLA\tNMASS\tPMASS\tDBHMAX\tTLP\tLA" << endl;
 #endif
 
-        if (ctx.opt._OUTPUT_extended)
-        {
-            sprintf(nnn, "%s_%i_sumstats_species.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[0].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_ppfd0.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[1].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_death.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[2].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_death_snapshots.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[3].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_deathrate.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[4].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_sdd.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[5].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_vertd.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[6].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_LAI.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[7].open(nnn, ios::out);
-            sprintf(nnn, "%s_%i_CHM.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_extended[8].open(nnn, ios::out);
-
-            // write headers
-            ctx.out.output_extended[0] << "iter\tspecies\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
-            ctx.out.output_extended[1] << "iter\tvariable\tvalue\tresidual" << endl;
-            if (ctx.opt._BASICTREEFALL)
-                ctx.out.output_extended[2] << "iter\tnbdead_n1\tnbdead_n10\tnbTreefall1\tnbTreefall10" << endl;
-            else
-                ctx.out.output_extended[2] << "iter\tnbdead_n1\tnbdead_n10" << endl;
-            ctx.out.output_extended[3] << "iter\tspecies\tage\tdbh\theight" << endl;
-            ctx.out.output_extended[4] << "iter\twsg\tdbh\tbasal\tdr" << endl;
-            ctx.out.output_extended[5] << "iter\td\tfreq" << endl;
-            ctx.out.output_extended[6] << "iter\th\tfreq" << endl;
-
-            if (ctx.crown.extent_visual > 0)
-            {
-                sprintf(nnn, "%s_%i_visual_field.txt", ctx.buffers.buf, easympi_rank);
-                ctx.out.output_visual[0].open(nnn, ios::out);
-#ifdef CHM_SPIKEFREE
-                ctx.out.output_visual[0] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "height_spikefree" << "\t" << "LAI" << endl; // header
-#else
-                ctx.out.output_visual[0] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "LAI" << endl; // header
-#endif
-
-                sprintf(nnn, "%s_%i_visual_slice.txt", ctx.buffers.buf, easympi_rank);
-                ctx.out.output_visual[1].open(nnn, ios::out);
-                ctx.out.output_visual[1] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "sp_lab" << "\t" << "ratio_height_Ct" << "\t" << "ratio_NPP_GPP" << endl; // header
-            }
-        }
-
-        // v.3.1.6 output for point cloud
-        if (ctx.opt._OUTPUT_pointcloud)
-        {
-            sprintf(nnn, "%s_%i.las", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_pointcloud.open(nnn, ios::out | ios::binary);
-            ctx.out.output_pointcloud.imbue(locale::classic()); // justification here: https://stackoverflow.com/questions/14750496/sending-integer-to-fstream-as-little-endian; locale regulates how streams print and read values (i.e. commas vs. points for decimals, etc.); setting it to classic to ensure portability, but not entirely sure how important this is in practice for binary files
-        }
-
-#ifdef Output_ABC
-        sprintf(nnn, "%s_%i_abc_traitconservation.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[0].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_ground.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_chm.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_chmALS.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[3].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_transmittance.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[4].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_transmittanceALS.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[5].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_species.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[6].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_species10.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[7].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_traits.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[8].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_traits10.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[9].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_abc_biomass.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output_abc[10].open(nnn, ios::out);
-#endif
-
-#ifdef WATER
-        // sprintf(nnn,"%s_%i_water_balance.txt",ctx.buffers.buf, easympi_rank);
-        // output_water[0].open(nnn, ios::out);
-
-        sprintf(nnn, "%s_%i_water_balance.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[11].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site1.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[12].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site2.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[13].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site3.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[14].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site4.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[15].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site5.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[16].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_site6.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[17].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_begin.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[28].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_mid.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[29].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_state_end.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[30].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_begin.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[1].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_mid.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[2].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWC_end.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[3].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_begin.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[4].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_mid.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[5].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_SWP_end.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[6].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_litterfall.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[7].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_begin.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[18].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_mid.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[19].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_waterfluxes_end.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[20].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIdynamics.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[21].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIyoung.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[22].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAImature.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[23].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIold.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[24].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_phi_root.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[31].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_LAIprofile.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[32].open(nnn, ios::out);
-        sprintf(nnn, "%s_%i_soilproperties.txt", ctx.buffers.buf, easympi_rank);
-        ctx.out.output[33].open(nnn, ios::out);
+    if (ctx.opt._OUTPUT_extended)
+    {
+        sprintf(nnn, "%s_sumstats_species.txt", ctx.buffers.buf);
+        ctx.out.output_extended[0].open(nnn, ios::out);
+        sprintf(nnn, "%s_ppfd0.txt", ctx.buffers.buf);
+        ctx.out.output_extended[1].open(nnn, ios::out);
+        sprintf(nnn, "%s_death.txt", ctx.buffers.buf);
+        ctx.out.output_extended[2].open(nnn, ios::out);
+        sprintf(nnn, "%s_death_snapshots.txt", ctx.buffers.buf);
+        ctx.out.output_extended[3].open(nnn, ios::out);
+        sprintf(nnn, "%s_deathrate.txt", ctx.buffers.buf);
+        ctx.out.output_extended[4].open(nnn, ios::out);
+        sprintf(nnn, "%s_sdd.txt", ctx.buffers.buf);
+        ctx.out.output_extended[5].open(nnn, ios::out);
+        sprintf(nnn, "%s_vertd.txt", ctx.buffers.buf);
+        ctx.out.output_extended[6].open(nnn, ios::out);
+        sprintf(nnn, "%s_LAI.txt", ctx.buffers.buf);
+        ctx.out.output_extended[7].open(nnn, ios::out);
+        sprintf(nnn, "%s_CHM.txt", ctx.buffers.buf);
+        ctx.out.output_extended[8].open(nnn, ios::out);
 
         // write headers
-        ctx.out.output[21] << "iter\tLAI" << endl;
-        ctx.out.output[22] << "iter";
-        ctx.out.output[23] << "iter";
-        ctx.out.output[24] << "iter";
-        for (int l = 0; l < ctx.grid.HEIGHT + 1; l++)
+        ctx.out.output_extended[0] << "iter\tspecies\tsum1\tsum10\tsum30\tba\tba10\tagb\tgpp\tnpp\trday\trnight\trstem\tlitterfall" << endl;
+        ctx.out.output_extended[1] << "iter\tvariable\tvalue\tresidual" << endl;
+        if (ctx.opt._BASICTREEFALL)
+            ctx.out.output_extended[2] << "iter\tnbdead_n1\tnbdead_n10\tnbTreefall1\tnbTreefall10" << endl;
+        else
+            ctx.out.output_extended[2] << "iter\tnbdead_n1\tnbdead_n10" << endl;
+        ctx.out.output_extended[3] << "iter\tspecies\tage\tdbh\theight" << endl;
+        ctx.out.output_extended[4] << "iter\twsg\tdbh\tbasal\tdr" << endl;
+        ctx.out.output_extended[5] << "iter\td\tfreq" << endl;
+        ctx.out.output_extended[6] << "iter\th\tfreq" << endl;
+
+        if (ctx.crown.extent_visual > 0)
         {
-            ctx.out.output[22] << "\t" << "h_" << l;
-            ctx.out.output[23] << "\t" << "h_" << l;
-            ctx.out.output[24] << "\t" << "h_" << l;
+            sprintf(nnn, "%s_visual_field.txt", ctx.buffers.buf);
+            ctx.out.output_visual[0].open(nnn, ios::out);
+#ifdef CHM_SPIKEFREE
+            ctx.out.output_visual[0] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "height_spikefree" << "\t" << "LAI" << endl; // header
+#else
+            ctx.out.output_visual[0] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "LAI" << endl; // header
+#endif
+
+            sprintf(nnn, "%s_visual_slice.txt", ctx.buffers.buf);
+            ctx.out.output_visual[1].open(nnn, ios::out);
+            ctx.out.output_visual[1] << "iter" << "\t" << "row" << "\t" << "col" << "\t" << "height" << "\t" << "sp_lab" << "\t" << "ratio_height_Ct" << "\t" << "ratio_NPP_GPP" << endl; // header
         }
-        ctx.out.output[22] << endl;
-        ctx.out.output[23] << endl;
-        ctx.out.output[24] << endl;
-        ctx.out.output[31] << "iter\tabundance_weighted_phi_root\tabundance_weighted_phi_root_n10\tagb_weighted_phi_root" << endl;
-        ctx.out.output[32] << "iter\theight\tLAI" << endl;
-        ctx.out.output[1] << "layer";
-        ctx.out.output[2] << "layer";
-        ctx.out.output[3] << "layer";
-        ctx.out.output[4] << "layer";
-        ctx.out.output[5] << "layer";
-        ctx.out.output[6] << "layer";
-        ctx.out.output[18] << "variable";
-        ctx.out.output[19] << "variable";
-        ctx.out.output[20] << "variable";
-        for (int d = 0; d < ctx.grid.nbdcells; d++)
-        {
-            ctx.out.output[1] << "\t" << "dcell_" << d;
-            ctx.out.output[2] << "\t" << "dcell_" << d;
-            ctx.out.output[3] << "\t" << "dcell_" << d;
-            ctx.out.output[4] << "\t" << "dcell_" << d;
-            ctx.out.output[5] << "\t" << "dcell_" << d;
-            ctx.out.output[6] << "\t" << "dcell_" << d;
-            ctx.out.output[18] << "\t" << "dcell_" << d;
-            ctx.out.output[19] << "\t" << "dcell_" << d;
-            ctx.out.output[20] << "\t" << "dcell_" << d;
-        }
-        ctx.out.output[1] << endl;
-        ctx.out.output[2] << endl;
-        ctx.out.output[3] << endl;
-        ctx.out.output[4] << endl;
-        ctx.out.output[5] << endl;
-        ctx.out.output[6] << endl;
-        ctx.out.output[18] << endl;
-        ctx.out.output[19] << endl;
-        ctx.out.output[20] << endl;
-        ctx.out.output[11] << "iter\tprecipitation\tinterception\tthroughfall\trunoff\tleak\tevaporation";
-        for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-            ctx.out.output[11] << "\t" << "transpitation_" << l;
-        ctx.out.output[11] << "\t" << "transpiration1016";
-        for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-            ctx.out.output[11] << "\t" << "SWC_" << l;
-        for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-            ctx.out.output[11] << "\t" << "SWP_" << l;
-        ctx.out.output[11] << endl;
-        string sites_headers = "iter\tsite\tsp_lab\theight\tdbh\tlitter\tage\tLA\tyougLA\tmatureLA\toldLA\tCR\tCD\tGPP\tNPP\tRstem\tRnight\tLAI3D_canopy\tLAI3D_base_crown\troot_depth\tphi_root\tWSFs\tWSFns\ttranspiration\tLAImax\tLAmax";
-        ctx.out.output[12] << sites_headers;
-        ctx.out.output[13] << sites_headers;
-        ctx.out.output[14] << sites_headers;
-        ctx.out.output[15] << sites_headers;
-        ctx.out.output[16] << sites_headers;
-        ctx.out.output[17] << sites_headers;
-        ctx.out.output[28] << sites_headers;
-        ctx.out.output[29] << sites_headers;
-        ctx.out.output[30] << sites_headers;
-        for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        {
-            ctx.out.output[12] << "\t" << "root_biomass_" << l;
-            ctx.out.output[13] << "\t" << "root_biomass_" << l;
-            ctx.out.output[14] << "\t" << "root_biomass_" << l;
-            ctx.out.output[15] << "\t" << "root_biomass_" << l;
-            ctx.out.output[16] << "\t" << "root_biomass_" << l;
-            ctx.out.output[17] << "\t" << "root_biomass_" << l;
-            ctx.out.output[28] << "\t" << "root_biomass_" << l;
-            ctx.out.output[29] << "\t" << "root_biomass_" << l;
-            ctx.out.output[30] << "\t" << "root_biomass_" << l;
-        }
-        for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-        {
-            ctx.out.output[12] << "\t" << "soil_layer_weight_" << l;
-            ctx.out.output[13] << "\t" << "soil_layer_weight_" << l;
-            ctx.out.output[14] << "\t" << "soil_layer_weight_" << l;
-            ctx.out.output[15] << "\t" << "soil_layer_weight_" << l;
-            ctx.out.output[16] << "\t" << "soil_layer_weight_" << l;
-            ctx.out.output[17] << "\t" << "soil_layer_weight_" << l;
-            ctx.out.output[28] << "\t" << "soil_layer_weight_" << l;
-            ctx.out.output[29] << "\t" << "soil_layer_weight_" << l;
-            ctx.out.output[30] << "\t" << "soil_layer_weight_" << l;
-        }
-        ctx.out.output[12] << endl;
-        ctx.out.output[13] << endl;
-        ctx.out.output[14] << endl;
-        ctx.out.output[15] << endl;
-        ctx.out.output[16] << endl;
-        ctx.out.output[17] << endl;
-        ctx.out.output[28] << endl;
-        ctx.out.output[29] << endl;
-        ctx.out.output[30] << endl;
+    }
+
+    // v.3.1.6 output for point cloud
+    if (ctx.opt._OUTPUT_pointcloud)
+    {
+        sprintf(nnn, "%s.las", ctx.buffers.buf);
+        ctx.out.output_pointcloud.open(nnn, ios::out | ios::binary);
+        ctx.out.output_pointcloud.imbue(locale::classic()); // justification here: https://stackoverflow.com/questions/14750496/sending-integer-to-fstream-as-little-endian; locale regulates how streams print and read values (i.e. commas vs. points for decimals, etc.); setting it to classic to ensure portability, but not entirely sure how important this is in practice for binary files
+    }
+
+#ifdef Output_ABC
+    sprintf(nnn, "%s_abc_traitconservation.txt", ctx.buffers.buf);
+    ctx.out.output_abc[0].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_ground.txt", ctx.buffers.buf);
+    ctx.out.output_abc[1].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_chm.txt", ctx.buffers.buf);
+    ctx.out.output_abc[2].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_chmALS.txt", ctx.buffers.buf);
+    ctx.out.output_abc[3].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_transmittance.txt", ctx.buffers.buf);
+    ctx.out.output_abc[4].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_transmittanceALS.txt", ctx.buffers.buf);
+    ctx.out.output_abc[5].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_species.txt", ctx.buffers.buf);
+    ctx.out.output_abc[6].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_species10.txt", ctx.buffers.buf);
+    ctx.out.output_abc[7].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_traits.txt", ctx.buffers.buf);
+    ctx.out.output_abc[8].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_traits10.txt", ctx.buffers.buf);
+    ctx.out.output_abc[9].open(nnn, ios::out);
+    sprintf(nnn, "%s_abc_biomass.txt", ctx.buffers.buf);
+    ctx.out.output_abc[10].open(nnn, ios::out);
+#endif
+
+#ifdef WATER
+    // sprintf(nnn,"%s_water_balance.txt",ctx.buffers.buf);
+    // output_water[0].open(nnn, ios::out);
+
+    sprintf(nnn, "%s_water_balance.txt", ctx.buffers.buf);
+    ctx.out.output[11].open(nnn, ios::out);
+    sprintf(nnn, "%s_site1.txt", ctx.buffers.buf);
+    ctx.out.output[12].open(nnn, ios::out);
+    sprintf(nnn, "%s_site2.txt", ctx.buffers.buf);
+    ctx.out.output[13].open(nnn, ios::out);
+    sprintf(nnn, "%s_site3.txt", ctx.buffers.buf);
+    ctx.out.output[14].open(nnn, ios::out);
+    sprintf(nnn, "%s_site4.txt", ctx.buffers.buf);
+    ctx.out.output[15].open(nnn, ios::out);
+    sprintf(nnn, "%s_site5.txt", ctx.buffers.buf);
+    ctx.out.output[16].open(nnn, ios::out);
+    sprintf(nnn, "%s_site6.txt", ctx.buffers.buf);
+    ctx.out.output[17].open(nnn, ios::out);
+    sprintf(nnn, "%s_state_begin.txt", ctx.buffers.buf);
+    ctx.out.output[28].open(nnn, ios::out);
+    sprintf(nnn, "%s_state_mid.txt", ctx.buffers.buf);
+    ctx.out.output[29].open(nnn, ios::out);
+    sprintf(nnn, "%s_state_end.txt", ctx.buffers.buf);
+    ctx.out.output[30].open(nnn, ios::out);
+    sprintf(nnn, "%s_SWC_begin.txt", ctx.buffers.buf);
+    ctx.out.output[1].open(nnn, ios::out);
+    sprintf(nnn, "%s_SWC_mid.txt", ctx.buffers.buf);
+    ctx.out.output[2].open(nnn, ios::out);
+    sprintf(nnn, "%s_SWC_end.txt", ctx.buffers.buf);
+    ctx.out.output[3].open(nnn, ios::out);
+    sprintf(nnn, "%s_SWP_begin.txt", ctx.buffers.buf);
+    ctx.out.output[4].open(nnn, ios::out);
+    sprintf(nnn, "%s_SWP_mid.txt", ctx.buffers.buf);
+    ctx.out.output[5].open(nnn, ios::out);
+    sprintf(nnn, "%s_SWP_end.txt", ctx.buffers.buf);
+    ctx.out.output[6].open(nnn, ios::out);
+    sprintf(nnn, "%s_litterfall.txt", ctx.buffers.buf);
+    ctx.out.output[7].open(nnn, ios::out);
+    sprintf(nnn, "%s_waterfluxes_begin.txt", ctx.buffers.buf);
+    ctx.out.output[18].open(nnn, ios::out);
+    sprintf(nnn, "%s_waterfluxes_mid.txt", ctx.buffers.buf);
+    ctx.out.output[19].open(nnn, ios::out);
+    sprintf(nnn, "%s_waterfluxes_end.txt", ctx.buffers.buf);
+    ctx.out.output[20].open(nnn, ios::out);
+    sprintf(nnn, "%s_LAIdynamics.txt", ctx.buffers.buf);
+    ctx.out.output[21].open(nnn, ios::out);
+    sprintf(nnn, "%s_LAIyoung.txt", ctx.buffers.buf);
+    ctx.out.output[22].open(nnn, ios::out);
+    sprintf(nnn, "%s_LAImature.txt", ctx.buffers.buf);
+    ctx.out.output[23].open(nnn, ios::out);
+    sprintf(nnn, "%s_LAIold.txt", ctx.buffers.buf);
+    ctx.out.output[24].open(nnn, ios::out);
+    sprintf(nnn, "%s_phi_root.txt", ctx.buffers.buf);
+    ctx.out.output[31].open(nnn, ios::out);
+    sprintf(nnn, "%s_LAIprofile.txt", ctx.buffers.buf);
+    ctx.out.output[32].open(nnn, ios::out);
+    sprintf(nnn, "%s_soilproperties.txt", ctx.buffers.buf);
+    ctx.out.output[33].open(nnn, ios::out);
+
+    // write headers
+    ctx.out.output[21] << "iter\tLAI" << endl;
+    ctx.out.output[22] << "iter";
+    ctx.out.output[23] << "iter";
+    ctx.out.output[24] << "iter";
+    for (int l = 0; l < ctx.grid.HEIGHT + 1; l++)
+    {
+        ctx.out.output[22] << "\t" << "h_" << l;
+        ctx.out.output[23] << "\t" << "h_" << l;
+        ctx.out.output[24] << "\t" << "h_" << l;
+    }
+    ctx.out.output[22] << endl;
+    ctx.out.output[23] << endl;
+    ctx.out.output[24] << endl;
+    ctx.out.output[31] << "iter\tabundance_weighted_phi_root\tabundance_weighted_phi_root_n10\tagb_weighted_phi_root" << endl;
+    ctx.out.output[32] << "iter\theight\tLAI" << endl;
+    ctx.out.output[1] << "layer";
+    ctx.out.output[2] << "layer";
+    ctx.out.output[3] << "layer";
+    ctx.out.output[4] << "layer";
+    ctx.out.output[5] << "layer";
+    ctx.out.output[6] << "layer";
+    ctx.out.output[18] << "variable";
+    ctx.out.output[19] << "variable";
+    ctx.out.output[20] << "variable";
+    for (int d = 0; d < ctx.grid.nbdcells; d++)
+    {
+        ctx.out.output[1] << "\t" << "dcell_" << d;
+        ctx.out.output[2] << "\t" << "dcell_" << d;
+        ctx.out.output[3] << "\t" << "dcell_" << d;
+        ctx.out.output[4] << "\t" << "dcell_" << d;
+        ctx.out.output[5] << "\t" << "dcell_" << d;
+        ctx.out.output[6] << "\t" << "dcell_" << d;
+        ctx.out.output[18] << "\t" << "dcell_" << d;
+        ctx.out.output[19] << "\t" << "dcell_" << d;
+        ctx.out.output[20] << "\t" << "dcell_" << d;
+    }
+    ctx.out.output[1] << endl;
+    ctx.out.output[2] << endl;
+    ctx.out.output[3] << endl;
+    ctx.out.output[4] << endl;
+    ctx.out.output[5] << endl;
+    ctx.out.output[6] << endl;
+    ctx.out.output[18] << endl;
+    ctx.out.output[19] << endl;
+    ctx.out.output[20] << endl;
+    ctx.out.output[11] << "iter\tprecipitation\tinterception\tthroughfall\trunoff\tleak\tevaporation";
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+        ctx.out.output[11] << "\t" << "transpitation_" << l;
+    ctx.out.output[11] << "\t" << "transpiration1016";
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+        ctx.out.output[11] << "\t" << "SWC_" << l;
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+        ctx.out.output[11] << "\t" << "SWP_" << l;
+    ctx.out.output[11] << endl;
+    string sites_headers = "iter\tsite\tsp_lab\theight\tdbh\tlitter\tage\tLA\tyougLA\tmatureLA\toldLA\tCR\tCD\tGPP\tNPP\tRstem\tRnight\tLAI3D_canopy\tLAI3D_base_crown\troot_depth\tphi_root\tWSFs\tWSFns\ttranspiration\tLAImax\tLAmax";
+    ctx.out.output[12] << sites_headers;
+    ctx.out.output[13] << sites_headers;
+    ctx.out.output[14] << sites_headers;
+    ctx.out.output[15] << sites_headers;
+    ctx.out.output[16] << sites_headers;
+    ctx.out.output[17] << sites_headers;
+    ctx.out.output[28] << sites_headers;
+    ctx.out.output[29] << sites_headers;
+    ctx.out.output[30] << sites_headers;
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+    {
+        ctx.out.output[12] << "\t" << "root_biomass_" << l;
+        ctx.out.output[13] << "\t" << "root_biomass_" << l;
+        ctx.out.output[14] << "\t" << "root_biomass_" << l;
+        ctx.out.output[15] << "\t" << "root_biomass_" << l;
+        ctx.out.output[16] << "\t" << "root_biomass_" << l;
+        ctx.out.output[17] << "\t" << "root_biomass_" << l;
+        ctx.out.output[28] << "\t" << "root_biomass_" << l;
+        ctx.out.output[29] << "\t" << "root_biomass_" << l;
+        ctx.out.output[30] << "\t" << "root_biomass_" << l;
+    }
+    for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+    {
+        ctx.out.output[12] << "\t" << "soil_layer_weight_" << l;
+        ctx.out.output[13] << "\t" << "soil_layer_weight_" << l;
+        ctx.out.output[14] << "\t" << "soil_layer_weight_" << l;
+        ctx.out.output[15] << "\t" << "soil_layer_weight_" << l;
+        ctx.out.output[16] << "\t" << "soil_layer_weight_" << l;
+        ctx.out.output[17] << "\t" << "soil_layer_weight_" << l;
+        ctx.out.output[28] << "\t" << "soil_layer_weight_" << l;
+        ctx.out.output[29] << "\t" << "soil_layer_weight_" << l;
+        ctx.out.output[30] << "\t" << "soil_layer_weight_" << l;
+    }
+    ctx.out.output[12] << endl;
+    ctx.out.output[13] << endl;
+    ctx.out.output[14] << endl;
+    ctx.out.output[15] << endl;
+    ctx.out.output[16] << endl;
+    ctx.out.output[17] << endl;
+    ctx.out.output[28] << endl;
+    ctx.out.output[29] << endl;
+    ctx.out.output[30] << endl;
 
 #endif
 
 #ifdef WATER
 
-        if (ctx.opt._WATER_RETENTION_CURVE == 1)
+    if (ctx.opt._WATER_RETENTION_CURVE == 1)
+    {
+        ctx.out.output[33] << "layer" << "\t" << "depth" << "\t" << "sat" << "\t" << "max" << "\t" << "fc" << "\t" << "res" << "\t" << "min" << "\t" << "Ksat" << "\t" << "a_vgm" << "\t" << "m_vgm" << endl;
+        for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
-            ctx.out.output[33] << "layer" << "\t" << "depth" << "\t" << "sat" << "\t" << "max" << "\t" << "fc" << "\t" << "res" << "\t" << "min" << "\t" << "Ksat" << "\t" << "a_vgm" << "\t" << "m_vgm" << endl;
-            for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-            {
-                ctx.out.output[33] << l << "\t" << ctx.soil.layer_depth[l] << "\t" << ctx.soil.Sat_SWC[l] << "\t" << ctx.soil.Max_SWC[l] << "\t" << ctx.soil.FC_SWC[l] << "\t" << ctx.soil.Res_SWC[l] << "\t" << ctx.soil.Min_SWC[l] << "\t" << ctx.soil.Ksat[l] << "\t" << ctx.soil.a_vgm[l] << "\t" << ctx.soil.m_vgm[l] << endl;
-            }
+            ctx.out.output[33] << l << "\t" << ctx.soil.layer_depth[l] << "\t" << ctx.soil.Sat_SWC[l] << "\t" << ctx.soil.Max_SWC[l] << "\t" << ctx.soil.FC_SWC[l] << "\t" << ctx.soil.Res_SWC[l] << "\t" << ctx.soil.Min_SWC[l] << "\t" << ctx.soil.Ksat[l] << "\t" << ctx.soil.a_vgm[l] << "\t" << ctx.soil.m_vgm[l] << endl;
         }
-        else if (ctx.opt._WATER_RETENTION_CURVE == 0)
-        {
+    }
+    else if (ctx.opt._WATER_RETENTION_CURVE == 0)
+    {
 
-            ctx.out.output[33] << "layer" << "\t" << "depth" << "\t" << "sat" << "\t" << "max" << "\t" << "fc" << "\t" << "res" << "\t" << "min" << "\t" << "Ksat" << "\t" << "phi_e" << "\t" << "b" << endl;
-            for (int l = 0; l < ctx.soil.nblayers_soil; l++)
-            {
-                ctx.out.output[33] << l << "\t" << ctx.soil.layer_depth[l] << "\t" << ctx.soil.Sat_SWC[l] << "\t" << ctx.soil.Max_SWC[l] << "\t" << ctx.soil.FC_SWC[l] << "\t" << ctx.soil.Res_SWC[l] << "\t" << ctx.soil.Min_SWC[l] << "\t" << ctx.soil.Ksat[l] << "\t" << ctx.soil.phi_e[l] << "\t" << ctx.soil.b[l] << endl;
-            }
+        ctx.out.output[33] << "layer" << "\t" << "depth" << "\t" << "sat" << "\t" << "max" << "\t" << "fc" << "\t" << "res" << "\t" << "min" << "\t" << "Ksat" << "\t" << "phi_e" << "\t" << "b" << endl;
+        for (int l = 0; l < ctx.soil.nblayers_soil; l++)
+        {
+            ctx.out.output[33] << l << "\t" << ctx.soil.layer_depth[l] << "\t" << ctx.soil.Sat_SWC[l] << "\t" << ctx.soil.Max_SWC[l] << "\t" << ctx.soil.FC_SWC[l] << "\t" << ctx.soil.Res_SWC[l] << "\t" << ctx.soil.Min_SWC[l] << "\t" << ctx.soil.Ksat[l] << "\t" << ctx.soil.phi_e[l] << "\t" << ctx.soil.b[l] << endl;
         }
+    }
 
 #endif
 
 #ifdef TRACK_INDIVIDUALS
-        if (ctx.opt._OUTPUT_extended)
-        {
-            // these are the "cases" of trees that are followed
-            sprintf(nnn, "%s_%i_trees_fortracking.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_track[0].open(nnn, ios::out);
-            ctx.out.output_track[0] << "site" << "\t" << "timeofyear_born" << "\t" << "col" << "\t" << "row" << "\t" << "species" << "\t" << "dbh" << "\t" << "cr" << "\t" << "height" << "\t" << "agb" << "\t" << "multiplier_cr" << "\t" << "multiplier_height" << "\t" << "wsg" << "\t" << "Nmass" << "\t" << "Pmass" << "\t" << "LMA" << "\t" << "deviation_wsg" << "\t" << "multiplier_Nmass" << "\t" << "multiplier_Pmass" << "\t" << "multiplier_lma" << "\t" << "Vcmax" << "\t" << "Jmax" << "\t" << "Rdark" << "\t" << "LAImax" << "\t" << "leaflifespan" << endl;
+    if (ctx.opt._OUTPUT_extended)
+    {
+        // these are the "cases" of trees that are followed
+        sprintf(nnn, "%s_trees_fortracking.txt", ctx.buffers.buf);
+        ctx.out.output_track[0].open(nnn, ios::out);
+        ctx.out.output_track[0] << "site" << "\t" << "timeofyear_born" << "\t" << "col" << "\t" << "row" << "\t" << "species" << "\t" << "dbh" << "\t" << "cr" << "\t" << "height" << "\t" << "agb" << "\t" << "multiplier_cr" << "\t" << "multiplier_height" << "\t" << "wsg" << "\t" << "Nmass" << "\t" << "Pmass" << "\t" << "LMA" << "\t" << "deviation_wsg" << "\t" << "multiplier_Nmass" << "\t" << "multiplier_Pmass" << "\t" << "multiplier_lma" << "\t" << "Vcmax" << "\t" << "Jmax" << "\t" << "Rdark" << "\t" << "LAImax" << "\t" << "leaflifespan" << endl;
 
-            // these are the "activities" that are recorded for each tree
-            sprintf(nnn, "%s_%i_trees_tracked.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_track[1].open(nnn, ios::out);
+        // these are the "activities" that are recorded for each tree
+        sprintf(nnn, "%s_trees_tracked.txt", ctx.buffers.buf);
+        ctx.out.output_track[1].open(nnn, ios::out);
 
-            ctx.out.output_track[1] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seeds" << "\t" << "seedstotal" << "\t" << "carbstarv" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "dbhgrowth" << "\t" << "height" << "\t" << "heightgrowth" << "\t" << "cr" << "\t" << "crgrowth" << "\t" << "agb" << "\t" << "agbgrowth" << "\t" << "GPP" << "\t" << "GPPsq" << "\t" << "NPP" << "\t" << "NPPsq" << "\t" << "Rday" << "\t" << "Rnight" << "\t" << "Rstem" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "carbstore_avg" << endl;
+        ctx.out.output_track[1] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seeds" << "\t" << "seedstotal" << "\t" << "carbstarv" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "dbhgrowth" << "\t" << "height" << "\t" << "heightgrowth" << "\t" << "cr" << "\t" << "crgrowth" << "\t" << "agb" << "\t" << "agbgrowth" << "\t" << "GPP" << "\t" << "GPPsq" << "\t" << "NPP" << "\t" << "NPPsq" << "\t" << "Rday" << "\t" << "Rnight" << "\t" << "Rstem" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "carbstore_avg" << endl;
 
-            // this is to get information on the dead trees > 10cm
-            sprintf(nnn, "%s_%i_trees_aftertracking.txt", ctx.buffers.buf, easympi_rank);
-            ctx.out.output_track[2].open(nnn, ios::out);
+        // this is to get information on the dead trees > 10cm
+        sprintf(nnn, "%s_trees_aftertracking.txt", ctx.buffers.buf);
+        ctx.out.output_track[2].open(nnn, ios::out);
 
-            ctx.out.output_track[2] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seedstotal" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "height" << "\t" << "cr" << "\t" << "agb" << "\t" << "GPP" << "\t" << "NPP" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "GPPsquared" << "\t" << "NPPsquared" << "\t" << "LAIabovesquared_avg" << "\t" << "LAIabovesquared_effavg" << endl;
-        }
-#endif
+        ctx.out.output_track[2] << "site" << "\t" << "timeofyear_born" << "\t" << "Iter" << "\t" << "age" << "\t" << "seedstotal" << "\t" << "carbstarvtotal" << "\t" << "dbh" << "\t" << "height" << "\t" << "cr" << "\t" << "agb" << "\t" << "GPP" << "\t" << "NPP" << "\t" << "LAIabove_avg" << "\t" << "LAIabove_effavg" << "\t" << "GPPsquared" << "\t" << "NPPsquared" << "\t" << "LAIabovesquared_avg" << "\t" << "LAIabovesquared_effavg" << endl;
     }
+#endif
 }
 
 // ######################################
@@ -891,20 +889,18 @@ void AllocMem(Context &ctx)
     ctx.grid.SBORD = ctx.grid.cols * ctx.grid.RMAX;
     ctx.grid.dbhmaxincm = int(100. * d);
     cout << "ctx.grid.SBORD: " << ctx.grid.SBORD << endl;
-    if (!mpi_rank)
+   
+    // cout << "ctx.grid.HEIGHT : " << ctx.grid.HEIGHT << " ctx.grid.RMAX : " << ctx.grid.RMAX << " DBH : " << DBH <<"\n"; cout.flush();
+    if (ctx.grid.RMAX > ctx.grid.rows)
     {
-        // cout << "ctx.grid.HEIGHT : " << ctx.grid.HEIGHT << " ctx.grid.RMAX : " << ctx.grid.RMAX << " DBH : " << DBH <<"\n"; cout.flush();
-        if (ctx.grid.RMAX > ctx.grid.rows)
-        {
-            // Consistency tests
-            cerr << "Error : ctx.grid.RMAX > ctx.grid.rows \n";
-            exit(-1);
-        }
-        if (ctx.grid.HEIGHT > ctx.grid.rows)
-        {
-            cerr << "Error : ctx.grid.HEIGHT > ctx.grid.rows \n";
-            exit(-1);
-        }
+        // Consistency tests
+        cerr << "Error : ctx.grid.RMAX > ctx.grid.rows \n";
+        exit(-1);
+    }
+    if (ctx.grid.HEIGHT > ctx.grid.rows)
+    {
+        cerr << "Error : ctx.grid.HEIGHT > ctx.grid.rows \n";
+        exit(-1);
     }
 
     //** Initialization of dynamic Fields **
@@ -1093,16 +1089,6 @@ void AllocMem(Context &ctx)
     }
 #endif
 
-#ifdef MPI // Fields for MPI operations
-    for (i = 0; i < 2; i++)
-    {                                                             //  Two fields: one for the CL north (0) one for the CL south (1)
-        if (NULL == (LAIc[i] = new unsigned short *[ctx.grid.HEIGHT + 1])) // These fields contain the light info in the neighboring procs (2*ctx.grid.SBORD in width, not ctx.grid.SBORD !). They are used to update local fields
-            cerr << "!!! Mem_Alloc\n";
-        for (h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-            if (NULL == (LAIc[i][h] = new unsigned short[2 * ctx.grid.SBORD]))
-                cerr << "!!! Mem_Alloc\n";
-    }
-#endif
 }
 
 //!  Free dynamic memory

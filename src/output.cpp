@@ -20,7 +20,7 @@ void Average(Context &ctx)
     int site, spp;
     float sum1 = 0.0, sum10 = 0.0, sum30 = 0.0, ba = 0.0, npp = 0.0, gpp = 0.0, ba10 = 0.0, agb = 0.0, rday = 0.0, rnight = 0.0, rstem = 0.0, litterfall = 0.0;
 
-    float inbcells = 1.0 / float(ctx.grid.sites * mpi_size);
+    float inbcells = 1.f / ctx.grid.sites;
     float inbhectares = inbcells * ctx.grid.NH * ctx.grid.NH * 10000.0;
 
 #ifdef WATER
@@ -29,85 +29,82 @@ void Average(Context &ctx)
     ctx.soil.agb_phi_root = 0.0;
 #endif
 
-    if (!mpi_rank)
+    for (spp = 1; spp <= ctx.grid.nbspp; spp++)
+        ctx.S[spp].s_sum10 = ctx.S[spp].s_sum30 = ctx.S[spp].s_ba = ctx.S[spp].s_ba10 = ctx.S[spp].s_agb = ctx.S[spp].s_gpp = ctx.S[spp].s_npp = ctx.S[spp].s_rday = ctx.S[spp].s_rnight = ctx.S[spp].s_rstem = ctx.S[spp].s_litterfall = 0;
+
+    for (site = 0; site < ctx.grid.sites; site++)
+        Average(ctx, ctx.T[site]);
+
+    for (spp = 1; spp <= ctx.grid.nbspp; spp++)
     {
-        for (spp = 1; spp <= ctx.grid.nbspp; spp++)
-            ctx.S[spp].s_sum10 = ctx.S[spp].s_sum30 = ctx.S[spp].s_ba = ctx.S[spp].s_ba10 = ctx.S[spp].s_agb = ctx.S[spp].s_gpp = ctx.S[spp].s_npp = ctx.S[spp].s_rday = ctx.S[spp].s_rnight = ctx.S[spp].s_rstem = ctx.S[spp].s_litterfall = 0;
+        float s_sum1 = float(ctx.S[spp].s_nbind) * inbhectares;
+        ctx.S[spp].s_sum10 *= inbhectares;
+        ctx.S[spp].s_sum30 *= inbhectares;
+        ctx.S[spp].s_ba *= inbhectares;
+        ctx.S[spp].s_ba10 *= inbhectares;
+        ctx.S[spp].s_agb *= inbhectares;
+        ctx.S[spp].s_gpp *= inbhectares;
+        ctx.S[spp].s_npp *= inbhectares;
+        ctx.S[spp].s_rday *= inbhectares;
+        ctx.S[spp].s_rnight *= inbhectares;
+        ctx.S[spp].s_rstem *= inbhectares;
+        ctx.S[spp].s_litterfall *= inbhectares;
 
-        for (site = 0; site < ctx.grid.sites; site++)
-            Average(ctx, ctx.T[site]);
+        sum1 += float(ctx.S[spp].s_nbind) * inbhectares;
+        sum10 += ctx.S[spp].s_sum10;
+        sum30 += ctx.S[spp].s_sum30;
+        ba += ctx.S[spp].s_ba;
+        ba10 += ctx.S[spp].s_ba10;
+        agb += ctx.S[spp].s_agb;
+        gpp += ctx.S[spp].s_gpp;
+        npp += ctx.S[spp].s_npp;
+        rday += ctx.S[spp].s_rday;
+        rnight += ctx.S[spp].s_rnight;
+        rstem += ctx.S[spp].s_rstem;
+        litterfall += ctx.S[spp].s_litterfall;
 
-        for (spp = 1; spp <= ctx.grid.nbspp; spp++)
-        {
-            float s_sum1 = float(ctx.S[spp].s_nbind) * inbhectares;
-            ctx.S[spp].s_sum10 *= inbhectares;
-            ctx.S[spp].s_sum30 *= inbhectares;
-            ctx.S[spp].s_ba *= inbhectares;
-            ctx.S[spp].s_ba10 *= inbhectares;
-            ctx.S[spp].s_agb *= inbhectares;
-            ctx.S[spp].s_gpp *= inbhectares;
-            ctx.S[spp].s_npp *= inbhectares;
-            ctx.S[spp].s_rday *= inbhectares;
-            ctx.S[spp].s_rnight *= inbhectares;
-            ctx.S[spp].s_rstem *= inbhectares;
-            ctx.S[spp].s_litterfall *= inbhectares;
+        // if(ctx.opt._OUTPUT_extended){
+        ctx.out.output_extended[0] << ctx.time.iter << "\t" << ctx.S[spp].s_name << "\t" << s_sum1 << "\t" << ctx.S[spp].s_sum10 << "\t" << ctx.S[spp].s_sum30 << "\t" << ctx.S[spp].s_ba << "\t" << ctx.S[spp].s_ba10 << "\t" << ctx.S[spp].s_agb << "\t" << ctx.S[spp].s_gpp << "\t" << ctx.S[spp].s_npp << "\t" << ctx.S[spp].s_rday << "\t" << ctx.S[spp].s_rnight << "\t" << ctx.S[spp].s_rstem << "\t" << ctx.S[spp].s_litterfall << endl;
+        //}
+    }
 
-            sum1 += float(ctx.S[spp].s_nbind) * inbhectares;
-            sum10 += ctx.S[spp].s_sum10;
-            sum30 += ctx.S[spp].s_sum30;
-            ba += ctx.S[spp].s_ba;
-            ba10 += ctx.S[spp].s_ba10;
-            agb += ctx.S[spp].s_agb;
-            gpp += ctx.S[spp].s_gpp;
-            npp += ctx.S[spp].s_npp;
-            rday += ctx.S[spp].s_rday;
-            rnight += ctx.S[spp].s_rnight;
-            rstem += ctx.S[spp].s_rstem;
-            litterfall += ctx.S[spp].s_litterfall;
-
-            // if(ctx.opt._OUTPUT_extended){
-            ctx.out.output_extended[0] << ctx.time.iter << "\t" << ctx.S[spp].s_name << "\t" << s_sum1 << "\t" << ctx.S[spp].s_sum10 << "\t" << ctx.S[spp].s_sum30 << "\t" << ctx.S[spp].s_ba << "\t" << ctx.S[spp].s_ba10 << "\t" << ctx.S[spp].s_agb << "\t" << ctx.S[spp].s_gpp << "\t" << ctx.S[spp].s_npp << "\t" << ctx.S[spp].s_rday << "\t" << ctx.S[spp].s_rnight << "\t" << ctx.S[spp].s_rstem << "\t" << ctx.S[spp].s_litterfall << endl;
-            //}
-        }
-
-        ctx.out.output_basic[0] << ctx.time.iter << "\t" << sum1 << "\t" << sum10 << "\t" << sum30 << "\t" << ba << "\t" << ba10 << "\t" << agb << "\t" << gpp << "\t" << npp << "\t" << rday << "\t" << rnight << "\t" << rstem << "\t" << litterfall << endl;
+    ctx.out.output_basic[0] << ctx.time.iter << "\t" << sum1 << "\t" << sum10 << "\t" << sum30 << "\t" << ba << "\t" << ba10 << "\t" << agb << "\t" << gpp << "\t" << npp << "\t" << rday << "\t" << rnight << "\t" << rstem << "\t" << litterfall << endl;
 
 #ifdef MIP_Lichstein
-        if ((!ctx.opt._FromInventory && ctx.time.iter >= (ctx.time.nbiter - 100 * ctx.time.iterperyear)) || ctx.opt._FromInventory)
-        {
-            ctx.out.output_MIP_eco << ctx.time.iter << "\t" << ctx.time.iter << "\t" << ctx.time.iter << "\t" << gpp * 100 << "\t" << npp * 100 << "\t";
-        }
+    if ((!ctx.opt._FromInventory && ctx.time.iter >= (ctx.time.nbiter - 100 * ctx.time.iterperyear)) || ctx.opt._FromInventory)
+    {
+        ctx.out.output_MIP_eco << ctx.time.iter << "\t" << ctx.time.iter << "\t" << ctx.time.iter << "\t" << gpp * 100 << "\t" << npp * 100 << "\t";
+    }
 #endif
 
-        cout.setf(ios::fixed, ios::floatfield);
-        cout.precision(2);
+    cout.setf(ios::fixed, ios::floatfield);
+    cout.precision(2);
 
 #ifdef WATER
-        cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << 100.0 * ctx.diag.nbdead_n1 * inbhectares / sum1 << " | " << 100.0 * ctx.diag.nbdead_n10 * inbhectares / sum10 << " | " << 100.0 * ctx.diag.nbdead_n30 * inbhectares / sum30 << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << " *** ctx.soil.Transpiration (mm): ";
+    cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << 100.0 * ctx.diag.nbdead_n1 * inbhectares / sum1 << " | " << 100.0 * ctx.diag.nbdead_n10 * inbhectares / sum10 << " | " << 100.0 * ctx.diag.nbdead_n30 * inbhectares / sum30 << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << " *** ctx.soil.Transpiration (mm): ";
 #else
 
-        cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << 100.0 * ctx.diag.nbdead_n1 * inbhectares / sum1 << " | " << 100.0 * ctx.diag.nbdead_n10 * inbhectares / sum10 << " | " << 100.0 * ctx.diag.nbdead_n30 * inbhectares / sum30 << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << endl;
+    cout << ctx.time.iter << "\tTrees (1/ha): " << sum1 << " | " << sum10 << " | " << sum30 << " *** nbdead (%): " << 100.0 * ctx.diag.nbdead_n1 * inbhectares / sum1 << " | " << 100.0 * ctx.diag.nbdead_n10 * inbhectares / sum10 << " | " << 100.0 * ctx.diag.nbdead_n30 * inbhectares / sum30 << " *** AGB (t/ha): " << round(agb / 1000.0) << " GPP (MgC/ha/yr) " << gpp * ctx.time.iterperyear << " NPP " << npp * ctx.time.iterperyear << " litterfall (Mg/ha/yr) " << litterfall * ctx.time.iterperyear << endl;
 #endif
 
-        if (ctx.opt._OUTPUT_extended)
+    if (ctx.opt._OUTPUT_extended)
+    {
+        float tototest = 0.0, tototest2 = 0.0, flux;
+        for (int site = 0; site < ctx.grid.sites; site++)
         {
-            float tototest = 0.0, tototest2 = 0.0, flux;
-            for (int site = 0; site < ctx.grid.sites; site++)
-            {
-                flux = ctx.climate.WDailyMean * exp(-fmaxf(ctx.field.LAI3D[0][site + ctx.grid.SBORD], 0.0) * ctx.params.kpar);
-                tototest += flux;
-                tototest2 += flux * flux;
-            }
-            tototest /= float(ctx.grid.sites * ctx.grid.LH * ctx.grid.LH); // Average light flux (PPFD) on the ground
-            tototest2 /= float(ctx.grid.sites * ctx.grid.LH * ctx.grid.LH);
-            if (ctx.time.iter)
-                ctx.out.output_extended[1] << ctx.time.iter << "\tMean PPFDground\t" << tototest << "\t" << sqrt(tototest2 - tototest * tototest) << "\n";
-
-            if (ctx.opt._BASICTREEFALL)
-                ctx.out.output_extended[2] << ctx.time.iter << "\t" << ctx.diag.nbdead_n1 * inbhectares << "\t" << ctx.diag.nbdead_n10 * inbhectares << "\t" << ctx.diag.nbTreefall1 * inbhectares << "\t" << ctx.diag.nbTreefall10 * inbhectares << endl;
-            else
-                ctx.out.output_extended[2] << ctx.time.iter << "\t" << ctx.diag.nbdead_n1 * inbhectares << "\t" << ctx.diag.nbdead_n10 * inbhectares << endl;
+            flux = ctx.climate.WDailyMean * exp(-fmaxf(ctx.field.LAI3D[0][site + ctx.grid.SBORD], 0.0) * ctx.params.kpar);
+            tototest += flux;
+            tototest2 += flux * flux;
         }
+        tototest /= float(ctx.grid.sites * ctx.grid.LH * ctx.grid.LH); // Average light flux (PPFD) on the ground
+        tototest2 /= float(ctx.grid.sites * ctx.grid.LH * ctx.grid.LH);
+        if (ctx.time.iter)
+            ctx.out.output_extended[1] << ctx.time.iter << "\tMean PPFDground\t" << tototest << "\t" << sqrt(tototest2 - tototest * tototest) << "\n";
+
+        if (ctx.opt._BASICTREEFALL)
+            ctx.out.output_extended[2] << ctx.time.iter << "\t" << ctx.diag.nbdead_n1 * inbhectares << "\t" << ctx.diag.nbdead_n10 * inbhectares << "\t" << ctx.diag.nbTreefall1 * inbhectares << "\t" << ctx.diag.nbTreefall10 * inbhectares << endl;
+        else
+            ctx.out.output_extended[2] << ctx.time.iter << "\t" << ctx.diag.nbdead_n1 * inbhectares << "\t" << ctx.diag.nbdead_n10 * inbhectares << endl;
     }
 
     if (ctx.opt._NDD)
@@ -396,19 +393,6 @@ void Average(Context &ctx)
     ctx.out.output[31] << ctx.time.iter << "\t" << ctx.soil.abund_phi_root << "\t" << ctx.soil.abund10_phi_root << "\t" << ctx.soil.agb_phi_root << endl;
 
 #endif
-
-#ifdef MPI
-    // This section corresponds to the parallel version of the reporting of the global diagnostic variables. Since much work has been done on routine Average over the past years, this would need a full rewrite, !!!!Action 20/01/2016: rework the parallel version of function Average!!!!
-
-    //     MPI_Reduce(&(ctx.S[spp].s_nbind),&sind,1,
-    //     MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
-    //     MPI_Reduce(ctx.S[spp].s_output_field,ctx.S[spp].s_output_field,5,
-    //     MPI_FLOAT,MPI_SUM,0,MPI_COMM_WORLD);
-    //     MPI_Reduce(Mortality,Mortality,4,
-    //     MPI_FLOAT,MPI_SUM,0,MPI_COMM_WORLD);
-    //     MPI_Reduce(&ctx.S[spp].s_output_field[6],&ctx.S[spp].s_output_field[6],5,
-    //     MPI_FLOAT,MPI_MAX,0,MPI_COMM_WORLD);
-#endif
     cout.flush();
 }
 
@@ -435,23 +419,15 @@ void OutputField(Context &ctx)
                 ctx.diag.layer[h] += ctx.field.LAI3D[h][site + ctx.grid.SBORD];
         }
 
-#ifdef MPI
-        MPI_Status status;
-        MPI_Reduce(ctx.diag.nbdbh, ctx.diag.nbdbh, ctx.grid.dbhmaxincm, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(ctx.diag.layer, ctx.diag.layer, ctx.grid.HEIGHT, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-#endif
-        if (!mpi_rank)
-        {
-            // output of the dbh histograms (ctx.out.output[31])
-            for (d = 1; d < ctx.grid.dbhmaxincm; d++)
-                ctx.out.output[31] << d << "\t" << ctx.diag.nbdbh[d] << "\n";
-            ctx.out.output[31] << "\n";
-            // output of the mean LAI per height class (ctx.out.output[32])
-            float norm = 1.0 / float(ctx.grid.sites * ctx.grid.LH * ctx.grid.LH * mpi_size);
-            for (h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-                ctx.out.output[32] << ctx.time.iter << "\t" << h * ctx.grid.LV << "\t" << ctx.diag.layer[h] * norm << "\n";
-            ctx.out.output[32] << "\n";
-        }
+        // output of the dbh histograms (ctx.out.output[31])
+        for (d = 1; d < ctx.grid.dbhmaxincm; d++)
+            ctx.out.output[31] << d << "\t" << ctx.diag.nbdbh[d] << "\n";
+        ctx.out.output[31] << "\n";
+        // output of the mean LAI per height class (ctx.out.output[32])
+        float norm = 1.f / float(ctx.grid.sites * ctx.grid.LH * ctx.grid.LH);
+        for (h = 0; h < (ctx.grid.HEIGHT + 1); h++)
+            ctx.out.output[32] << ctx.time.iter << "\t" << h * ctx.grid.LV << "\t" << ctx.diag.layer[h] * norm << "\n";
+        ctx.out.output[32] << "\n";
     }
 }
 

@@ -53,11 +53,6 @@ public:
 #ifdef Output_ABC
     float s_dbhmax_realized; //!< Maximum dbh found across individuals from this species
 #endif
-
-#ifdef MPI
-    unsigned char *s_Gc[4]; //!< MPI: seeds on neighboring procs
-#endif
-
     //! Constructor of the Species class
     Species();
 

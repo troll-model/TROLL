@@ -69,14 +69,6 @@ void UpdateField(Context &ctx)
     RecruitTree(ctx);
 
     //  Compute Field ctx.field.LAI3D
-#ifdef MPI
-    // Reinitialize field ctx.field.LAI3D
-    for (int i = 0; i < 2; i++)
-        for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-            for (int site = 0; site < 2 * ctx.grid.SBORD; site++)
-                LAIc[i][h][site] = 0;
-#endif
-
     for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
         for (int sbsite = 0; sbsite < ctx.grid.sites + 2 * ctx.grid.SBORD; sbsite++)
             ctx.field.LAI3D[h][sbsite] = 0.0;
@@ -176,24 +168,6 @@ void UpdateField(Context &ctx)
         // cout << "iter=" << ctx.time.iter << " ctx.climate.WSDailyMean=" << ctx.climate.WSDailyMean << " d=" << d <<  " canopy_height_DCELL[d]=" << ctx.soil.Canopy_height_DCELL[d] << " ctx.soil.HSum_DCELL[d]=" << ctx.soil.HSum_DCELL[d] <<" ctx.soil.TopWindSpeed_DCELL[d]=" << ctx.soil.TopWindSpeed_DCELL[d];
         // if (d==225) cout << " d=" << d <<  " canopy_height_DCELL[d]=" << ctx.soil.Canopy_height_DCELL[d] ;
         // cout << endl;
-    }
-#endif
-
-#ifdef MPI
-    // Communicate border of field
-    // MPI_ShareField(ctx.field.LAI3D,LAIc,2*ctx.grid.SBORD);
-    This MPI command no longer exists in openMPI
-            Action 20 /
-        01 / 2016 TODO : FIX THIS MPI_ShareField(ctx.field.LAI3D, LAIc, 2 * ctx.grid.SBORD);
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-    {
-        //! Add border effects in local fields
-        if (mpi_rank)
-            for (site = 0; site < 2 * ctx.grid.SBORD; site++)
-                ctx.field.LAI3D[h][site] += LAIc[0][h][site];
-        if (mpi_rank < mpi_size - 1)
-            for (int site = 0; site < 2 * ctx.grid.SBORD; site++)
-                ctx.field.LAI3D[h][site + ctx.grid.sites] += LAIc[1][h][site];
     }
 #endif
 
@@ -391,8 +365,6 @@ void UpdateField(Context &ctx)
 // #################################
 void UpdateSeeds(Context &ctx)
 {
-    // With MPI option: Pass seeds across processors => two more fields to be communicated between n.n. (nearest neighbor) processors. NB: dispersal distance is bounded by the value of 'ctx.grid.rows'. At least 99 % of the seeds should be dispersed within the stripe or on the n.n. stripe. Hence ctx.grid.rows > 4.7*max(dist_moy_dissemination),for an exponential dispersal kernel.
-    // dispersal only once a year
     if (ctx.time.iter % ctx.time.iterperyear == 0)
     {
         // acceleration, using the multinomial distribution
@@ -418,7 +390,6 @@ void UpdateSeeds(Context &ctx)
                 else
                     ctx.species.SPECIES_SEEDS[s][spp] = 0;
             }
-            //}
         }
 
         // now disperse seeds from the trees on site
@@ -878,79 +849,3 @@ void CalcLAI(Context &ctx, Tree &tree)
     }
 }
 #endif
-
-#ifdef MPI
-// MPI Routines
-
-// ##############################################
-//  Global MPI function: Communication of border fields in the parallel version of the code
-// ##############################################
-//! - Only if the MPI option has been enabled
-void MPI_ShareSeed(unsigned char **c, int n)
-{
-
-    MPI_Status status;
-
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, size - 2, 0, c[3], n, MPI_UNSIGNED_CHAR, 0, 0, MPI_COMM_WORLD, &status);
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, size - 1, 0, c[3], n, MPI_UNSIGNED_CHAR, 1, 0, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_CHAR, p_rank - 1, 0, c[3], n, MPI_UNSIGNED_CHAR, p_rank + 1, 0, MPI_COMM_WORLD, &status);
-
-    if (p_rank == 0)
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, 1, 1, c[2], n, MPI_UNSIGNED_CHAR, size - 1, 1, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, 0, 1, c[2], n, MPI_UNSIGNED_CHAR, size - 2, 1, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[1], n, MPI_UNSIGNED_CHAR, p_rank + 1, 1, c[2], n, MPI_UNSIGNED_CHAR, p_rank - 1, 1, MPI_COMM_WORLD, &status);
-}
-
-// ##############################################
-//  Global MPI function: Communication of fields
-// ##############################################
-void MPI_ShareField(Context &ctx, unsigned short **cl, unsigned short ***cp, int n)
-{
-
-    MPI_Status status;
-    for (int h = 0; h < (ctx.grid.HEIGHT + 1); h++)
-    {
-        if (p_rank == 0)
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, size - 1, h, cp[1][h], n, MPI_UNSIGNED_SHORT, 1, h, MPI_COMM_WORLD, &status);
-        if (p_rank == size - 1)
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, size - 2, h, cp[1][h], n, MPI_UNSIGNED_SHORT, 0, h, MPI_COMM_WORLD, &status);
-        if ((p_rank) && (p_rank < size - 1))
-            MPI_Sendrecv(cl[h], n, MPI_UNSIGNED_SHORT, p_rank - 1, h, cp[1][h], n, MPI_UNSIGNED_SHORT, p_rank + 1, h, MPI_COMM_WORLD, &status);
-
-        if (p_rank == 0)
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, 1, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, size - 1, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-        if (p_rank == size - 1)
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, 0, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, size - 2, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-        if ((p_rank) && (p_rank < size - 1))
-            MPI_Sendrecv(cl[h] + ctx.grid.sites, n, MPI_UNSIGNED_SHORT, p_rank + 1, h + ctx.grid.HEIGHT, cp[0][h], n, MPI_UNSIGNED_SHORT, p_rank - 1, h + ctx.grid.HEIGHT, MPI_COMM_WORLD, &status);
-    }
-}
-
-// ##############################################
-//  Global MPI function: Communication of treefalls
-// ##############################################
-void MPI_ShareTreefall(unsigned short **c, int n)
-{
-
-    MPI_Status status;
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, size - 1, 0, c[2], n, MPI_UNSIGNED_SHORT, 1, 0, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, size - 2, 0, c[2], n, MPI_UNSIGNED_SHORT, 0, 0, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0], n, MPI_UNSIGNED_SHORT, p_rank - 1, 0, c[2], n, MPI_UNSIGNED_SHORT, p_rank + 1, 0, MPI_COMM_WORLD, &status);
-
-    if (p_rank == 0)
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, 1, 1, c[1], n, MPI_UNSIGNED_SHORT, size - 1, 1, MPI_COMM_WORLD, &status);
-    if (p_rank == size - 1)
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, 0, 1, c[1], n, MPI_UNSIGNED_SHORT, size - 2, 1, MPI_COMM_WORLD, &status);
-    if ((p_rank) && (p_rank < size - 1))
-        MPI_Sendrecv(c[0] + 2 * n, n, MPI_UNSIGNED_SHORT, p_rank + 1, 1, c[1], n, MPI_UNSIGNED_SHORT, p_rank - 1, 1, MPI_COMM_WORLD, &status);
-}
-#endif
-

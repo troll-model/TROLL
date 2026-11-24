@@ -58,10 +58,6 @@
 #include <typeinfo>
 #include <random>
 
-#ifdef MPI
-#include "mpi.h"
-#endif
-
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
@@ -194,19 +190,6 @@ float carbon_net_total;         //!< Global variable: --  !!!UPDATE
 float carbon_stored_leaves;     //!< Global variable: --  !!!UPDATE
 float carbon_stored_trunk;      //!< Global variable: --  !!!UPDATE
 float carbon_stored_free;       //!< Global variable: --  !!!UPDATE
-#endif
-
-// PROCESSORS FOR MPI OPTION
-extern int mpi_rank;     //!< Global variable: processor rank (Message Passing Interface)
-extern int mpi_size;     //!< Global variable: processor number (Message Passing Interface)
-extern int easympi_rank; //!< Global variable: processor rank (easy Message Passing Interface)
-
-// MPI PROCEDURES
-#ifdef MPI
-unsigned short **LAIc[2];                                        //!< Global 3D field: sharing LAI across boundaries
-void MPI_ShareSeed(unsigned char **, int);                       //!< Global MPI function: Communication of border fields in the parallel version of the code
-void MPI_ShareField(Context &ctx, unsigned short **, unsigned short ***, int); //!< Global MPI function: Communication of fields
-void MPI_ShareTreefall(unsigned short **, int);                  //!< Global MPI function: Communication of treefalls
 #endif
 
 #ifdef CROWN_UMBRELLA
