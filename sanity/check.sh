@@ -114,7 +114,8 @@ count=0
 
 for f in $(ls -1 "$TEST"/test_*); do
     filename=$(basename "$f")
-    ref="$BASE/$filename"
+    suffix=${filename#*test_}
+    ref=$(find $BASE -type f -name "*$suffix" -print)
 
     if [[ ! -f "$ref" ]]; then
         echo -e "$filename [${RED}MISSING REF${NC}]"

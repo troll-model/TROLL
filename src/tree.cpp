@@ -728,7 +728,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
             char par_name[30];
-            sprintf(par_name, "root_biomass%d", l);
+            snprintf(par_name, sizeof(par_name), "root_biomass%d", l);
             string par_name_s = par_name;
             parameter_name = par_name_s;
             parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
@@ -738,7 +738,7 @@ int Tree::BirthFromInventory(Context &ctx, int site, vector<string> &parameter_n
         for (int l = 0; l < ctx.soil.nblayers_soil; l++)
         {
             char par_name[30];
-            sprintf(par_name, "soil_layer_weight%d", l); //
+            snprintf(par_name, sizeof(par_name), "soil_layer_weight%d", l); //
             string par_name_s = par_name;
             parameter_name = par_name_s;
             parameter_value = GetParameter(parameter_name, parameter_names, parameter_values);
@@ -1434,7 +1434,7 @@ leafFluxes Tree::FluxesLeaf(Context &ctx, float PPFD, float VPDa, float Ta, floa
         // float TLEAF1 = Ta + (Rnetiso - lambdaET)/HDIVT; // Leaf temperature inferred from Jones (2013) equation (9.7), p.225. Note : in Vezy et al. 2018 they accounted for the rate of evaporation of water at the leaf sufarce when the leaf is wet in addition to the one of tranpiration. To do so they use Penman-Monteith with an "infinitly" large stomatal conductance to water vapor and use a weighted mean of both PM values...
 
         float TDIFF = (Rnetiso - lambdaET) / HDIVT;
-        float TLEAF1 = Ta + 0.25 * TDIFF; // divide by 4 to slow down convergence and avoid big changes -- taken from code from Vezy et al. 2018 -- cf. discussion with Guerric Le Maire
+        float TLEAF1 = Ta + 0.25 * TDIFF; // following an advice from Guerric Le Maire et Remi Vezy (see code from Vezy et al. 2018), we divide by 4 to slow down convergence and avoid big changes. Test to be performed if this actually reduce the number of iteration.
         if (abs(TLEAF - TLEAF1) < 0.01)
         {
             // itmax=ITER;
@@ -1516,7 +1516,7 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     B = (1.0 - CS * GSDIVA) * (VJ - Rday) + ctx.params.g0 * (2.0 * GammaT - CS) - GSDIVA * (VJ * GammaT + 2.0 * GammaT * Rday);
     C = -(1.0 - CS * GSDIVA) * GammaT * (VJ + 2.0 * Rday) - ctx.params.g0 * 2.0 * GammaT * CS;
     float CIJ = QUAD(A, B, C, 1); // Finds larger root of quadratic function
-    AJ = VJ * (CIJ - GammaT) / (CIC + 2.0 * GammaT);
+    AJ = VJ * (CIJ - GammaT) / (CIJ + 2.0 * GammaT);
     if ((AJ - Rday) < 1.0e-6)
     {
         CIJ = CS; // Below light compensation point
@@ -3071,22 +3071,13 @@ void TriggerTreefall(Context &ctx)
                 ctx.T[site].Treefall(ctx, angle);
             }
         }
-#ifdef MPI
-    // Treefall field passed to the n.n. procs
-    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
-#endif
+
     for (int site = 0; site < ctx.grid.sites; site++)
     {
         // Update of Field hurt
         if (ctx.T[site].t_age)
         {
             ctx.T[site].t_hurt = max(ctx.field.Thurt[0][site + ctx.grid.sites], ctx.T[site].t_hurt); // NEW in v.2.4: addition of damages, alternative: max()
-#ifdef MPI
-            if (mpi_rank)
-                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[1][site]); // ? v.2.4: Update needed, ctx.field.Thurt[1], why max?
-            if (mpi_rank < mpi_size - 1)
-                ctx.T[site].t_hurt = max(ctx.T[site].t_hurt, ctx.field.Thurt[2][site]);
-#endif
         }
     }
 }
@@ -3133,11 +3124,6 @@ void TriggerTreefallSecondary(Context &ctx)
             }
         }
     }
-
-#ifdef MPI
-    //! Treefall field passed to the n.n. procs
-    MPI_ShareTreefall(ctx.field.Thurt, ctx.grid.sites);
-#endif
 }
 
 float CalcHeightBaseline(float &ah, float &hmax, float &dbh)

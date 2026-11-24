@@ -1,4 +1,5 @@
 #include "troll.hpp"
+#include <stdexcept>
 #include "constants.hpp"
 #include "context.hpp"
 #include "internal/lookup_tables_cache.hpp"
@@ -18,22 +19,13 @@ int easympi_rank = 0;
 //! Returns the process exit code.
 //! @param argc number of command-line arguments
 //! @param argv command-line arguments (see README: -i, -s, -m, -d, -p, -o)
-int main(int argc, char *argv[])
+int RunTROLL(int argc, char *argv[])
 {
     Context ctx{};
 
     //!*********************
     //!** Initializations **
     //!*********************
-#ifdef MPI // Lookup processor number / total number of processors
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &p_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-    mpi_rank = 0;
-    mpi_size = 1;
-#endif
-    easympi_rank = 0;
 
     for (int argn = 1; argn < argc; argn++)
     { // Arguments of the input and output files
@@ -77,22 +69,22 @@ int main(int argc, char *argv[])
     }
 
     // input files
-    sprintf(ctx.fileio.inputfile, "%s", ctx.buffers.bufi);
-    sprintf(ctx.fileio.inputfile_daytimevar, "%s", ctx.buffers.bufi_daytimevar);
-    sprintf(ctx.fileio.inputfile_climate, "%s", ctx.buffers.bufi_climate);
-    sprintf(ctx.fileio.inputfile_soil, "%s", ctx.buffers.bufi_soil);
-    sprintf(ctx.fileio.inputfile_species, "%s", ctx.buffers.bufi_species);
+    snprintf(ctx.fileio.inputfile, sizeof(ctx.fileio.inputfile), "%s", ctx.buffers.bufi);
+    snprintf(ctx.fileio.inputfile_daytimevar, sizeof(ctx.fileio.inputfile_daytimevar), "%s", ctx.buffers.bufi_daytimevar);
+    snprintf(ctx.fileio.inputfile_climate, sizeof(ctx.fileio.inputfile_climate), "%s", ctx.buffers.bufi_climate);
+    snprintf(ctx.fileio.inputfile_soil, sizeof(ctx.fileio.inputfile_soil), "%s", ctx.buffers.bufi_soil);
+    snprintf(ctx.fileio.inputfile_species, sizeof(ctx.fileio.inputfile_species), "%s", ctx.buffers.bufi_species);
 
     if (ctx.opt._OUTPUT_pointcloud)
     {
-        sprintf(ctx.fileio.inputfile_pointcloud, "%s", ctx.buffers.bufi_pointcloud); // v.3.1.6
+        snprintf(ctx.fileio.inputfile_pointcloud, sizeof(ctx.fileio.inputfile_pointcloud), "%s", ctx.buffers.bufi_pointcloud); // v.3.1.6
     }
 
     if (ctx.opt._FromInventory)
     {
-        sprintf(ctx.fileio.inputfile_inventory, "%s", ctx.buffers.bufi_data);
+        snprintf(ctx.fileio.inputfile_inventory, sizeof(ctx.fileio.inputfile_inventory), "%s", ctx.buffers.bufi_data);
 #ifdef WATER
-        sprintf(ctx.fileio.inputfile_SWC, "%s", ctx.buffers.bufi_dataSWC);
+        snprintf(ctx.fileio.inputfile_SWC, sizeof(ctx.fileio.inputfile_SWC), "%s", ctx.buffers.bufi_dataSWC);
 #endif
     }
     // Registers parameters (used by AssignParamFromRegistry, the AssignValueGlobal replacement)
@@ -107,18 +99,15 @@ int main(int argc, char *argv[])
     Trandgsl = gsl_rng_default;
     ctx.rng.gslrand = gsl_rng_alloc(Trandgsl);
 
-    cout << "Easy MPI rank: " << easympi_rank << endl;
-
-    unsigned long int t = (unsigned long int)time(NULL);
-    unsigned long int seed = 3 * t + 2 * (easympi_rank + 1) + 1;
+    unsigned long int seed = (unsigned long int)time(NULL);
 
     if (ctx.opt._NONRANDOM == 1)
         seed = 1;
 
     gsl_rng_set(ctx.rng.gslrand, seed);
 
-    cout << "On proc #" << easympi_rank << " seed: " << seed << endl;
-    sprintf(ctx.fileio.outputinfo, "%s_%i_info.txt", ctx.buffers.buf, easympi_rank);
+    cout << "RNG seed: " << seed << endl;
+    snprintf(ctx.fileio.outputinfo, sizeof(ctx.fileio.outputinfo), "%s_info.txt", ctx.buffers.buf);
     ctx.out.output_info.open(ctx.fileio.outputinfo, ios::out);
     if (!ctx.out.output_info)
         cerr << "ERROR with info file" << endl;
@@ -177,19 +166,16 @@ int main(int argc, char *argv[])
 
     //** Information in file info **
     //******************************
-    if (!mpi_rank)
-    {
-        ctx.out.output_info << "\nTROLL simulator\n\n";
-        ctx.out.output_info << "\n   2D discrete network: horizontal step = " << ctx.grid.LH
-                            << " m, one tree per " << ctx.grid.LH * ctx.grid.LH << " m^2 \n\n";
-        ctx.out.output_info << "\n   Tree : (t_dbh,t_height,t_CR,t_CD) \n\n";
-        ctx.out.output_info << "\n            + one species label \n\n";
-        ctx.out.output_info << " Number of sites      : " << ctx.grid.rows << "x" << ctx.grid.cols << "\n";
-        ctx.out.output_info << " Number of iterations : " << ctx.time.nbiter << "\n";
-        ctx.out.output_info << " Duration of timestep : " << ctx.time.timestep << " years\n";
-        ctx.out.output_info << " Number of Species    : " << ctx.grid.nbspp << "\n\n";
-        ctx.out.output_info.flush();
-    }
+    ctx.out.output_info << "\nTROLL simulator\n\n";
+    ctx.out.output_info << "\n   2D discrete network: horizontal step = " << ctx.grid.LH
+                        << " m, one tree per " << ctx.grid.LH * ctx.grid.LH << " m^2 \n\n";
+    ctx.out.output_info << "\n   Tree : (t_dbh,t_height,t_CR,t_CD) \n\n";
+    ctx.out.output_info << "\n            + one species label \n\n";
+    ctx.out.output_info << " Number of sites      : " << ctx.grid.rows << "x" << ctx.grid.cols << "\n";
+    ctx.out.output_info << " Number of iterations : " << ctx.time.nbiter << "\n";
+    ctx.out.output_info << " Duration of timestep : " << ctx.time.timestep << " years\n";
+    ctx.out.output_info << " Number of Species    : " << ctx.grid.nbspp << "\n\n";
+    ctx.out.output_info.flush();
 
     // initial pattern, should be empty, unless an inventory has been provided
     if (ctx.opt._OUTPUT_extended & !ctx.opt._OUTPUT_inventory)
@@ -276,27 +262,27 @@ int main(int argc, char *argv[])
     //** End of simulation **
     //***********************
     float durf = duration / double(CLOCKS_PER_SEC); // output of the effective CPU time
-#ifdef MPI
-    MPI_Reduce(&durf, &durf, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
-#endif
-    if (!mpi_rank)
-    {
-        cout << "\n";
-#ifdef MPI
-        ctx.out.output_info << "Number of processors : " << mpi_size << "\n";
-#endif
-        ctx.out.output_info << "Average computation time : " << durf / float(mpi_size) << " seconds.\n";
-        ctx.out.output_info << "End of simulation.\n";
-        ctx.out.output_info.flush();
-        cout << "\nNumber of processors : " << mpi_size << "\n";
-        cout << "Average computation time : " << durf / float(mpi_size) << " seconds.\n";
-        cout << "End of simulation.\n";
-    }
+    cout << "\n";
+    ctx.out.output_info << "Average computation time: " << durf << " seconds.\n";
+    ctx.out.output_info << "End of simulation.\n";
+    ctx.out.output_info.flush();
+    cout << "Average computation time : " << durf << " seconds.\n";
+    cout << "End of simulation.\n";
 
     CloseOutputs(ctx); // new in v.3.1: Close and clear outputs, maybe not necessary as main function terminates shortly after, but maybe it ensures a cleaner communication with file system/within Rcpp
     FreeMem(ctx);      // Free dynamic memory  //! added in oct2013
-#ifdef easyMPI
-    MPI::Finalize();
-#endif
-    exit(0);
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    try
+    {
+        return RunTROLL(argc, argv);
+    }
+    catch (const std::exception &e)
+    {
+        cerr << "TROLL stopped: " << e.what() << endl;
+        return 1;
+    }
 }

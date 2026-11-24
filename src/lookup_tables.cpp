@@ -207,7 +207,7 @@ void InitialiseLookUpTables(Context &ctx)
     float VPDaccuracy = 0.01;
     ctx.lookup.iVPDaccuracy = 1.0 / VPDaccuracy;
     cout << "Built-in maximal VPD: " << float(ctx.lookup.nbVPDbins) * VPDaccuracy << endl;
-    if (NULL == (ctx.lookup.LookUp_INLR = new float *[ctx.lookup.nbTbins]))
+    if (NULL == (ctx.lookup.LookUp_INLR = new float *[ctx.lookup.nbTbins]())) // () : row pointers start as nullptr (row 0 is never allocated)
         cerr << "!!! Mem_Alloc ctx.lookup.LookUp_INLR" << endl;
     for (int i = 1; i < ctx.lookup.nbTbins; i++)
     {

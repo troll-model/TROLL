@@ -41,6 +41,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_compile_options(${PROJECT_NAME} PRIVATE -O3 -Wall)
 target_link_libraries(${PROJECT_NAME} PRIVATE GSL::gsl GSL::gslcblas)
 
+# Optional: build with AddressSanitizer and UndefinedBehaviorSanitizer to detect memory errors and leaks
+# (slow; for testing only). Usage: cmake -S . -B build-asan -DTROLL_SANITIZE=ON
+option(TROLL_SANITIZE "Build with address and undefined-behaviour sanitizers" OFF)
+if(TROLL_SANITIZE)
+    target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer -g)
+    target_link_libraries(${PROJECT_NAME} PRIVATE -fsanitize=address,undefined)
+endif()
+
 # --- Test target ---
 # check.sh $1 = nombre de pas de temps, défaut 20 dans le script
 foreach(n 10 100 1000 10000)
