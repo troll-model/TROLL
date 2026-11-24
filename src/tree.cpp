@@ -1540,7 +1540,7 @@ leafFluxes Tree::Photosyn(Context &ctx, float PPFD, float TLEAF, float CS, float
     B = (1.0 - CS * GSDIVA) * (VJ - Rday) + ctx.params.g0 * (2.0 * GammaT - CS) - GSDIVA * (VJ * GammaT + 2.0 * GammaT * Rday);
     C = -(1.0 - CS * GSDIVA) * GammaT * (VJ + 2.0 * Rday) - ctx.params.g0 * 2.0 * GammaT * CS;
     float CIJ = QUAD(A, B, C, 1); // Finds larger root of quadratic function
-    AJ = VJ * (CIJ - GammaT) / (CIC + 2.0 * GammaT);
+    AJ = VJ * (CIJ - GammaT) / (CIJ + 2.0 * GammaT);
     if ((AJ - Rday) < 1.0e-6)
     {
         CIJ = CS; // Below light compensation point
