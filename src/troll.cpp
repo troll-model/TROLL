@@ -1,4 +1,5 @@
 #include "troll.hpp"
+#include <stdexcept>
 #include "constants.hpp"
 #include "context.hpp"
 #include "internal/lookup_tables_cache.hpp"
@@ -14,7 +15,9 @@ int easympi_rank = 0;
 // ###########################################
 // ###########################################
 
-int main(int argc, char *argv[])
+// The simulation itself. It is called by main(), which catches fatal errors (std::exception),
+// so that files are flushed and memory is released when a run stops early.
+static int RunTROLL(int argc, char *argv[])
 {
     Context ctx{};
 
@@ -275,5 +278,18 @@ int main(int argc, char *argv[])
 
     CloseOutputs(ctx); // new in v.3.1: Close and clear outputs, maybe not necessary as main function terminates shortly after, but maybe it ensures a cleaner communication with file system/within Rcpp
     FreeMem(ctx);      // Free dynamic memory  //! added in oct2013
-    exit(0);
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    try
+    {
+        return RunTROLL(argc, argv);
+    }
+    catch (const std::exception &e)
+    {
+        cerr << "TROLL stopped: " << e.what() << endl;
+        return 1;
+    }
 }
