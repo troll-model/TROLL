@@ -3,8 +3,6 @@
 #include "constants.hpp"
 #include "context.hpp"
 
-//! Global function: initialise intraspecific variables
-//! Global function: initialise output streams
 void InitialiseOutputStreams(Context &ctx)
 {
     char nnn[200];
@@ -386,7 +384,6 @@ void Initialise(Context &ctx)
 // ######################################
 //  Global ABC function: initialise ABC conditions
 // ######################################
-//! - determine area to be taken into consideration for ABC and margin not to be taken into consideration (artefacts along border)
 void InitialiseABC(Context &ctx)
 {
     margin = 0;
@@ -460,7 +457,6 @@ void InitialiseABC(Context &ctx)
 //  Global function: point cloud generation
 // ######################################
 //  added v.3.1.6
-
 void ReadInputPointcloud(Context &ctx)
 {
     cout << endl
@@ -1090,7 +1086,6 @@ void AllocMem(Context &ctx)
 
 }
 
-//!  Free dynamic memory
 void FreeMem(Context &ctx)
 {
     delete[] ctx.diag.nbdbh;

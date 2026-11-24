@@ -106,6 +106,16 @@
 // ==========================
 
 // Numeric template (int, float)
+//! Parse a numeric parameter value. Values within [parameter_min, parameter_max], or up to 1%
+//! outside it (then clamped), are assigned; other or non-numeric values give parameter_default
+//! with a warning. The assigned value is printed unless quiet.
+//! @param parameter_name parameter name
+//! @param parameter_value value read from the file (text)
+//! @param parameter [out] variable receiving the value
+//! @param parameter_min minimum allowed value
+//! @param parameter_max maximum allowed value
+//! @param parameter_default default value used when the value is invalid
+//! @param quiet suppress console messages if true
 template <typename N>
 void SetParameter(std::string &parameter_name,
                   std::string &parameter_value,
@@ -116,6 +126,12 @@ void SetParameter(std::string &parameter_name,
                   bool quiet);
 
 // String overload
+//! Assign a string parameter (parameter_default if empty), printed unless quiet.
+//! @param parameter_name parameter name
+//! @param parameter_value value read from the file (text)
+//! @param parameter [out] variable receiving the value
+//! @param parameter_default default value used when the value is invalid
+//! @param quiet suppress console messages if true
 void SetParameter(std::string &parameter_name,
                   std::string &parameter_value,
                   std::string &parameter,
@@ -123,6 +139,14 @@ void SetParameter(std::string &parameter_name,
                   bool quiet);
 
 // Boolean overload
+//! Assign a boolean parameter given as 0 or 1 (parameter_default otherwise), printed unless quiet.
+//! @param parameter_name parameter name
+//! @param parameter_value value read from the file (text)
+//! @param parameter [out] variable receiving the value
+//! @param parameter_min minimum allowed value
+//! @param parameter_max maximum allowed value
+//! @param parameter_default default value used when the value is invalid
+//! @param quiet suppress console messages if true
 void SetParameter(std::string &parameter_name,
                   std::string &parameter_value,
                   bool &parameter,
@@ -135,25 +159,38 @@ void SetParameter(std::string &parameter_name,
 // Registry system
 // ==========================
 
+//! Entry of the global-parameter registry: target variable, type, allowed range and default
 struct ParamSpec
 {
+    //! Type of the variable a registry entry assigns
     enum Type
     {
         INT,
         FLOAT,
         BOOL
-    } type;
-    void *target;
-    double minv, maxv, def;
+    } type;          //!< Type of the target variable
+    void *target;    //!< Address of the variable in Context that receives the value
+    double minv;     //!< Minimum allowed value
+    double maxv;     //!< Maximum allowed value
+    double def;      //!< Default value
 
+    //! Registry entry for variable tgt of type t, allowed range [mn, mx], default df
+    //! @param t    type of the target variable
+    //! @param tgt  address of the target variable
+    //! @param mn   minimum allowed value
+    //! @param mx   maximum allowed value
+    //! @param df   default value
     ParamSpec(Type t, void *tgt, double mn, double mx, double df)
         : type(t), target(tgt), minv(mn), maxv(mx), def(df) {}
 };
 
-extern std::unordered_map<std::string, ParamSpec> parameter_registry;
+extern std::unordered_map<std::string, ParamSpec> parameter_registry; //!< Global parameters by name, filled by RegisterParameters()
 
-void RegisterParameters(Context &ctx);
+void RegisterParameters(Context &ctx); //!< Register every global parameter of the parameter file, with its range and default
 
+//! Assign the value read for parameter name, validated against its registry entry
+//! @param name parameter name
+//! @param value value read from the global parameter file (text)
 void AssignParamFromRegistry(const std::string &name,
                              const std::string &value);
 

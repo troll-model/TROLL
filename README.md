@@ -2,9 +2,10 @@
 
 [![DOI](https://zenodo.org/badge/49142579.svg)](https://doi.org/10.5281/zenodo.14013146)
 
-TROLL 4.0 is an individual- and trait-based model of forest dynamics. A full description of the model and discussion of the underlying modelling choices can be found in the following manuscript:
+TROLL 4.0 is an individual- and trait-based model of forest dynamics. The model and its evaluation are described in two companion papers in Geoscientific Model Development:
 
-“_TROLL 4.0: representing water and carbon fluxes, leaf phenology and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description. Maréchaux I, Fischer FJ, Schmitt S, Chave J_” currently in an open review process for Geoscientific Model Development.
+- Maréchaux I., Fischer F.J., Schmitt S., Chave J. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description. *Geosci. Model Dev.*, 18, 5143–5204. https://doi.org/10.5194/gmd-18-5143-2025
+- Schmitt S., Fischer F.J., *et al.* (2025). TROLL 4.0 … – Part 2: Model evaluation for two Amazonian sites. *Geosci. Model Dev.*, 18, 5205–5243. https://doi.org/10.5194/gmd-18-5205-2025
 
 ## Installation
 
@@ -31,6 +32,23 @@ cmake ..
 make
 ```
 
+### Tests
+
+```bash
+cd build/
+make sanity10      # 10 days from bare ground, against reference outputs
+make sanity100     # 100 days from bare ground, similar to sanity10
+make sanity1000    # 1000 days, similar to sanity10
+make sanity10000   # 10000 days, similar to sanity10
+make test          # triggers sanity100
+```
+The regression checks compare against reference outputs computed from `main` branch. On Linux x86-64 with GCC 13, results reproduce them bit for bit.
+
+### Documentation
+
+- [docs/outputs.md](docs/outputs.md): every output file, its columns and units.
+- API documentation: `make docs` generates it in `build/docs/html` (requires Doxygen); `make docs-check` also reports coverage and fails on documentation errors.
+
 ## Get started
 
 The code of TROLL 4.0 is written in C++ and requires five input files to run a simulation: (i) global parameters (global_inputs), (ii) species parameters (species), (iii) soil characteristics (soil), and finally, meteorological drivers varying at (iv) half-hour (halfhourly_climate) and (v) daily step (daily_climate).
@@ -38,8 +56,12 @@ The code of TROLL 4.0 is written in C++ and requires five input files to run a s
 The following command line can be used to run the code:
 
 ```bash
-./TROLLv4_exe -i./example/global_inputs.txt -s./example/species.txt -m./example/daily_climate.txt -d./example/halfhourly_climate.txt -p./example/soil.txt -o./TROLLv4_test
+./build/TROLL -i./example/global_inputs.txt -s./example/species.txt -m./example/daily_climate.txt -d./example/halfhourly_climate.txt -p./example/soil.txt -o./TROLLv4_test
 ```
+
+Optional arguments: `-f<file>` and `-w<file>` initialise the forest and soil water from an inventory (e.g. the `_final_pattern.txt` and `_final_SWC3D.txt` outputs of a previous run), `-n<index>` sets the run index used in output file names, and `-r<seed>` (or `--seed=<seed>`) sets the random seed. Without `-r`, the seed is 1 if `_NONRANDOM` is 1 in the global inputs and time-based otherwise. The seed actually used is written to the `_info.txt` output so every run can be reproduced.
+
+TROLL uses all available cores by default; set `OMP_NUM_THREADS` to choose the number of threads (e.g. `OMP_NUM_THREADS=1` when running many simulations side by side). Outputs are bit-identical whatever the number of threads. The reported "computation time" is wall-clock time spent in the simulation loop.
 
 ## Alternative
 

@@ -15,24 +15,17 @@ int easympi_rank = 0;
 // ###########################################
 // ###########################################
 
-// The simulation itself. It is called by main(), which catches fatal errors (std::exception),
-// so that files are flushed and memory is released when a run stops early.
-static int RunTROLL(int argc, char *argv[])
+//! Run one simulation: parse arguments, read inputs, initialise, loop over timesteps, write outputs.
+//! Returns the process exit code.
+//! @param argc number of command-line arguments
+//! @param argv command-line arguments (see README: -i, -s, -m, -d, -p, -o)
+int RunTROLL(int argc, char *argv[])
 {
     Context ctx{};
 
     //!*********************
     //!** Initializations **
     //!*********************
-#ifdef MPI // Lookup processor number / total number of processors
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &p_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-    mpi_rank = 0;
-    mpi_size = 1;
-#endif
-    easympi_rank = 0;
 
     for (int argn = 1; argn < argc; argn++)
     { // Arguments of the input and output files

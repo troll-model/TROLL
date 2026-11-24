@@ -58,7 +58,6 @@ void Evolution(Context &ctx)
         OutputField(ctx); //! Output the statistics
 }
 
-
 // Helper function
 int GetTimeofyear(Context &ctx)
 {
@@ -70,4 +69,5 @@ int GetTimeofyear(Context &ctx)
         timeofyear = ctx.time.iter % ctx.time.iterperyear;
     return (timeofyear);
 };
+
 

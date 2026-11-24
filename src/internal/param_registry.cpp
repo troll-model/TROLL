@@ -128,8 +128,11 @@ void SetParameter(std::string &parameter_name,
 }
 
 // explicit instantiations
+//! Explicit instantiation of SetParameter for int parameters
 template void SetParameter<int>(std::string &, std::string &, int &, int, int, int, bool);
+//! Explicit instantiation of SetParameter for float parameters
 template void SetParameter<float>(std::string &, std::string &, float &, float, float, float, bool);
+//! Explicit instantiation of SetParameter for unsigned short parameters
 template void SetParameter<unsigned short>(std::string &, std::string &, unsigned short &, unsigned short, unsigned short, unsigned short, bool);
 
 // ============================================================================

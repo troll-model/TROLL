@@ -2,19 +2,9 @@
 
 For developpers. The test runs a few time steps from TROLL reference version (`main` branch, tag `v4.0`) and compare the outputs bit by bit with current version (`dev` branch), based on the `./example/` configuration. It is insufficient to catch long term trends break but it garantees that initialization and basics functions are not broken.
 
-## Requirements
+## Requirements & usage
 
-Same requirements for compiling TROLL, see build [README](../README.md)
-
-## Usage
-
-```bash
-cd build
-cmake ..
-make test # similar to make sanity100
-# make sanity1000 for longer run
-# make sanity10000 for validating long term trends
-```
+Refer to main [README](../README.md)
 
 ## Expected outputs
 
