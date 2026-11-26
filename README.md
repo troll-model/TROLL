@@ -4,7 +4,7 @@
 
 TROLL 4.0 is an individual- and trait-based model of forest dynamics. A full description of the model and discussion of the underlying modelling choices can be found in the following manuscript:
 
-“_TROLL 4.0: representing water and carbon fluxes, leaf phenology and intraspecific trait variation in a mixed-species individual-based forest dynamics model – Part 1: Model description. Maréchaux I, Fischer FJ, Schmitt S, Chave J_” currently in an open review process for Geoscientific Model Development.
+“Maréchaux, I., Fischer, F. J., Schmitt, S., & Chave, J. (2025). TROLL 4.0: representing water and carbon fluxes, leaf phenology, and intraspecific trait variation in a mixed-species individual-based forest dynamics model–Part 1: Model description. Geoscientific Model Development, 18(16), 5143-5204”.
 
 ## Installation
 
